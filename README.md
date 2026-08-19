@@ -4,6 +4,8 @@ A native **KDE Plasma 6** system tray widget for [Framework Laptops](https://fra
 
 > **This is not a fork.** This project is an independent Plasma widget that talks to the REST API of [ozturkkl/framework-control](https://github.com/ozturkkl/framework-control). The backend service is developed and maintained by Kemal Ozturk. FrameWidge simply provides a native KDE frontend.
 
+> **100% vibe coded.** This entire project — every QML file, every script, the landing page, this README — was generated through AI-assisted development. No line was written by hand. Use at your own risk, and please report bugs!
+
 ## Features
 
 - **Fan Control** — Auto, manual duty slider, custom curve editor with drag-and-drop points, hysteresis, rate limiting, per-fan overrides (Framework 16), and calibration wizard
