@@ -136,6 +136,20 @@ Backend install requires `sudo`; plasmoid install does not.
 
 `uninstall.sh` removes only the plasmoid. Backend removal is documented separately (upstream's `uninstall-linux.sh`).
 
+### Release channels
+
+The install script offers three channels:
+
+| Channel | Source | Use case |
+|---------|--------|----------|
+| **Stable** (default) | Latest GitHub release **not** marked pre-release | Recommended for daily use |
+| **Beta** | Latest GitHub release tagged as pre-release (`beta`, `alpha`, `rc`) | Early access to new features, may have bugs |
+| **Main** | `main` branch HEAD | Bleeding edge, no stability guarantees |
+
+The channel selection is interactive — the user picks `1/2/3` at install time. The script resolves the correct tag or branch via the GitHub API and downloads the matching tarball.
+
+**Current state**: Only a beta release (`v0.1.0-beta`) exists. Once the first stable release is published, the default channel (1) will resolve to it. Until then, users should choose Beta (2) or Main (3).
+
 ### AUR / copr
 
 Planned for after MVP. Not yet implemented.

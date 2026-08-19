@@ -1,0 +1,14 @@
+---
+description: Keep DESIGN.md in sync with every architectural or UX decision
+alwaysApply: true
+---
+
+# DESIGN.md maintenance
+
+Whenever a new design, architectural, or UX decision is made (e.g. new feature approach, API change, install strategy, visual guideline), update `DESIGN.md` with:
+
+- A concise heading under the appropriate section
+- The decision and its rationale
+- Any trade-offs or alternatives considered
+
+Do this in the same commit as the implementation change. Never defer the DESIGN.md update to a follow-up.
