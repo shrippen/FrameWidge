@@ -70,7 +70,7 @@ ColumnLayout {
         }
 
         // Tab content
-        QQC2.StackLayout {
+        StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             currentIndex: tabBar.currentIndex
