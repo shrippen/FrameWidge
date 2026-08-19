@@ -22,7 +22,7 @@ echo "    1) Stable  — latest stable release (recommended)"
 echo "    2) Beta    — latest pre-release (newer features, may have bugs)"
 echo "    3) Main    — bleeding edge from the main branch"
 echo ""
-read -rp "  Choose [1/2/3] (default: 1): " channel_choice
+read -rp "  Choose [1/2/3] (default: 1): " channel_choice </dev/tty
 channel_choice="${channel_choice:-1}"
 
 case "$channel_choice" in
@@ -69,7 +69,7 @@ else
     echo "  The backend service is required. It manages fans, power, battery"
     echo "  and runs as a systemd service (requires root)."
     echo ""
-    read -rp "  Install/update the framework-control backend? [Y/n] " answer
+    read -rp "  Install/update the framework-control backend? [Y/n] " answer </dev/tty
     answer="${answer:-Y}"
     if [[ "$answer" =~ ^[Yy] ]]; then
         info "Installing framework-control backend..."
