@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+
+    <group name="General">
+        <entry name="servicePort" type="Int">
+            <label>Port of the framework-control service</label>
+            <default>30912</default>
+        </entry>
+        <entry name="pollIntervalMs" type="Int">
+            <label>Health poll interval in milliseconds</label>
+            <default>2000</default>
+        </entry>
+        <entry name="compactDisplay" type="String">
+            <label>What to show on the compact tray icon (temp, rpm, soc, icon)</label>
+            <default>temp</default>
+        </entry>
+    </group>
+</kcfg>

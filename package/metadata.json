@@ -1,0 +1,23 @@
+{
+    "KPlugin": {
+        "Id": "org.kde.plasma.framewidge",
+        "Name": "FrameWidge",
+        "Description": "Native Plasma widget for Framework Laptop control (fans, power, battery, sensors)",
+        "Icon": "cpu",
+        "Authors": [
+            {
+                "Name": "Arian",
+                "Email": ""
+            }
+        ],
+        "Category": "Hardware",
+        "License": "MIT",
+        "Website": "https://github.com/ozturkkl/framework-control"
+    },
+    "X-Plasma-API": "declarativeappletscript",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-MainScript": "ui/main.qml",
+    "X-Plasma-NotificationArea": "true",
+    "X-Plasma-NotificationAreaCategory": "Hardware",
+    "KPackageStructure": "Plasma/Applet"
+}
