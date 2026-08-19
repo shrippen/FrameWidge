@@ -25,7 +25,7 @@ A native **KDE Plasma 6** system tray widget for [Framework Laptops](https://fra
 One command installs both the backend and the widget:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/arian/framework-control-plasmoid/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/shrippen/FrameWidge/main/install.sh | bash
 ```
 
 Then add **FrameWidge** to your panel or system tray via the Plasma widget picker.
@@ -39,15 +39,15 @@ Then add **FrameWidge** to your panel or system tray via the Plasma widget picke
 
 2. Install the plasmoid:
    ```bash
-   git clone https://github.com/arian/framework-control-plasmoid.git
-   cd framework-control-plasmoid
+   git clone https://github.com/shrippen/FrameWidge.git
+   cd FrameWidge
    kpackagetool6 -t Plasma/Applet -i package/
    ```
 
 ### Update
 
 ```bash
-cd framework-control-plasmoid && git pull
+cd FrameWidge && git pull
 kpackagetool6 -t Plasma/Applet -u package/
 ```
 

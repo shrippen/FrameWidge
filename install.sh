@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="https://github.com/arian/framework-control-plasmoid"
+REPO_URL="https://github.com/shrippen/FrameWidge"
 BACKEND_INSTALL="https://raw.githubusercontent.com/ozturkkl/framework-control/main/install-linux.sh"
 PLASMOID_ID="org.kde.plasma.framewidge"
 
@@ -46,11 +46,11 @@ if command -v git >/dev/null 2>&1; then
     git clone --depth 1 "$REPO_URL.git" "$TMPDIR/repo" 2>/dev/null || {
         warn "git clone failed, trying tarball download..."
         curl -fsSL "$REPO_URL/archive/refs/heads/main.tar.gz" | tar -xz -C "$TMPDIR"
-        mv "$TMPDIR"/framework-control-plasmoid-main "$TMPDIR/repo"
+        mv "$TMPDIR"/FrameWidge-main "$TMPDIR/repo"
     }
 else
     curl -fsSL "$REPO_URL/archive/refs/heads/main.tar.gz" | tar -xz -C "$TMPDIR"
-    mv "$TMPDIR"/framework-control-plasmoid-main "$TMPDIR/repo"
+    mv "$TMPDIR"/FrameWidge-main "$TMPDIR/repo"
 fi
 
 PACKAGE_DIR="$TMPDIR/repo/package"
