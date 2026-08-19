@@ -10,6 +10,21 @@ ok()    { echo -e "\033[1;32m[OK]\033[0m    $*"; }
 warn()  { echo -e "\033[1;33m[WARN]\033[0m  $*"; }
 error() { echo -e "\033[1;31m[ERROR]\033[0m $*"; exit 1; }
 
+# When piped via curl|bash, stdin is the script itself.
+# Open a persistent fd to the real terminal for interactive prompts.
+if [ -t 0 ]; then
+    exec 3<&0
+elif [ -e /dev/tty ]; then
+    exec 3</dev/tty
+else
+    error "No interactive terminal available. Download and run the script directly instead of piping."
+fi
+
+ask() {
+    local prompt="$1" var="$2"
+    read -rp "$prompt" "$var" <&3
+}
+
 # --- Check prerequisites ---
 command -v kpackagetool6 >/dev/null 2>&1 || error "kpackagetool6 not found. Is KDE Plasma 6 installed?"
 command -v curl >/dev/null 2>&1 || error "curl is required."
@@ -22,8 +37,14 @@ echo "    1) Stable  — latest stable release (recommended)"
 echo "    2) Beta    — latest pre-release (newer features, may have bugs)"
 echo "    3) Main    — bleeding edge from the main branch"
 echo ""
-read -rp "  Choose [1/2/3] (default: 1): " channel_choice </dev/tty
-channel_choice="${channel_choice:-1}"
+channel_choice=""
+while [[ ! "$channel_choice" =~ ^[123]$ ]]; do
+    ask "  Choose [1/2/3] (default: 1): " channel_choice
+    channel_choice="${channel_choice:-1}"
+    if [[ ! "$channel_choice" =~ ^[123]$ ]]; then
+        warn "Invalid choice '$channel_choice'. Please enter 1, 2, or 3."
+    fi
+done
 
 case "$channel_choice" in
     2)
@@ -69,7 +90,7 @@ else
     echo "  The backend service is required. It manages fans, power, battery"
     echo "  and runs as a systemd service (requires root)."
     echo ""
-    read -rp "  Install/update the framework-control backend? [Y/n] " answer </dev/tty
+    ask "  Install/update the framework-control backend? [Y/n] " answer
     answer="${answer:-Y}"
     if [[ "$answer" =~ ^[Yy] ]]; then
         info "Installing framework-control backend..."
