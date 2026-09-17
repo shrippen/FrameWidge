@@ -68,6 +68,8 @@ Goal: make multi-tab / multi-instance state consistent and robust to backend hic
 ### Phase 2 — Visual redesign ("sleek" pass)
 Goal: apply the `DESIGN.md` brand language deliberately inside the widget, not just on the landing page.
 
+**Chosen direction: "Brand-accented Kirigami."** Four directions were proposed (brand-accented Kirigami, dashboard tiles, icon-only sidebar tabs, ambient tray gauge); this one was picked as it stays closest to native Plasma conventions while giving the widget a distinct identity — a small icon-mark header with live status, the `#E8DCC4` accent used deliberately (status dot, progress/active states) instead of generic `QQC2` defaults, and a tighter, more consistent spacing rhythm. The other three remain documented above as alternatives if this direction doesn't hold up once built.
+
 - [ ] Design a proper header: small brand mark (using the `#E8DCC4` accent per `DESIGN.md`) + widget name + live at-a-glance status (online dot, temp), replacing the plain opacity-0.8 heading.
 - [ ] Redesign the tab bar: consider icon-only compact tabs with tooltips, or a segmented-control look consistent with Kirigami 6 conventions, tightening vertical rhythm (`spacing: 0` currently means everything relies on manual margins — audit for consistent spacing scale using `Kirigami.Units.*` throughout).
 - [ ] Polish the Sensors chart and Curve editor: add hover crosshair + current value readout, smooth line rendering (antialiasing / curve smoothing on the Canvas), subtle fade-in for new data points, tuned color palette for both light and dark themes.
