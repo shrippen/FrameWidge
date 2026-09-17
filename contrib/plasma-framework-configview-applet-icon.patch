@@ -1,0 +1,32 @@
+Subject: [PATCH] plasmaquick/configview: use the applet's own icon for the
+ config dialog window
+
+ConfigView hardcodes the window icon to the generic theme icon
+"configure", so every widget's configuration dialog shows the same gear
+in the task switcher/taskbar instead of the widget's own icon.
+
+Use the applet's metadata icon name when one is set, falling back to
+"configure" otherwise.
+
+Why FrameWidge cares: a pure-QML plasmoid cannot override this itself -
+QWindow::icon is not a Q_PROPERTY and setIcon() is neither a slot nor
+Q_INVOKABLE, so the configDialog context property exposed to the
+applet's KCM pages cannot change the window icon from QML. Verified
+against Qt 6.11: no meta-object entry "icon" on QQuickWindow, and no
+registered QString/QUrl/QPixmap/QImage -> QIcon converters.
+
+Applies to: plasma-framework master, src/plasmaquick/configview.cpp
+
+--- a/src/plasmaquick/configview.cpp
++++ b/src/plasmaquick/configview.cpp
+@@ -ConfigView::ConfigView(Plasma::Applet *applet, QWindow *parent)
+     : QQuickWindow(parent)
+     , d(new ConfigViewPrivate(applet, this))
+ {
+-    setIcon(QIcon::fromTheme(QStringLiteral("configure")));
++    const QString appletIcon = applet->pluginMetaData().iconName();
++    setIcon(QIcon::fromTheme(appletIcon.isEmpty() ? QStringLiteral("configure") : appletIcon));
+     // Only register types once
+     [[maybe_unused]] static int configModelRegisterResult = qmlRegisterType<ConfigModel>("org.kde.plasma.configuration", 2, 0, "ConfigModel");
+     [[maybe_unused]] static int configCategoryRegisterResult = qmlRegisterType<ConfigCategory>("org.kde.plasma.configuration", 2, 0, "ConfigCategory");
+     d->init();
