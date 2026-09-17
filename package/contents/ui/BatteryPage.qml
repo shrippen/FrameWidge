@@ -135,6 +135,24 @@ ColumnLayout {
 
     Kirigami.Separator { Layout.fillWidth: true }
 
+    // --- Loading state ---
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.margins: Kirigami.Units.smallSpacing
+        visible: !configLoaded
+        spacing: Kirigami.Units.smallSpacing
+
+        PlasmaComponents.BusyIndicator {
+            Layout.preferredWidth: Kirigami.Units.iconSizes.small
+            Layout.preferredHeight: width
+            running: !configLoaded
+        }
+        PlasmaComponents.Label {
+            text: i18n("Loading battery configuration…")
+            opacity: 0.6
+        }
+    }
+
     // --- Charge Limit Control ---
     PlasmaExtras.Heading {
         Layout.leftMargin: Kirigami.Units.smallSpacing
@@ -148,6 +166,8 @@ ColumnLayout {
         Layout.rightMargin: Kirigami.Units.largeSpacing
         spacing: Kirigami.Units.smallSpacing
         enabled: configLoaded
+        opacity: configLoaded ? 1 : 0.4
+        Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
 
         QQC2.CheckBox {
             id: clCheck
@@ -190,6 +210,8 @@ ColumnLayout {
         Layout.rightMargin: Kirigami.Units.largeSpacing
         spacing: Kirigami.Units.smallSpacing
         enabled: configLoaded
+        opacity: configLoaded ? 1 : 0.4
+        Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
 
         QQC2.CheckBox {
             checked: rateEnabled

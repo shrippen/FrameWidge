@@ -5,8 +5,14 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
+import "js/ColorGrading.js" as ColorGrading
+
 ColumnLayout {
     id: fullRoot
+
+    // Brand accent per DESIGN.md - reserved for the icon mark and small
+    // live-status accents, everything else stays on Kirigami.Theme.*
+    readonly property color brandAccent: "#E8DCC4"
 
     Layout.minimumWidth: Kirigami.Units.gridUnit * 22
     Layout.minimumHeight: Kirigami.Units.gridUnit * 26
@@ -21,6 +27,8 @@ ColumnLayout {
         Layout.fillHeight: true
         active: !root.serviceOnline || !root.cliPresent
         visible: active
+        opacity: active ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Kirigami.Units.longDuration } }
         sourceComponent: OfflineHint {}
     }
 
@@ -29,23 +37,71 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         visible: root.serviceOnline && root.cliPresent
+        opacity: visible ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Kirigami.Units.longDuration } }
         spacing: 0
 
         // Header
-        PlasmaExtras.Heading {
+        RowLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: Kirigami.Units.smallSpacing
-            Layout.topMargin: Kirigami.Units.smallSpacing
-            level: 4
-            text: "FrameWidge"
-            opacity: 0.8
+            Layout.margins: Kirigami.Units.smallSpacing
+            spacing: Kirigami.Units.smallSpacing
+
+            Rectangle {
+                id: brandMark
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.6
+                Layout.preferredHeight: width
+                radius: Kirigami.Units.cornerRadius
+                color: fullRoot.brandAccent
+
+                PlasmaComponents.Label {
+                    anchors.centerIn: parent
+                    text: "F"
+                    font.bold: true
+                    font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
+                    color: "#282828" // fixed dark ink on the fixed-light brand chip, not theme-dependent
+                }
+            }
+
+            PlasmaExtras.Heading {
+                level: 4
+                text: "FrameWidge"
+            }
+
+            Item { Layout.fillWidth: true }
+
+            // Live at-a-glance status: colored dot + current CPU temperature
+            RowLayout {
+                spacing: Kirigami.Units.smallSpacing / 2
+
+                Rectangle {
+                    Layout.preferredWidth: Kirigami.Units.smallSpacing
+                    Layout.preferredHeight: width
+                    radius: width / 2
+                    color: ColorGrading.gradeIndicatorColor(root.serviceOnline, "temp", root.cpuTemp, {
+                        disabled: Kirigami.Theme.disabledTextColor,
+                        negative: Kirigami.Theme.negativeTextColor,
+                        neutral: Kirigami.Theme.neutralTextColor,
+                        positive: Kirigami.Theme.positiveTextColor,
+                        text: Kirigami.Theme.textColor
+                    })
+                    Behavior on color { ColorAnimation { duration: Kirigami.Units.longDuration } }
+                }
+
+                PlasmaComponents.Label {
+                    text: root.cpuTemp >= 0 ? i18n("%1 °C", Math.round(root.cpuTemp)) : ""
+                    opacity: 0.8
+                    font.pointSize: Kirigami.Theme.smallFont.pointSize
+                }
+            }
         }
+
+        Kirigami.Separator { Layout.fillWidth: true }
 
         // Tab bar
         QQC2.TabBar {
             id: tabBar
             Layout.fillWidth: true
-            Layout.topMargin: Kirigami.Units.smallSpacing
 
             QQC2.TabButton {
                 text: i18n("Sensors")
@@ -68,6 +124,8 @@ ColumnLayout {
                 icon.name: "configure"
             }
         }
+
+        Kirigami.Separator { Layout.fillWidth: true }
 
         // Tab content
         StackLayout {

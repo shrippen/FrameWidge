@@ -156,11 +156,29 @@ ColumnLayout {
 
     Kirigami.Separator { Layout.fillWidth: true }
 
+    // --- Loading state ---
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.margins: Kirigami.Units.smallSpacing
+        visible: !configLoaded
+        spacing: Kirigami.Units.smallSpacing
+
+        PlasmaComponents.BusyIndicator {
+            Layout.preferredWidth: Kirigami.Units.iconSizes.small
+            Layout.preferredHeight: width
+            running: !configLoaded
+        }
+        PlasmaComponents.Label {
+            text: i18n("Loading power configuration…")
+            opacity: 0.6
+        }
+    }
+
     // No capabilities
     PlasmaComponents.Label {
         Layout.fillWidth: true
         Layout.margins: Kirigami.Units.largeSpacing
-        visible: !hasAnyCapability
+        visible: configLoaded && !hasAnyCapability
         wrapMode: Text.WordWrap
         text: i18n("No supported power management interface detected.")
         opacity: 0.6
@@ -191,6 +209,8 @@ ColumnLayout {
         Layout.margins: Kirigami.Units.smallSpacing
         visible: hasAnyCapability
         enabled: configLoaded
+        opacity: configLoaded ? 1 : 0.4
+        Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
         spacing: Kirigami.Units.smallSpacing
 
         // EPP

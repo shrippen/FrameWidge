@@ -102,72 +102,179 @@ ColumnLayout {
     }
 
     // --- Chart ---
-    Canvas {
-        id: sensorChart
+    Item {
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.minimumHeight: Kirigami.Units.gridUnit * 10
 
-        readonly property int padLeft: 36
-        readonly property int padRight: 12
-        readonly property int padTop: 12
-        readonly property int padBottom: 22
+        readonly property bool hasData: Object.keys(series).length > 0
 
-        onPaint: {
-            var ctx = getContext("2d");
-            ctx.clearRect(0, 0, width, height);
+        Canvas {
+            id: sensorChart
+            anchors.fill: parent
 
-            // Collect all timestamps
-            var allTimes = [];
-            var seriesKeys = Object.keys(series);
-            for (var k = 0; k < seriesKeys.length; k++) {
-                var pts = series[seriesKeys[k]];
-                for (var p = 0; p < pts.length; p++) allTimes.push(pts[p][0]);
-            }
-            if (allTimes.length === 0) return;
+            readonly property int padLeft: 36
+            readonly property int padRight: 12
+            readonly property int padTop: 12
+            readonly property int padBottom: 22
 
-            var tMin = Math.min.apply(null, allTimes);
-            var tMax = Math.max.apply(null, allTimes);
-            if (tMax === tMin) tMax = tMin + 1;
+            // Set by the MouseArea below; -1 means "not hovering".
+            property real hoverX: -1
+            property var hoverInfo: null // { time, entries: [{name, value, color}] }
 
-            var yMin = 0, yMax = 100;
-            var w = width - padLeft - padRight;
-            var h = height - padTop - padBottom;
+            function xPx(t, tMin, tMax, w) { return padLeft + ((t - tMin) / (tMax - tMin)) * w; }
+            function yPx(v, h) { return padTop + (1 - (v - 0) / 100) * h; }
 
-            function xPx(t) { return padLeft + ((t - tMin) / (tMax - tMin)) * w; }
-            function yPx(v) { return padTop + (1 - (v - yMin) / (yMax - yMin)) * h; }
+            onPaint: {
+                var ctx = getContext("2d");
+                ctx.clearRect(0, 0, width, height);
 
-            // Grid
-            ctx.strokeStyle = Kirigami.Theme.disabledTextColor;
-            ctx.lineWidth = 0.5;
-            for (var d = 0; d <= 100; d += 20) {
-                var gy = yPx(d);
-                ctx.beginPath(); ctx.moveTo(padLeft, gy); ctx.lineTo(width - padRight, gy); ctx.stroke();
-                ctx.fillStyle = Kirigami.Theme.textColor;
-                ctx.font = "10px sans-serif";
-                ctx.textAlign = "right";
-                ctx.fillText(d + "°C", padLeft - 4, gy + 4);
-            }
-
-            // Lines
-            for (var si = 0; si < seriesKeys.length; si++) {
-                var name = seriesKeys[si];
-                var data = series[name];
-                if (data.length === 0) continue;
-
-                ctx.strokeStyle = sensorColor(name);
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(xPx(data[0][0]), yPx(data[0][1]));
-                for (var di = 1; di < data.length; di++) {
-                    ctx.lineTo(xPx(data[di][0]), yPx(data[di][1]));
+                var allTimes = [];
+                var seriesKeys = Object.keys(series);
+                for (var k = 0; k < seriesKeys.length; k++) {
+                    var pts = series[seriesKeys[k]];
+                    for (var p = 0; p < pts.length; p++) allTimes.push(pts[p][0]);
                 }
-                ctx.stroke();
+                if (allTimes.length === 0) { hoverInfo = null; return; }
+
+                var tMin = Math.min.apply(null, allTimes);
+                var tMax = Math.max.apply(null, allTimes);
+                if (tMax === tMin) tMax = tMin + 1;
+
+                var w = width - padLeft - padRight;
+                var h = height - padTop - padBottom;
+
+                // Grid
+                ctx.strokeStyle = Kirigami.Theme.disabledTextColor;
+                ctx.lineWidth = 0.5;
+                for (var d = 0; d <= 100; d += 20) {
+                    var gy = yPx(d, h);
+                    ctx.beginPath(); ctx.moveTo(padLeft, gy); ctx.lineTo(width - padRight, gy); ctx.stroke();
+                    ctx.fillStyle = Kirigami.Theme.textColor;
+                    ctx.font = "10px sans-serif";
+                    ctx.textAlign = "right";
+                    ctx.fillText(d + "°C", padLeft - 4, gy + 4);
+                }
+
+                // Lines
+                for (var si = 0; si < seriesKeys.length; si++) {
+                    var name = seriesKeys[si];
+                    var data = series[name];
+                    if (data.length === 0) continue;
+
+                    ctx.strokeStyle = sensorColor(name);
+                    ctx.lineWidth = 2;
+                    ctx.lineJoin = "round";
+                    ctx.beginPath();
+                    ctx.moveTo(xPx(data[0][0], tMin, tMax, w), yPx(data[0][1], h));
+                    for (var di = 1; di < data.length; di++) {
+                        ctx.lineTo(xPx(data[di][0], tMin, tMax, w), yPx(data[di][1], h));
+                    }
+                    ctx.stroke();
+                }
+
+                // Hover crosshair: nearest sample per series to the cursor's time
+                if (hoverX >= padLeft && hoverX <= width - padRight) {
+                    var hoverTime = tMin + ((hoverX - padLeft) / w) * (tMax - tMin);
+                    var entries = [];
+                    for (var hi = 0; hi < seriesKeys.length; hi++) {
+                        var hname = seriesKeys[hi];
+                        var hdata = series[hname];
+                        if (hdata.length === 0) continue;
+                        var nearest = hdata[0];
+                        for (var hj = 1; hj < hdata.length; hj++) {
+                            if (Math.abs(hdata[hj][0] - hoverTime) < Math.abs(nearest[0] - hoverTime)) nearest = hdata[hj];
+                        }
+                        entries.push({ name: hname, value: nearest[1], color: sensorColor(hname) });
+
+                        // Highlight the nearest point on its line
+                        ctx.fillStyle = sensorColor(hname);
+                        ctx.beginPath();
+                        ctx.arc(xPx(nearest[0], tMin, tMax, w), yPx(nearest[1], h), 3, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+                    hoverInfo = { entries: entries };
+
+                    ctx.strokeStyle = Kirigami.Theme.textColor;
+                    ctx.globalAlpha = 0.3;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(hoverX, padTop);
+                    ctx.lineTo(hoverX, height - padBottom);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                } else {
+                    hoverInfo = null;
+                }
+            }
+
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onHoverXChanged: requestPaint()
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onPositionChanged: function(mouse) { sensorChart.hoverX = mouse.x; }
+                onExited: sensorChart.hoverX = -1
             }
         }
 
-        onWidthChanged: requestPaint()
-        onHeightChanged: requestPaint()
+        // Floating readout following the crosshair
+        ColumnLayout {
+            visible: sensorChart.hoverInfo !== null && sensorChart.hoverInfo.entries.length > 0
+            x: Math.min(Math.max(sensorChart.hoverX + Kirigami.Units.smallSpacing, 0), parent.width - width)
+            y: Kirigami.Units.smallSpacing
+            spacing: 0
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: readoutColumn.implicitHeight + Kirigami.Units.smallSpacing
+                color: Kirigami.Theme.backgroundColor
+                opacity: 0.9
+                radius: Kirigami.Units.cornerRadius
+                border.color: Kirigami.Theme.disabledTextColor
+                border.width: 1
+
+                ColumnLayout {
+                    id: readoutColumn
+                    anchors.centerIn: parent
+                    spacing: 0
+
+                    Repeater {
+                        model: sensorChart.hoverInfo ? sensorChart.hoverInfo.entries : []
+                        RowLayout {
+                            spacing: Kirigami.Units.smallSpacing / 2
+                            Rectangle { width: 8; height: 8; radius: 4; color: modelData.color }
+                            PlasmaComponents.Label {
+                                text: modelData.name + ": " + modelData.value.toFixed(1) + "°C"
+                                font.pointSize: Kirigami.Theme.smallFont.pointSize
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Empty state
+        ColumnLayout {
+            anchors.centerIn: parent
+            visible: !parent.hasData
+            spacing: Kirigami.Units.smallSpacing
+
+            Kirigami.Icon {
+                Layout.alignment: Qt.AlignHCenter
+                source: "office-chart-line"
+                width: Kirigami.Units.iconSizes.medium
+                height: width
+                opacity: 0.4
+            }
+            PlasmaComponents.Label {
+                Layout.alignment: Qt.AlignHCenter
+                text: i18n("Waiting for sensor data…")
+                opacity: 0.5
+            }
+        }
     }
 
     function sensorColor(name) {

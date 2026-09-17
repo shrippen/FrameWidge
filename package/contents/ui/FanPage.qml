@@ -142,12 +142,32 @@ ColumnLayout {
 
     Kirigami.Separator { Layout.fillWidth: true }
 
+    // --- Loading state ---
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.margins: Kirigami.Units.smallSpacing
+        visible: !configLoaded
+        spacing: Kirigami.Units.smallSpacing
+
+        PlasmaComponents.BusyIndicator {
+            Layout.preferredWidth: Kirigami.Units.iconSizes.small
+            Layout.preferredHeight: width
+            running: !configLoaded
+        }
+        PlasmaComponents.Label {
+            text: i18n("Loading fan configuration…")
+            opacity: 0.6
+        }
+    }
+
     // --- Mode selector ---
     RowLayout {
         Layout.fillWidth: true
         Layout.leftMargin: Kirigami.Units.largeSpacing
         spacing: Kirigami.Units.smallSpacing
         enabled: configLoaded
+        opacity: configLoaded ? 1 : 0.4
+        Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
 
         QQC2.RadioButton {
             text: i18n("Auto")
@@ -196,6 +216,8 @@ ColumnLayout {
         Layout.rightMargin: Kirigami.Units.largeSpacing
         visible: fanMode === "manual"
         enabled: configLoaded
+        opacity: configLoaded ? 1 : 0.4
+        Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
         spacing: Kirigami.Units.smallSpacing
 
         PlasmaComponents.Label { text: i18n("Duty:") }
@@ -224,6 +246,8 @@ ColumnLayout {
         Layout.margins: Kirigami.Units.smallSpacing
         visible: fanMode === "curve"
         enabled: configLoaded
+        opacity: configLoaded ? 1 : 0.4
+        Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
         spacing: Kirigami.Units.smallSpacing
 
         // Curve editor placeholder — will be replaced by CurveEditor
