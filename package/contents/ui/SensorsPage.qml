@@ -18,10 +18,20 @@ ColumnLayout {
     property int windowSeconds: 300
     property int telemetryPollMs: 2000
 
+    // Relative luminance of the theme background, used to tune sensor line
+    // colors for contrast (see ColorGrading.sensorColor) instead of relying
+    // on one fixed hex palette that only reads well in one color scheme.
+    readonly property bool darkTheme: {
+        var bg = Kirigami.Theme.backgroundColor;
+        return (0.299 * bg.r + 0.587 * bg.g + 0.114 * bg.b) < 0.5;
+    }
+
     Component.onCompleted: {
         seedTelemetryConfig(root.configData);
         fetchHistory();
     }
+
+    onDarkThemeChanged: sensorChart.requestPaint()
 
     Connections {
         target: root
@@ -92,6 +102,7 @@ ColumnLayout {
                 Rectangle {
                     width: 10; height: 10; radius: 5
                     color: sensorColor(modelData)
+                    Accessible.ignored: true // decorative; the label next to it names the sensor
                 }
                 PlasmaComponents.Label {
                     text: modelData
@@ -112,6 +123,21 @@ ColumnLayout {
         Canvas {
             id: sensorChart
             anchors.fill: parent
+
+            // The drawn lines carry no information for screen reader users,
+            // so summarize the latest reading per sensor as text instead.
+            Accessible.role: Accessible.Graphic
+            Accessible.name: {
+                var keys = Object.keys(series);
+                if (keys.length === 0) return i18n("Sensor temperature chart, no data yet");
+                var parts = [];
+                for (var i = 0; i < keys.length; i++) {
+                    var pts = series[keys[i]];
+                    if (pts.length === 0) continue;
+                    parts.push(keys[i] + ": " + pts[pts.length - 1][1].toFixed(1) + "°C");
+                }
+                return i18n("Sensor temperature chart. Latest: %1", parts.join(", "));
+            }
 
             readonly property int padLeft: 36
             readonly property int padRight: 12
@@ -245,7 +271,7 @@ ColumnLayout {
                         model: sensorChart.hoverInfo ? sensorChart.hoverInfo.entries : []
                         RowLayout {
                             spacing: Kirigami.Units.smallSpacing / 2
-                            Rectangle { width: 8; height: 8; radius: 4; color: modelData.color }
+                            Rectangle { width: 8; height: 8; radius: 4; color: modelData.color; Accessible.ignored: true }
                             PlasmaComponents.Label {
                                 text: modelData.name + ": " + modelData.value.toFixed(1) + "°C"
                                 font.pointSize: Kirigami.Theme.smallFont.pointSize
@@ -278,7 +304,7 @@ ColumnLayout {
     }
 
     function sensorColor(name) {
-        return ColorGrading.sensorColor(name);
+        return ColorGrading.sensorColor(name, darkTheme);
     }
 
     Kirigami.Separator { Layout.fillWidth: true }

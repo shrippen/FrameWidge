@@ -20,12 +20,38 @@ TestCase {
         verify(ColorGrading.sensorColor("CPU") !== ColorGrading.sensorColor("GPU"));
     }
 
-    function test_sensorColor_alwaysReturnsAPaletteEntry() {
+    function test_sensorColor_alwaysReturnsAValidHexColor() {
         var names = ["CPU", "GPU", "SSD", "Battery", "VRM", ""];
         for (var i = 0; i < names.length; i++) {
             var c = ColorGrading.sensorColor(names[i]);
-            verify(typeof c === "string" && c.length > 0, "no color for '" + names[i] + "'");
+            verify(/^#[0-9a-f]{6}$/.test(c), "not a #rrggbb color for '" + names[i] + "': " + c);
         }
+    }
+
+    function test_sensorColor_isLighterInDarkTheme() {
+        // Same hue (same name) needs a different lightness per theme: light
+        // lines are unreadable on a light background and vice versa.
+        var light = ColorGrading.sensorColor("CPU", false);
+        var dark = ColorGrading.sensorColor("CPU", true);
+        function luminance(hex) {
+            var r = parseInt(hex.substr(1, 2), 16);
+            var g = parseInt(hex.substr(3, 2), 16);
+            var b = parseInt(hex.substr(5, 2), 16);
+            return 0.299 * r + 0.587 * g + 0.114 * b;
+        }
+        verify(luminance(dark) > luminance(light), "dark-theme color must be lighter than the light-theme one");
+    }
+
+    function test_sensorColor_defaultsToLightTheme() {
+        compare(ColorGrading.sensorColor("CPU"), ColorGrading.sensorColor("CPU", false));
+    }
+
+    function test_hslToHex_primaryHues() {
+        compare(ColorGrading.hslToHex(0, 100, 50), "#ff0000");
+        compare(ColorGrading.hslToHex(120, 100, 50), "#00ff00");
+        compare(ColorGrading.hslToHex(240, 100, 50), "#0000ff");
+        compare(ColorGrading.hslToHex(0, 0, 100), "#ffffff");
+        compare(ColorGrading.hslToHex(0, 0, 0), "#000000");
     }
 
     function test_gradeIndicatorColor_offlineIsAlwaysDisabled() {

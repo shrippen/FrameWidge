@@ -29,7 +29,10 @@ Item {
     activeFocusOnTab: true
     focus: false
     Accessible.role: Accessible.Slider
-    Accessible.name: i18n("Fan curve editor")
+    Accessible.name: {
+        if (selectedIndex < 0 || selectedIndex >= points.length) return i18n("Fan curve editor");
+        return i18n("Fan curve editor, selected point: %1°C → %2%", points[selectedIndex][0], points[selectedIndex][1]);
+    }
     Accessible.description: i18n("Click to add a point, drag to move it, double-click to remove it. Use arrow keys to fine-tune the selected point, Tab to select another, Delete to remove it.")
 
     function tempToX(temp) {
@@ -108,6 +111,7 @@ Item {
     Canvas {
         id: canvas
         anchors.fill: parent
+        Accessible.ignored: true // curveEditor itself carries the accessible name/description
         onPaint: {
             var ctx = getContext("2d");
             ctx.clearRect(0, 0, width, height);

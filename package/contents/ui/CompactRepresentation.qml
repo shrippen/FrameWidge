@@ -13,6 +13,13 @@ MouseArea {
 
     hoverEnabled: true
 
+    // The tray entry is a single icon with no visible text, so it needs an
+    // explicit accessible name/description for screen readers - the
+    // tooltip alone isn't exposed to assistive tech the same way.
+    Accessible.role: Accessible.Button
+    Accessible.name: root.toolTipMainText
+    Accessible.description: root.toolTipSubText
+
     property real displayValue: {
         var mode = plasmoid.configuration.compactDisplay;
         if (mode === "rpm") return root.fanRpm;
@@ -45,6 +52,7 @@ MouseArea {
         source: "cpu"
         active: compactRoot.containsMouse
         opacity: root.serviceOnline ? 1.0 : 0.4
+        Accessible.ignored: true // compactRoot already exposes the accessible name/description
     }
 
     Rectangle {
@@ -60,6 +68,7 @@ MouseArea {
         anchors.bottom: trayIcon.bottom
         anchors.rightMargin: -width * 0.15
         anchors.bottomMargin: -width * 0.15
+        Accessible.ignored: true
     }
 
     PlasmaCore.ToolTipArea {

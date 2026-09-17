@@ -53,6 +53,7 @@ ColumnLayout {
                 Layout.preferredHeight: width
                 radius: Kirigami.Units.cornerRadius
                 color: fullRoot.brandAccent
+                Accessible.ignored: true // decorative; the heading label next to it carries the name
 
                 PlasmaComponents.Label {
                     anchors.centerIn: parent
@@ -86,12 +87,14 @@ ColumnLayout {
                         text: Kirigami.Theme.textColor
                     })
                     Behavior on color { ColorAnimation { duration: Kirigami.Units.longDuration } }
+                    Accessible.ignored: true // decorative; the label next to it carries the same info as text
                 }
 
                 PlasmaComponents.Label {
                     text: root.cpuTemp >= 0 ? i18n("%1 °C", Math.round(root.cpuTemp)) : ""
                     opacity: 0.8
                     font.pointSize: Kirigami.Theme.smallFont.pointSize
+                    Accessible.name: root.cpuTemp >= 0 ? i18n("CPU temperature: %1 °C", Math.round(root.cpuTemp)) : i18n("CPU temperature unavailable")
                 }
             }
         }
