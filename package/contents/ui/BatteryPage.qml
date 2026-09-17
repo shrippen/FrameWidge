@@ -85,6 +85,8 @@ ColumnLayout {
         interval: 350
         onTriggered: applyRateLimit()
     }
+    function scheduleChargeLimitApply() { chargeLimitDebounce.restart(); }
+    function scheduleRateLimitApply() { rateLimitDebounce.restart(); }
 
     // --- Info bar ---
     Kirigami.FormLayout {
@@ -165,7 +167,7 @@ ColumnLayout {
             enabled: clEnabled
             onMoved: {
                 clValue = Math.round(value);
-                chargeLimitDebounce.restart();
+                scheduleChargeLimitApply();
             }
         }
 
@@ -206,7 +208,7 @@ ColumnLayout {
             enabled: rateEnabled
             onMoved: {
                 rateC = Math.round(value * 20) / 20;
-                rateLimitDebounce.restart();
+                scheduleRateLimitApply();
             }
         }
 

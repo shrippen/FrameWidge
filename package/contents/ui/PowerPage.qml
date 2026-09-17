@@ -107,6 +107,8 @@ ColumnLayout {
         interval: 350
         onTriggered: applyField("thermal_limit_c")
     }
+    function scheduleTdpApply() { tdpDebounce.restart(); }
+    function scheduleThermalApply() { thermalDebounce.restart(); }
 
     // --- Current state bar ---
     Kirigami.FormLayout {
@@ -272,7 +274,7 @@ ColumnLayout {
                 enabled: activeConfig.tdp_watts.enabled
                 onMoved: {
                     activeConfig.tdp_watts.value = Math.round(value);
-                    tdpDebounce.restart();
+                    scheduleTdpApply();
                 }
             }
 
@@ -307,7 +309,7 @@ ColumnLayout {
                 enabled: activeConfig.thermal_limit_c.enabled
                 onMoved: {
                     activeConfig.thermal_limit_c.value = Math.round(value);
-                    thermalDebounce.restart();
+                    scheduleThermalApply();
                 }
             }
 

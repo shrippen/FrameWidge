@@ -6,6 +6,7 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
 import "js/Api.js" as Api
+import "js/ColorGrading.js" as ColorGrading
 
 ColumnLayout {
     id: sensorsPage
@@ -48,6 +49,7 @@ ColumnLayout {
         interval: 250
         onTriggered: fetchHistory()
     }
+    function scheduleFetch() { fetchDebounce.restart(); }
 
     function seedTelemetryConfig(data) {
         if (!data || !data.telemetry) return;
@@ -148,7 +150,6 @@ ColumnLayout {
             }
 
             // Lines
-            var colors = ["#e63946", "#457b9d", "#2a9d8f", "#e9c46a", "#f4a261", "#264653", "#6a0572"];
             for (var si = 0; si < seriesKeys.length; si++) {
                 var name = seriesKeys[si];
                 var data = series[name];
@@ -170,13 +171,7 @@ ColumnLayout {
     }
 
     function sensorColor(name) {
-        var colors = ["#e63946", "#457b9d", "#2a9d8f", "#e9c46a", "#f4a261", "#264653", "#6a0572", "#d62828", "#003049"];
-        var hash = 0;
-        for (var i = 0; i < name.length; i++) {
-            hash = ((hash << 5) - hash) + name.charCodeAt(i);
-            hash |= 0;
-        }
-        return colors[Math.abs(hash) % colors.length];
+        return ColorGrading.sensorColor(name);
     }
 
     Kirigami.Separator { Layout.fillWidth: true }
@@ -221,7 +216,7 @@ ColumnLayout {
             value: windowSeconds
             onMoved: {
                 windowSeconds = Math.round(value);
-                fetchDebounce.restart();
+                scheduleFetch();
             }
         }
 

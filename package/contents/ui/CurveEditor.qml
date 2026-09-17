@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
+import "js/CurveMath.js" as CurveMath
+
 Item {
     id: curveEditor
 
@@ -21,23 +23,19 @@ Item {
     readonly property int padBottom: 22
 
     function tempToX(temp) {
-        var w = width - padLeft - padRight;
-        return padLeft + ((temp - tempMin) / (tempMax - tempMin)) * w;
+        return CurveMath.tempToX(temp, width, padLeft, padRight, tempMin, tempMax);
     }
 
     function dutyToY(duty) {
-        var h = height - padTop - padBottom;
-        return padTop + (1 - (duty - dutyMin) / (dutyMax - dutyMin)) * h;
+        return CurveMath.dutyToY(duty, height, padTop, padBottom, dutyMin, dutyMax);
     }
 
     function xToTemp(x) {
-        var w = width - padLeft - padRight;
-        return Math.round(Math.max(tempMin, Math.min(tempMax, tempMin + ((x - padLeft) / w) * (tempMax - tempMin))));
+        return CurveMath.xToTemp(x, width, padLeft, padRight, tempMin, tempMax);
     }
 
     function yToDuty(y) {
-        var h = height - padTop - padBottom;
-        return Math.round(Math.max(dutyMin, Math.min(dutyMax, dutyMax - ((y - padTop) / h) * (dutyMax - dutyMin))));
+        return CurveMath.yToDuty(y, height, padTop, padBottom, dutyMin, dutyMax);
     }
 
     Canvas {

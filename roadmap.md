@@ -62,8 +62,8 @@ Goal: make multi-tab / multi-instance state consistent and robust to backend hic
 - [ ] Add request sequencing/guarding (ignore stale POST responses using a monotonically increasing request id) to avoid out-of-order config overwrites.
 - [ ] Add a "dirty vs. applied" indicator on controls that have pending unsent changes (relevant once debouncing is in place — user should see it's about to apply, not silently guess).
 - [ ] Handle backend restart gracefully mid-session: detect health-poll failure while a popup is open and mid-edit, pause background polling, and show the existing `OfflineHint` without discarding in-progress edits abruptly.
-- [ ] Add minimal automated tests: pure-JS unit tests for `CurveEditor`'s coordinate math and `Api.js` request handling (can run headless via `qmltestrunner` or a small Node harness for the `.js` logic extracted from QML bindings).
-- [ ] Add a GitHub Actions workflow: QML lint (`qmllint`), package validation (`kpackagetool6 -t Plasma/Applet --list` dry run or a container-based install smoke test).
+- [x] Add automated tests: `tests/qml/tst_*.qml` unit-test `CurveMath.js`/`ColorGrading.js` (extracted from `CurveEditor`/`CompactRepresentation`/`SensorsPage` for testability), `Api.js` against a mock backend, and the Fan/Power/Battery/Sensors pages' config-seeding, debounce, and patch-building logic via a minimal fake `root`. `tests/smoke/` adds a static package/qmllint/kpackagetool6 check and a `plasmawindowed`-based real-host load test (the only thing that would have caught the missing-Kirigami-import bug, since it needs an actual render). Run via `tests/run_all.sh`; see `tests/README.md` for the how/why.
+- [ ] Add a GitHub Actions workflow wiring `tests/run_all.sh` (or at least `run_unit_tests.sh` + `smoke_package.sh`) into CI on a KDE/Plasma-capable runner image; `smoke_plasmawindowed.sh` needs a real Plasma6 + KWin/offscreen-QPA environment, so it may need a container image rather than GitHub's stock Ubuntu runners.
 
 ### Phase 2 — Visual redesign ("sleek" pass)
 Goal: apply the `DESIGN.md` brand language deliberately inside the widget, not just on the landing page.

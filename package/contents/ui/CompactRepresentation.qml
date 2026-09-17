@@ -4,6 +4,8 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.kirigami as Kirigami
 
+import "js/ColorGrading.js" as ColorGrading
+
 MouseArea {
     id: compactRoot
     acceptedButtons: Qt.LeftButton
@@ -25,16 +27,15 @@ MouseArea {
         return "°";
     }
 
-    property color indicatorColor: {
-        if (!root.serviceOnline) return Kirigami.Theme.disabledTextColor;
-        var mode = plasmoid.configuration.compactDisplay;
-        if (mode === "temp" || mode === undefined) {
-            if (root.cpuTemp > 85) return Kirigami.Theme.negativeTextColor;
-            if (root.cpuTemp > 70) return Kirigami.Theme.neutralTextColor;
-            return Kirigami.Theme.positiveTextColor;
-        }
-        return Kirigami.Theme.textColor;
-    }
+    property color indicatorColor: ColorGrading.gradeIndicatorColor(
+        root.serviceOnline, plasmoid.configuration.compactDisplay, root.cpuTemp,
+        {
+            disabled: Kirigami.Theme.disabledTextColor,
+            negative: Kirigami.Theme.negativeTextColor,
+            neutral: Kirigami.Theme.neutralTextColor,
+            positive: Kirigami.Theme.positiveTextColor,
+            text: Kirigami.Theme.textColor
+        })
 
     Kirigami.Icon {
         id: trayIcon
