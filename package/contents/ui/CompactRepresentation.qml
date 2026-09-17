@@ -44,15 +44,18 @@ MouseArea {
             text: Kirigami.Theme.textColor
         })
 
-    // "icon" mode shows the plain icon (+ a small status dot); the other
-    // modes (temp/rpm/soc) replace it with the live number itself, since an
-    // icon and a readable number rarely both fit in a ~16-22px tray slot.
+    // "icon" mode shows the plain icon (+ a small status dot). The other
+    // modes (temp/rpm/soc) show the live number by itself, unless
+    // compactShowIcon is also set, in which case both share the slot
+    // (icon on top, number below) rather than one replacing the other.
     readonly property bool showIconOnly: plasmoid.configuration.compactDisplay === "icon"
+    readonly property bool showCombined: !showIconOnly && plasmoid.configuration.compactShowIcon
 
     Kirigami.Icon {
         id: trayIcon
-        anchors.centerIn: parent
-        width: Math.min(parent.width, parent.height)
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: compactRoot.showCombined ? 0 : (parent.height - height) / 2
+        width: compactRoot.showCombined ? parent.height * 0.55 : Math.min(parent.width, parent.height)
         height: width
         source: Qt.resolvedUrl("icons/framewidge.svg")
         // isMask repaints the SVG as a flat silhouette in `color`, the same
@@ -62,7 +65,7 @@ MouseArea {
         color: Kirigami.Theme.textColor
         active: compactRoot.containsMouse
         opacity: root.serviceOnline ? 1.0 : 0.4
-        visible: compactRoot.showIconOnly
+        visible: compactRoot.showIconOnly || compactRoot.showCombined
         Accessible.ignored: true // compactRoot already exposes the accessible name/description
     }
 
@@ -84,7 +87,11 @@ MouseArea {
 
     Text {
         id: valueLabel
-        anchors.fill: parent
+        // Combined mode: number takes the bottom portion, under the icon.
+        // Data-only mode: number fills the whole slot.
+        y: compactRoot.showCombined ? parent.height * 0.55 : 0
+        height: compactRoot.showCombined ? parent.height * 0.45 : parent.height
+        width: parent.width
         visible: !compactRoot.showIconOnly
         opacity: root.serviceOnline ? 1.0 : 0.4
         horizontalAlignment: Text.AlignHCenter

@@ -8,6 +8,7 @@ KCM.SimpleKCM {
     property alias cfg_servicePort: portField.value
     property alias cfg_pollIntervalMs: pollField.value
     property alias cfg_compactDisplay: displayCombo.currentValue
+    property alias cfg_compactShowIcon: showIconCheck.checked
 
     Kirigami.FormLayout {
         QQC2.SpinBox {
@@ -38,6 +39,16 @@ KCM.SimpleKCM {
             ]
             textRole: "text"
             valueRole: "value"
+        }
+
+        QQC2.CheckBox {
+            id: showIconCheck
+            Kirigami.FormData.label: i18n("With data value:")
+            text: i18n("Also show the icon")
+            enabled: displayCombo.currentValue !== "icon"
+            QQC2.ToolTip.text: i18n("Shows the plain chip icon together with the data value above, instead of the number filling the whole tray slot by itself.")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: 500
         }
     }
 }

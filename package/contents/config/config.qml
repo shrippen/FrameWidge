@@ -7,4 +7,9 @@ ConfigModel {
         icon: "configure"
         source: "ConfigGeneral.qml"
     }
+    ConfigCategory {
+        name: i18n("System Info")
+        icon: "computer-symbolic"
+        source: "ConfigSystemInfo.qml"
+    }
 }

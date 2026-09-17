@@ -125,6 +125,26 @@ Item {
             compare(fanPage.fanNames, ["Left", "Right"]);
         }
 
+        function test_curveLiveMarkers_onePerSelectedSensor() {
+            root.thermalData = { temps: { CPU: 55, GPU: 40, SSD: 35 } };
+            fanPage.selectedSensors = ["CPU", "GPU"];
+            var markers = fanPage.curveLiveMarkers;
+            compare(markers.length, 2, "one marker per selected sensor, not collapsed to a single value");
+            compare(markers[0].label, "CPU");
+            compare(markers[0].temp, 55);
+            compare(markers[1].label, "GPU");
+            compare(markers[1].temp, 40);
+            verify(markers[0].color !== markers[1].color, "different sensors must get different marker colors");
+        }
+
+        function test_curveLiveMarkers_fallsBackToGenericCpuWhenNoneSelected() {
+            fanPage.selectedSensors = [];
+            root.cpuTemp = 47;
+            var markers = fanPage.curveLiveMarkers;
+            compare(markers.length, 1);
+            compare(markers[0].temp, 47);
+        }
+
         // --- Presets ---
         // The real org.kde.activities model is exercised live (see roadmap.md
         // for how its id/name/current roles were verified against

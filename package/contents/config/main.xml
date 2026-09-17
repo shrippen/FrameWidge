@@ -18,6 +18,10 @@
             <label>What to show on the compact tray icon (temp, rpm, soc, icon)</label>
             <default>temp</default>
         </entry>
+        <entry name="compactShowIcon" type="Bool">
+            <label>Also show the plain icon alongside the data value on the compact tray icon (ignored when compactDisplay is "icon")</label>
+            <default>false</default>
+        </entry>
     </group>
 
     <group name="FanCurvePresets">

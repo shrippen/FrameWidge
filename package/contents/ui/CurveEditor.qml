@@ -9,9 +9,11 @@ Item {
     id: curveEditor
 
     property var points: [[40, 0], [60, 40], [75, 80], [85, 100]]
-    // Current sensor reading feeding this curve (-1 = unknown/not shown),
-    // set by FanPage from the enabled sensors' live thermal data.
-    property real liveTemp: -1
+    // Current readings feeding this curve, one entry per selected sensor:
+    // [{label, temp, color}]. `color` "" falls back to the theme's neutral
+    // color. Set by FanPage from its enabled sensors' live thermal data -
+    // several sensors means several markers, not one collapsed value.
+    property var liveMarkers: []
     property int dragIndex: -1
     // Selected point for keyboard control; independent of mouse dragIndex
     // so Tab/arrow-key users don't need to click first.
@@ -180,31 +182,38 @@ Item {
                 ctx.stroke();
             }
 
-            // Live reading: a dashed guide at the current temperature and a
-            // marker at the duty this curve would command for it right now.
-            if (liveTemp >= tempMin && liveTemp <= tempMax) {
-                var lx = tempToX(liveTemp);
-                var ly = dutyToY(interpolatedDutyAt(liveTemp));
+            // Live readings: a dashed guide at each selected sensor's current
+            // temperature and a marker at the duty this curve would command
+            // for it right now. Multiple sensors get one guide/marker each,
+            // colored to match that sensor's line in the Sensors tab chart.
+            for (var mi = 0; mi < liveMarkers.length; mi++) {
+                var marker = liveMarkers[mi];
+                if (marker.temp < tempMin || marker.temp > tempMax) continue;
+                var markerColor = marker.color || Kirigami.Theme.neutralTextColor;
+                var lx = tempToX(marker.temp);
+                var ly = dutyToY(interpolatedDutyAt(marker.temp));
 
                 ctx.save();
-                ctx.strokeStyle = Kirigami.Theme.neutralTextColor;
+                ctx.strokeStyle = markerColor;
                 ctx.setLineDash([3, 3]);
                 ctx.lineWidth = 1;
+                ctx.globalAlpha = 0.7;
                 ctx.beginPath();
                 ctx.moveTo(lx, padTop);
                 ctx.lineTo(lx, height - padBottom);
                 ctx.stroke();
                 ctx.restore();
 
-                ctx.fillStyle = Kirigami.Theme.neutralTextColor;
+                ctx.fillStyle = markerColor;
                 ctx.beginPath();
                 ctx.arc(lx, ly, 4, 0, 2 * Math.PI);
                 ctx.fill();
 
                 ctx.textAlign = "left";
                 ctx.textBaseline = ly - padTop < 14 ? "top" : "bottom";
-                ctx.font = "bold 10px sans-serif";
-                ctx.fillText(Math.round(liveTemp) + "° now", Math.min(lx + 6, width - padRight - 44), ly);
+                ctx.font = "bold 9px sans-serif";
+                var label = (marker.label ? marker.label + " " : "") + Math.round(marker.temp) + "°";
+                ctx.fillText(label, Math.min(lx + 6, width - padRight - (label.length * 5)), ly);
                 ctx.textBaseline = "alphabetic";
             }
 
@@ -334,7 +343,7 @@ Item {
     }
 
     onPointsChanged: canvas.requestPaint()
-    onLiveTempChanged: canvas.requestPaint()
+    onLiveMarkersChanged: canvas.requestPaint()
     onSelectedIndexChanged: canvas.requestPaint()
     onActiveFocusChanged: canvas.requestPaint()
     onWidthChanged: canvas.requestPaint()

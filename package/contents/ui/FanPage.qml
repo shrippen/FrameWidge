@@ -6,6 +6,8 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 import org.kde.activities as Activities
 
+import "js/ColorGrading.js" as ColorGrading
+
 ColumnLayout {
     id: fanPage
     spacing: Kirigami.Units.smallSpacing
@@ -28,19 +30,29 @@ ColumnLayout {
     property int liveRpm: root.fanRpm
     property real liveTemp: root.cpuTemp
 
-    // The temperature actually driving the curve: the max of whichever
-    // sensors are selected for it, matching how the backend's curve
-    // controller picks a value when several sensors feed one curve. Falls
-    // back to the general CPU reading when no sensor is selected yet.
-    readonly property real curveInputTemp: {
-        if (!root.thermalData || !root.thermalData.temps || selectedSensors.length === 0) return liveTemp;
-        var temps = root.thermalData.temps;
-        var max = -1;
-        for (var i = 0; i < selectedSensors.length; i++) {
-            var v = temps[selectedSensors[i]];
-            if (v !== undefined && v > max) max = v;
+    // Relative luminance of the theme background, used to tune each
+    // marker's color the same way SensorsPage tunes its chart lines.
+    readonly property bool darkTheme: {
+        var bg = Kirigami.Theme.backgroundColor;
+        return (0.299 * bg.r + 0.587 * bg.g + 0.114 * bg.b) < 0.5;
+    }
+
+    // One live marker per sensor actually feeding this curve, colored to
+    // match that sensor's line in the Sensors tab. Falls back to a single
+    // generic "CPU" marker when no sensor is selected yet.
+    readonly property var curveLiveMarkers: {
+        if (selectedSensors.length === 0) {
+            return liveTemp >= 0 ? [{ label: "", temp: liveTemp, color: "" }] : [];
         }
-        return max >= 0 ? max : liveTemp;
+        if (!root.thermalData || !root.thermalData.temps) return [];
+        var temps = root.thermalData.temps;
+        var markers = [];
+        for (var i = 0; i < selectedSensors.length; i++) {
+            var name = selectedSensors[i];
+            var v = temps[name];
+            if (v !== undefined) markers.push({ label: name, temp: v, color: ColorGrading.sensorColor(name, darkTheme) });
+        }
+        return markers;
     }
 
     // Sensors / fan topology come from the shared thermal poll, not a private fetch
@@ -387,7 +399,7 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: Kirigami.Units.gridUnit * 12
             points: fanPage.curvePoints
-            liveTemp: fanPage.curveInputTemp
+            liveMarkers: fanPage.curveLiveMarkers
             onPointsChanged: {
                 fanPage.curvePoints = points;
                 scheduleApply();

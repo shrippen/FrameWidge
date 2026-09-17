@@ -14,14 +14,20 @@ ColumnLayout {
     // live-status accents, everything else stays on Kirigami.Theme.*
     readonly property color brandAccent: "#E8DCC4"
 
-    // The minimum guarantees header + tab bar + a usable sliver of content
-    // always fit; the ScrollView below is the safety net for whatever a
-    // window manager lets the user shrink it to anyway (some Plasma popup
-    // dialogs don't strictly enforce this floor at screen edges), so
-    // controls scroll into view instead of being clipped under the panel.
-    Layout.minimumWidth: Kirigami.Units.gridUnit * 22
+    // Width is fixed: the tab content (sliders, ComboBoxes, curve graph)
+    // doesn't reflow sensibly when squeezed or stretched horizontally, so
+    // min/max/preferred all pin to the same value and only height can be
+    // resized. The minimum height guarantees header + tab bar + a usable
+    // sliver of content always fit; the ScrollView below is the safety net
+    // for whatever a window manager lets the user shrink it to anyway (some
+    // Plasma popup dialogs don't strictly enforce this floor at screen
+    // edges), so controls scroll into view instead of being clipped under
+    // the panel.
+    readonly property int fixedWidth: Kirigami.Units.gridUnit * 24
+    Layout.minimumWidth: fixedWidth
+    Layout.maximumWidth: fixedWidth
+    Layout.preferredWidth: fixedWidth
     Layout.minimumHeight: Kirigami.Units.gridUnit * 18
-    Layout.preferredWidth: Kirigami.Units.gridUnit * 24
     Layout.preferredHeight: Kirigami.Units.gridUnit * 28
 
     spacing: 0
@@ -114,23 +120,40 @@ ColumnLayout {
 
             QQC2.TabButton {
                 text: i18n("Sensors")
-                icon.name: "temperature-warm"
+                // "-symbolic" specifically: the plain names resolve to
+                // Breeze's full-color status icons, not monochrome ones -
+                // confirmed by rendering both side by side before this change.
+                icon.name: "temperature-warm-symbolic"
             }
             QQC2.TabButton {
                 text: i18n("Fan")
-                icon.name: "speedometer"
+                icon.name: "speedometer-symbolic"
             }
             QQC2.TabButton {
+                id: powerTab
                 text: i18n("Power")
-                icon.name: "battery-charging"
+                // No "-symbolic" icon fit "power management" well enough, so
+                // this is our own glyph. icon.color does NOT recolor a custom
+                // icon.source on QQC2.TabButton (verified empirically - it
+                // only auto-tints named theme icons), so Kirigami.Icon's
+                // isMask is used directly via a custom contentItem instead.
+                contentItem: RowLayout {
+                    spacing: Kirigami.Units.smallSpacing
+                    Kirigami.Icon {
+                        Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                        Layout.preferredHeight: width
+                        source: Qt.resolvedUrl("icons/tab-power.svg")
+                        isMask: true
+                        color: Kirigami.Theme.textColor
+                    }
+                    PlasmaComponents.Label {
+                        text: powerTab.text
+                    }
+                }
             }
             QQC2.TabButton {
                 text: i18n("Battery")
-                icon.name: "battery-100"
-            }
-            QQC2.TabButton {
-                text: i18n("Settings")
-                icon.name: "configure"
+                icon.name: "battery-100-symbolic"
             }
         }
 
@@ -153,7 +176,6 @@ ColumnLayout {
                 FanPage {}
                 PowerPage {}
                 BatteryPage {}
-                SettingsPage {}
             }
         }
     }
