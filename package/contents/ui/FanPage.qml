@@ -27,6 +27,21 @@ ColumnLayout {
     property int liveRpm: root.fanRpm
     property real liveTemp: root.cpuTemp
 
+    // The temperature actually driving the curve: the max of whichever
+    // sensors are selected for it, matching how the backend's curve
+    // controller picks a value when several sensors feed one curve. Falls
+    // back to the general CPU reading when no sensor is selected yet.
+    readonly property real curveInputTemp: {
+        if (!root.thermalData || !root.thermalData.temps || selectedSensors.length === 0) return liveTemp;
+        var temps = root.thermalData.temps;
+        var max = -1;
+        for (var i = 0; i < selectedSensors.length; i++) {
+            var v = temps[selectedSensors[i]];
+            if (v !== undefined && v > max) max = v;
+        }
+        return max >= 0 ? max : liveTemp;
+    }
+
     // Sensors / fan topology come from the shared thermal poll, not a private fetch
     readonly property var availableSensors: root.thermalData && root.thermalData.temps ? Object.keys(root.thermalData.temps) : []
     readonly property int fanCount: root.thermalData && root.thermalData.fans ? root.thermalData.fans.length : 0
@@ -42,8 +57,70 @@ ColumnLayout {
     property bool configLoaded: false
     property bool applyGuard: false // suppress re-apply while seeding from server state
 
+    // --- Curve presets ---
+    // Stored client-side in the widget's own KConfig (JSON-encoded), not
+    // round-tripped through the backend's /api/config - see main.xml.
+    property var presets: []
+    property int selectedPresetIndex: -1
+
+    function loadPresets() {
+        try {
+            var parsed = JSON.parse(plasmoid.configuration.fanCurvePresetsJson || "[]");
+            presets = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            presets = [];
+        }
+    }
+
+    function persistPresets() {
+        plasmoid.configuration.fanCurvePresetsJson = JSON.stringify(presets);
+    }
+
+    function saveCurrentAsPreset(name) {
+        var preset = {
+            name: name,
+            points: curvePoints,
+            hysteresis_c: hysteresisC,
+            rate_limit_pct_per_step: rateLimitPctPerStep,
+            rate_limit_down_enabled: rateLimitDownEnabled,
+            rate_limit_down_pct_per_step: rateLimitDownPctPerStep,
+            poll_ms: pollMs,
+            sensors: selectedSensors
+        };
+        var updated = presets.slice();
+        var existingIndex = updated.findIndex(function(p) { return p.name === name; });
+        if (existingIndex >= 0) updated[existingIndex] = preset;
+        else updated.push(preset);
+        presets = updated;
+        persistPresets();
+        selectedPresetIndex = updated.findIndex(function(p) { return p.name === name; });
+    }
+
+    function applyPreset(index) {
+        if (index < 0 || index >= presets.length) return;
+        var p = presets[index];
+        curvePoints = p.points || curvePoints;
+        hysteresisC = p.hysteresis_c !== undefined ? p.hysteresis_c : hysteresisC;
+        rateLimitPctPerStep = p.rate_limit_pct_per_step || rateLimitPctPerStep;
+        rateLimitDownEnabled = !!p.rate_limit_down_enabled;
+        rateLimitDownPctPerStep = p.rate_limit_down_pct_per_step || rateLimitPctPerStep;
+        pollMs = p.poll_ms || pollMs;
+        selectedSensors = p.sensors || selectedSensors;
+        applyMode();
+    }
+
+    function deletePreset(index) {
+        if (index < 0 || index >= presets.length) return;
+        var updated = presets.slice();
+        updated.splice(index, 1);
+        presets = updated;
+        persistPresets();
+        selectedPresetIndex = -1;
+    }
+
     Component.onCompleted: {
         if (root.configData) seedFromConfig(root.configData);
+        loadPresets();
     }
 
     // Coalesces rapid slider drags into a single request instead of one POST per pixel
@@ -255,19 +332,19 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: Kirigami.Units.gridUnit * 12
             points: fanPage.curvePoints
+            liveTemp: fanPage.curveInputTemp
             onPointsChanged: {
                 fanPage.curvePoints = points;
                 scheduleApply();
             }
         }
 
-        // Hysteresis
+        // Hysteresis + rate limit share a row - neither needs the full width.
         RowLayout {
             Layout.fillWidth: true
-            spacing: Kirigami.Units.smallSpacing
+            spacing: Kirigami.Units.largeSpacing
 
             PlasmaComponents.Label { text: i18n("Hysteresis (°C):") }
-
             QQC2.SpinBox {
                 from: 0
                 to: 20
@@ -278,15 +355,8 @@ ColumnLayout {
                     applyMode();
                 }
             }
-        }
-
-        // Rate limit
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Kirigami.Units.smallSpacing
 
             PlasmaComponents.Label { text: i18n("Rate limit (%/step):") }
-
             QQC2.SpinBox {
                 from: 1
                 to: 100
@@ -297,12 +367,14 @@ ColumnLayout {
                     applyMode();
                 }
             }
+
+            Item { Layout.fillWidth: true }
         }
 
-        // Down rate limit
+        // Down-rate override + poll interval likewise share a row.
         RowLayout {
             Layout.fillWidth: true
-            spacing: Kirigami.Units.smallSpacing
+            spacing: Kirigami.Units.largeSpacing
 
             QQC2.CheckBox {
                 text: i18n("Separate down rate:")
@@ -312,7 +384,6 @@ ColumnLayout {
                     applyMode();
                 }
             }
-
             QQC2.SpinBox {
                 from: 1
                 to: 100
@@ -324,15 +395,8 @@ ColumnLayout {
                     applyMode();
                 }
             }
-        }
-
-        // Poll interval
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Kirigami.Units.smallSpacing
 
             PlasmaComponents.Label { text: i18n("Poll (ms):") }
-
             QQC2.SpinBox {
                 from: 100
                 to: 10000
@@ -344,6 +408,8 @@ ColumnLayout {
                     applyMode();
                 }
             }
+
+            Item { Layout.fillWidth: true }
         }
 
         // Sensor selection
@@ -368,6 +434,78 @@ ColumnLayout {
                         applyMode();
                     }
                 }
+            }
+        }
+
+        // Presets
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Kirigami.Units.smallSpacing
+
+            PlasmaComponents.Label { text: i18n("Preset:") }
+
+            QQC2.ComboBox {
+                id: presetCombo
+                Layout.fillWidth: true
+                model: presets.map(function(p) { return p.name; })
+                currentIndex: selectedPresetIndex
+                enabled: presets.length > 0
+                displayText: currentIndex >= 0 ? currentText : i18n("(none selected)")
+                onActivated: function(index) { selectedPresetIndex = index; }
+            }
+
+            PlasmaComponents.Button {
+                icon.name: "dialog-ok-apply"
+                text: i18n("Load")
+                enabled: selectedPresetIndex >= 0
+                onClicked: applyPreset(selectedPresetIndex)
+            }
+
+            PlasmaComponents.Button {
+                icon.name: "document-save"
+                text: i18n("Save as…")
+                onClicked: {
+                    presetNameField.text = selectedPresetIndex >= 0 ? presets[selectedPresetIndex].name : "";
+                    savePresetDialog.open();
+                }
+            }
+
+            PlasmaComponents.Button {
+                icon.name: "edit-delete"
+                enabled: selectedPresetIndex >= 0
+                QQC2.ToolTip.text: i18n("Delete preset")
+                QQC2.ToolTip.visible: hovered
+                QQC2.ToolTip.delay: 500
+                onClicked: deletePreset(selectedPresetIndex)
+            }
+        }
+    }
+
+    QQC2.Dialog {
+        id: savePresetDialog
+        title: i18n("Save Fan Curve Preset")
+        modal: true
+        standardButtons: QQC2.Dialog.Save | QQC2.Dialog.Cancel
+
+        onAccepted: {
+            if (presetNameField.text.length > 0) saveCurrentAsPreset(presetNameField.text);
+        }
+
+        ColumnLayout {
+            spacing: Kirigami.Units.smallSpacing
+
+            PlasmaComponents.Label {
+                text: i18n("Saves the current curve, hysteresis, rate limit, and sensor selection under this name.")
+                wrapMode: Text.WordWrap
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 16
+                opacity: 0.7
+            }
+
+            QQC2.TextField {
+                id: presetNameField
+                Layout.fillWidth: true
+                placeholderText: i18n("Preset name")
+                onAccepted: savePresetDialog.accept()
             }
         }
     }

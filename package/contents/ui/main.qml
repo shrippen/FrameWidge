@@ -46,6 +46,7 @@ PlasmoidItem {
     }
 
     Plasmoid.icon: "cpu"
+    Plasmoid.backgroundHints: PlasmaCore.Types.DefaultBackground | PlasmaCore.Types.TranslucentBackground
     toolTipMainText: "FrameWidge"
     toolTipSubText: {
         if (!serviceOnline) return i18n("Service offline");

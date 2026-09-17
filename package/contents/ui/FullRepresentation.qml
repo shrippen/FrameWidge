@@ -14,8 +14,13 @@ ColumnLayout {
     // live-status accents, everything else stays on Kirigami.Theme.*
     readonly property color brandAccent: "#E8DCC4"
 
+    // The minimum guarantees header + tab bar + a usable sliver of content
+    // always fit; the ScrollView below is the safety net for whatever a
+    // window manager lets the user shrink it to anyway (some Plasma popup
+    // dialogs don't strictly enforce this floor at screen edges), so
+    // controls scroll into view instead of being clipped under the panel.
     Layout.minimumWidth: Kirigami.Units.gridUnit * 22
-    Layout.minimumHeight: Kirigami.Units.gridUnit * 26
+    Layout.minimumHeight: Kirigami.Units.gridUnit * 18
     Layout.preferredWidth: Kirigami.Units.gridUnit * 24
     Layout.preferredHeight: Kirigami.Units.gridUnit * 28
 
@@ -92,8 +97,9 @@ ColumnLayout {
 
                 PlasmaComponents.Label {
                     text: root.cpuTemp >= 0 ? i18n("%1 °C", Math.round(root.cpuTemp)) : ""
-                    opacity: 0.8
-                    font.pointSize: Kirigami.Theme.smallFont.pointSize
+                    opacity: 0.9
+                    font.bold: true
+                    font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.3
                     Accessible.name: root.cpuTemp >= 0 ? i18n("CPU temperature: %1 °C", Math.round(root.cpuTemp)) : i18n("CPU temperature unavailable")
                 }
             }
@@ -130,17 +136,25 @@ ColumnLayout {
 
         Kirigami.Separator { Layout.fillWidth: true }
 
-        // Tab content
-        StackLayout {
+        // Tab content - scrollable so a popup squeezed shorter than its
+        // contents still lets you reach every control, instead of clipping
+        // the bottom of the page off under the panel.
+        QQC2.ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: tabBar.currentIndex
+            clip: true
+            QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
 
-            SensorsPage {}
-            FanPage {}
-            PowerPage {}
-            BatteryPage {}
-            SettingsPage {}
+            StackLayout {
+                width: parent.width
+                currentIndex: tabBar.currentIndex
+
+                SensorsPage {}
+                FanPage {}
+                PowerPage {}
+                BatteryPage {}
+                SettingsPage {}
+            }
         }
     }
 }

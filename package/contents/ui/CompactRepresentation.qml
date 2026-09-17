@@ -44,6 +44,11 @@ MouseArea {
             text: Kirigami.Theme.textColor
         })
 
+    // "icon" mode shows the plain icon (+ a small status dot); the other
+    // modes (temp/rpm/soc) replace it with the live number itself, since an
+    // icon and a readable number rarely both fit in a ~16-22px tray slot.
+    readonly property bool showIconOnly: plasmoid.configuration.compactDisplay === "icon"
+
     Kirigami.Icon {
         id: trayIcon
         anchors.centerIn: parent
@@ -52,12 +57,13 @@ MouseArea {
         source: "cpu"
         active: compactRoot.containsMouse
         opacity: root.serviceOnline ? 1.0 : 0.4
+        visible: compactRoot.showIconOnly
         Accessible.ignored: true // compactRoot already exposes the accessible name/description
     }
 
     Rectangle {
         id: statusDot
-        visible: root.serviceOnline
+        visible: compactRoot.showIconOnly && root.serviceOnline
         width: Math.max(4, trayIcon.width * 0.22)
         height: width
         radius: width / 2
@@ -69,6 +75,24 @@ MouseArea {
         anchors.rightMargin: -width * 0.15
         anchors.bottomMargin: -width * 0.15
         Accessible.ignored: true
+    }
+
+    Text {
+        id: valueLabel
+        anchors.fill: parent
+        visible: !compactRoot.showIconOnly
+        opacity: root.serviceOnline ? 1.0 : 0.4
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        text: root.serviceOnline && compactRoot.displayValue >= 0
+            ? Math.round(compactRoot.displayValue) + compactRoot.displayUnit
+            : "–"
+        color: compactRoot.indicatorColor
+        font.bold: true
+        fontSizeMode: Text.Fit
+        minimumPixelSize: 6
+        font.pixelSize: height
+        Accessible.ignored: true // compactRoot already exposes the accessible name/description
     }
 
     PlasmaCore.ToolTipArea {

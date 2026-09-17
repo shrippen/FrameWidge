@@ -118,12 +118,20 @@ ColumnLayout {
         PlasmaComponents.Label {
             Kirigami.FormData.label: i18n("AC:")
             text: battery && battery.ac_present !== undefined ? (battery.ac_present ? i18n("Plugged in") : i18n("On battery")) : "—"
+            HoverHandler { id: acHover }
+            QQC2.ToolTip.visible: acHover.hovered
+            QQC2.ToolTip.delay: 500
+            QQC2.ToolTip.text: i18n("Whether the laptop is running on AC power or battery. Power profiles below can be configured separately for each.")
         }
 
         PlasmaComponents.Label {
             Kirigami.FormData.label: i18n("TDP:")
             visible: currentState && currentState.tdp_limit_watts !== undefined
             text: currentState && currentState.tdp_limit_watts !== undefined ? currentState.tdp_limit_watts + " W" : ""
+            HoverHandler { id: tdpStateHover }
+            QQC2.ToolTip.visible: tdpStateHover.hovered
+            QQC2.ToolTip.delay: 500
+            QQC2.ToolTip.text: i18n("Thermal Design Power: the sustained power budget the CPU is allowed to draw. Lower means cooler and quieter but less performance; higher means the opposite.")
         }
 
         PlasmaComponents.Label {
@@ -136,12 +144,20 @@ ColumnLayout {
             Kirigami.FormData.label: i18n("EPP:")
             visible: currentState && currentState.epp_preference
             text: currentState ? (currentState.epp_preference || "") : ""
+            HoverHandler { id: eppStateHover }
+            QQC2.ToolTip.visible: eppStateHover.hovered
+            QQC2.ToolTip.delay: 500
+            QQC2.ToolTip.text: i18n("Energy Performance Preference: biases the CPU scheduler toward power savings or performance within the current frequency/TDP limits, without changing them.")
         }
 
         PlasmaComponents.Label {
             Kirigami.FormData.label: i18n("Governor:")
             visible: currentState && currentState.governor
             text: currentState ? (currentState.governor || "") : ""
+            HoverHandler { id: governorStateHover }
+            QQC2.ToolTip.visible: governorStateHover.hovered
+            QQC2.ToolTip.delay: 500
+            QQC2.ToolTip.text: i18n("The kernel's CPU frequency governor - the policy deciding how quickly clock speed ramps up and down in response to load (e.g. schedutil, performance, powersave).")
         }
 
         PlasmaComponents.Label {
@@ -227,7 +243,13 @@ ColumnLayout {
                 }
             }
 
-            PlasmaComponents.Label { text: i18n("EPP:") }
+            PlasmaComponents.Label {
+                text: i18n("EPP:")
+                HoverHandler { id: eppLabelHover }
+                QQC2.ToolTip.visible: eppLabelHover.hovered
+                QQC2.ToolTip.delay: 500
+                QQC2.ToolTip.text: i18n("Energy Performance Preference: biases the CPU scheduler toward power savings or performance within the current frequency/TDP limits, without changing them.")
+            }
 
             QQC2.ComboBox {
                 Layout.fillWidth: true
@@ -255,7 +277,13 @@ ColumnLayout {
                 }
             }
 
-            PlasmaComponents.Label { text: i18n("Governor:") }
+            PlasmaComponents.Label {
+                text: i18n("Governor:")
+                HoverHandler { id: governorLabelHover }
+                QQC2.ToolTip.visible: governorLabelHover.hovered
+                QQC2.ToolTip.delay: 500
+                QQC2.ToolTip.text: i18n("The kernel's CPU frequency governor - the policy deciding how quickly clock speed ramps up and down in response to load (e.g. schedutil, performance, powersave).")
+            }
 
             QQC2.ComboBox {
                 Layout.fillWidth: true
@@ -283,7 +311,13 @@ ColumnLayout {
                 }
             }
 
-            PlasmaComponents.Label { text: i18n("TDP (W):") }
+            PlasmaComponents.Label {
+                text: i18n("TDP (W):")
+                HoverHandler { id: tdpLabelHover }
+                QQC2.ToolTip.visible: tdpLabelHover.hovered
+                QQC2.ToolTip.delay: 500
+                QQC2.ToolTip.text: i18n("Thermal Design Power: the sustained power budget the CPU is allowed to draw. Lower means cooler and quieter but less performance; higher means the opposite.")
+            }
 
             QQC2.Slider {
                 Layout.fillWidth: true

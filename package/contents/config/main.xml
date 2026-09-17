@@ -19,4 +19,20 @@
             <default>temp</default>
         </entry>
     </group>
+
+    <group name="FanCurvePresets">
+        <!--
+            Saved fan curve presets, stored client-side rather than round-tripped
+            through the framework-control backend's /api/config: that API is owned
+            by an upstream project we don't control and don't extend (see
+            DESIGN.md), so a "presets" field added to its fan.curve schema would
+            either be silently dropped or rejected. A JSON-encoded string is the
+            simplest way to store a variable-length list of named curves in kcfg,
+            which has no native list-of-objects type.
+        -->
+        <entry name="fanCurvePresetsJson" type="String">
+            <label>JSON-encoded array of saved fan curve presets</label>
+            <default>[]</default>
+        </entry>
+    </group>
 </kcfg>

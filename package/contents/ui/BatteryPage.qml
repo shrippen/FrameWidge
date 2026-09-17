@@ -202,6 +202,10 @@ ColumnLayout {
         Layout.leftMargin: Kirigami.Units.smallSpacing
         level: 5
         text: i18n("Charge Rate Limit")
+        HoverHandler { id: chargeRateHeadingHover }
+        QQC2.ToolTip.visible: chargeRateHeadingHover.hovered
+        QQC2.ToolTip.delay: 500
+        QQC2.ToolTip.text: i18n("Limits charging speed in \"C-rate\": 1.0C charges the battery in about an hour, 0.5C in about two. Slower charging generates less heat and can extend battery lifespan.")
     }
 
     RowLayout {

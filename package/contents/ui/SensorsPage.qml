@@ -149,17 +149,28 @@ ColumnLayout {
             property var hoverInfo: null // { time, entries: [{name, value, color}] }
 
             function xPx(t, tMin, tMax, w) { return padLeft + ((t - tMin) / (tMax - tMin)) * w; }
-            function yPx(v, h) { return padTop + (1 - (v - 0) / 100) * h; }
+            function yPx(v, h, yMin, yMax) { return padTop + (1 - (v - yMin) / (yMax - yMin)) * h; }
+
+            // Rounds a raw gridline step up to a "nice" 1/2/5 * 10^n value,
+            // the way most charting libraries pick axis ticks.
+            function niceStep(rawStep) {
+                if (rawStep <= 0) return 1;
+                var magnitude = Math.pow(10, Math.floor(Math.log(rawStep) / Math.LN10));
+                var residual = rawStep / magnitude;
+                var niceResidual = residual < 1.5 ? 1 : residual < 3 ? 2 : residual < 7 ? 5 : 10;
+                return niceResidual * magnitude;
+            }
 
             onPaint: {
                 var ctx = getContext("2d");
                 ctx.clearRect(0, 0, width, height);
 
                 var allTimes = [];
+                var allValues = [];
                 var seriesKeys = Object.keys(series);
                 for (var k = 0; k < seriesKeys.length; k++) {
                     var pts = series[seriesKeys[k]];
-                    for (var p = 0; p < pts.length; p++) allTimes.push(pts[p][0]);
+                    for (var p = 0; p < pts.length; p++) { allTimes.push(pts[p][0]); allValues.push(pts[p][1]); }
                 }
                 if (allTimes.length === 0) { hoverInfo = null; return; }
 
@@ -167,19 +178,29 @@ ColumnLayout {
                 var tMax = Math.max.apply(null, allTimes);
                 if (tMax === tMin) tMax = tMin + 1;
 
+                // Scale the temperature axis to the data actually on screen,
+                // with a little headroom, instead of a fixed 0-100C range
+                // that leaves most sensors squashed into a thin band.
+                var rawMin = Math.min.apply(null, allValues);
+                var rawMax = Math.max.apply(null, allValues);
+                var step = niceStep(Math.max(1, (rawMax - rawMin) / 4));
+                var yMin = Math.floor(rawMin / step) * step - step;
+                var yMax = Math.ceil(rawMax / step) * step + step;
+                if (yMax === yMin) yMax = yMin + step;
+
                 var w = width - padLeft - padRight;
                 var h = height - padTop - padBottom;
 
                 // Grid
                 ctx.strokeStyle = Kirigami.Theme.disabledTextColor;
                 ctx.lineWidth = 0.5;
-                for (var d = 0; d <= 100; d += 20) {
-                    var gy = yPx(d, h);
+                for (var d = yMin; d <= yMax + step / 2; d += step) {
+                    var gy = yPx(d, h, yMin, yMax);
                     ctx.beginPath(); ctx.moveTo(padLeft, gy); ctx.lineTo(width - padRight, gy); ctx.stroke();
                     ctx.fillStyle = Kirigami.Theme.textColor;
                     ctx.font = "10px sans-serif";
                     ctx.textAlign = "right";
-                    ctx.fillText(d + "°C", padLeft - 4, gy + 4);
+                    ctx.fillText(Math.round(d) + "°C", padLeft - 4, gy + 4);
                 }
 
                 // Lines
@@ -192,9 +213,9 @@ ColumnLayout {
                     ctx.lineWidth = 2;
                     ctx.lineJoin = "round";
                     ctx.beginPath();
-                    ctx.moveTo(xPx(data[0][0], tMin, tMax, w), yPx(data[0][1], h));
+                    ctx.moveTo(xPx(data[0][0], tMin, tMax, w), yPx(data[0][1], h, yMin, yMax));
                     for (var di = 1; di < data.length; di++) {
-                        ctx.lineTo(xPx(data[di][0], tMin, tMax, w), yPx(data[di][1], h));
+                        ctx.lineTo(xPx(data[di][0], tMin, tMax, w), yPx(data[di][1], h, yMin, yMax));
                     }
                     ctx.stroke();
                 }
@@ -216,7 +237,7 @@ ColumnLayout {
                         // Highlight the nearest point on its line
                         ctx.fillStyle = sensorColor(hname);
                         ctx.beginPath();
-                        ctx.arc(xPx(nearest[0], tMin, tMax, w), yPx(nearest[1], h), 3, 0, 2 * Math.PI);
+                        ctx.arc(xPx(nearest[0], tMin, tMax, w), yPx(nearest[1], h, yMin, yMax), 3, 0, 2 * Math.PI);
                         ctx.fill();
                     }
                     hoverInfo = { entries: entries };

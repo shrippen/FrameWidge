@@ -9,6 +9,9 @@ Item {
     id: curveEditor
 
     property var points: [[40, 0], [60, 40], [75, 80], [85, 100]]
+    // Current sensor reading feeding this curve (-1 = unknown/not shown),
+    // set by FanPage from the enabled sensors' live thermal data.
+    property real liveTemp: -1
     property int dragIndex: -1
     // Selected point for keyboard control; independent of mouse dragIndex
     // so Tab/arrow-key users don't need to click first.
@@ -45,6 +48,24 @@ Item {
 
     function xToTemp(x) {
         return CurveMath.xToTemp(x, width, padLeft, padRight, tempMin, tempMax);
+    }
+
+    // Linear interpolation between curve points, matching how the backend's
+    // curve controller derives duty from temperature - so the live marker
+    // shows the *actual* duty this curve would command right now.
+    function interpolatedDutyAt(temp) {
+        if (points.length === 0) return 0;
+        if (temp <= points[0][0]) return points[0][1];
+        if (temp >= points[points.length - 1][0]) return points[points.length - 1][1];
+        for (var i = 1; i < points.length; i++) {
+            if (temp <= points[i][0]) {
+                var prev = points[i - 1], cur = points[i];
+                var span = cur[0] - prev[0];
+                var t = span > 0 ? (temp - prev[0]) / span : 0;
+                return prev[1] + t * (cur[1] - prev[1]);
+            }
+        }
+        return points[points.length - 1][1];
     }
 
     function yToDuty(y) {
@@ -157,6 +178,34 @@ Item {
                     ctx.lineTo(tempToX(points[i][0]), dutyToY(points[i][1]));
                 }
                 ctx.stroke();
+            }
+
+            // Live reading: a dashed guide at the current temperature and a
+            // marker at the duty this curve would command for it right now.
+            if (liveTemp >= tempMin && liveTemp <= tempMax) {
+                var lx = tempToX(liveTemp);
+                var ly = dutyToY(interpolatedDutyAt(liveTemp));
+
+                ctx.save();
+                ctx.strokeStyle = Kirigami.Theme.neutralTextColor;
+                ctx.setLineDash([3, 3]);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(lx, padTop);
+                ctx.lineTo(lx, height - padBottom);
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.fillStyle = Kirigami.Theme.neutralTextColor;
+                ctx.beginPath();
+                ctx.arc(lx, ly, 4, 0, 2 * Math.PI);
+                ctx.fill();
+
+                ctx.textAlign = "left";
+                ctx.textBaseline = ly - padTop < 14 ? "top" : "bottom";
+                ctx.font = "bold 10px sans-serif";
+                ctx.fillText(Math.round(liveTemp) + "° now", Math.min(lx + 6, width - padRight - 44), ly);
+                ctx.textBaseline = "alphabetic";
             }
 
             // Points
@@ -285,6 +334,7 @@ Item {
     }
 
     onPointsChanged: canvas.requestPaint()
+    onLiveTempChanged: canvas.requestPaint()
     onSelectedIndexChanged: canvas.requestPaint()
     onActiveFocusChanged: canvas.requestPaint()
     onWidthChanged: canvas.requestPaint()
