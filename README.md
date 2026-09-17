@@ -46,6 +46,12 @@ Then add **FrameWidge** to your panel or system tray via the Plasma widget picke
    kpackagetool6 -t Plasma/Applet -i package/
    ```
 
+3. Install the app icon (used for the widget's Configure dialog; skip this and it just falls back to a generic icon there):
+   ```bash
+   mkdir -p ~/.local/share/icons/hicolor/scalable/apps
+   cp package/contents/icons/hicolor/scalable/apps/framewidge.svg ~/.local/share/icons/hicolor/scalable/apps/
+   ```
+
 ### Update
 
 ```bash

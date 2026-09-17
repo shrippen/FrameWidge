@@ -137,6 +137,23 @@ else
     kpackagetool6 -t Plasma/Applet -i "$PACKAGE_DIR"
 fi
 
+# --- Step 4: Install the app icon into the user's icon theme ---
+# metadata.json's "Icon" (and windows like the widget's Configure dialog)
+# resolve icon *names* through the standard XDG icon theme, which only
+# looks in real theme directories - a name isn't found just because the
+# plasmoid package happens to ship a file at that path. Verified with
+# `kiconfinder6 framewidge` before relying on this.
+ICON_SRC="$PACKAGE_DIR/contents/icons/hicolor/scalable/apps/framewidge.svg"
+ICON_DEST_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
+if [ -f "$ICON_SRC" ]; then
+    mkdir -p "$ICON_DEST_DIR"
+    cp "$ICON_SRC" "$ICON_DEST_DIR/framewidge.svg"
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+    fi
+    ok "App icon installed."
+fi
+
 ok "FrameWidge installed! ($DOWNLOAD_REF)"
 echo ""
 echo "  Add 'FrameWidge' to your panel or system tray via"

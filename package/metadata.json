@@ -3,7 +3,7 @@
         "Id": "org.kde.plasma.framewidge",
         "Name": "FrameWidge",
         "Description": "Native Plasma widget for Framework Laptop control (fans, power, battery, sensors)",
-        "Icon": "cpu",
+        "Icon": "framewidge",
         "Authors": [
             {
                 "Name": "Arian",

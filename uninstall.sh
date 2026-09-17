@@ -16,6 +16,15 @@ else
     warn "Plasmoid was not installed."
 fi
 
+ICON_FILE="$HOME/.local/share/icons/hicolor/scalable/apps/framewidge.svg"
+if [ -f "$ICON_FILE" ]; then
+    rm -f "$ICON_FILE"
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+    fi
+    ok "App icon removed."
+fi
+
 echo ""
 echo "  Note: The framework-control backend service was NOT removed."
 echo "  To remove it, run:"
