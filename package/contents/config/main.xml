@@ -22,6 +22,25 @@
             <label>Also show the plain icon alongside the data value on the compact tray icon (ignored when compactDisplay is "icon")</label>
             <default>false</default>
         </entry>
+        <entry name="compactOverlayScale" type="Int">
+            <label>Size of the data overlay on the compact tray icon, in percent of the default size (50-200)</label>
+            <default>100</default>
+        </entry>
+        <!--
+            Value->color bands for the overlay text, per display mode, stored
+            as a JSON string for the same reason as fanCurvePresetsJson below
+            (kcfg has no list-of-objects type). Schema:
+            { "temp|rpm|soc": [ { "upTo": <number|null>, "color": <token|#rrggbb> }, ... ] }
+            upTo is inclusive; the last band is always open-ended (null).
+            Color tokens (positive/neutral/negative/text/disabled) resolve
+            against the active Plasma color scheme at render time; anything
+            else must be a #rrggbb literal. Keep this default in sync with
+            ColorGrading.defaultOverlayBands().
+        -->
+        <entry name="compactOverlayBands" type="String">
+            <label>JSON-encoded value-to-color bands for the tray overlay text, per display mode</label>
+            <default>{"temp":[{"upTo":60,"color":"positive"},{"upTo":80,"color":"neutral"},{"upTo":null,"color":"negative"}],"rpm":[{"upTo":2500,"color":"positive"},{"upTo":4000,"color":"neutral"},{"upTo":null,"color":"negative"}],"soc":[{"upTo":20,"color":"negative"},{"upTo":50,"color":"neutral"},{"upTo":null,"color":"positive"}]}</default>
+        </entry>
     </group>
 
     <group name="FanCurvePresets">

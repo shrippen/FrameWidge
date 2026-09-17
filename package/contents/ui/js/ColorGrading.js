@@ -52,3 +52,100 @@ function gradeIndicatorColor(serviceOnline, mode, cpuTemp, colors) {
     }
     return colors.text;
 }
+
+// --- Configurable value bands for the tray overlay text color ---
+//
+// Each display mode (temp/rpm/soc) maps to an ordered list of bands
+// [{ upTo: <number|null>, color: <token|#rrggbb> }, ...]. A band matches when
+// value <= upTo; the last band is always open-ended (upTo: null) so every
+// value above the last threshold still gets a color.
+//
+// Band colors are either theme tokens ("positive"/"neutral"/"negative"/
+// "text"/"disabled"), resolved against the colors map the caller passes in so
+// the defaults automatically follow the active Plasma/Breeze color scheme, or
+// literal "#rrggbb" strings for custom colors picked in the KCM color dialog.
+
+function defaultOverlayBands() {
+    return {
+        temp: [
+            { upTo: 60, color: "positive" },
+            { upTo: 80, color: "neutral" },
+            { upTo: null, color: "negative" }
+        ],
+        rpm: [
+            { upTo: 2500, color: "positive" },
+            { upTo: 4000, color: "neutral" },
+            { upTo: null, color: "negative" }
+        ],
+        // SoC is inverted: low charge is bad, high charge is good.
+        soc: [
+            { upTo: 20, color: "negative" },
+            { upTo: 50, color: "neutral" },
+            { upTo: null, color: "positive" }
+        ]
+    };
+}
+
+var overlayBandModes = ["temp", "rpm", "soc"];
+var bandColorTokens = ["positive", "neutral", "negative", "text", "disabled"];
+
+function isValidBand(band) {
+    if (!band || typeof band !== "object") return false;
+    if (band.upTo !== null && typeof band.upTo !== "number") return false;
+    if (typeof band.color !== "string") return false;
+    if (bandColorTokens.indexOf(band.color) !== -1) return true;
+    return /^#[0-9a-fA-F]{6}$/.test(band.color);
+}
+
+// Parses the kcfg JSON string into a { temp, rpm, soc } band map, falling
+// back to the defaults per mode whenever the stored value is missing or
+// invalid - the tray must never end up colorless because of a hand-edited
+// config file.
+function parseOverlayBands(json) {
+    var defaults = defaultOverlayBands();
+    var parsed;
+    try {
+        parsed = JSON.parse(json);
+    } catch (e) {
+        return defaults;
+    }
+    if (!parsed || typeof parsed !== "object") return defaults;
+
+    var result = {};
+    for (var i = 0; i < overlayBandModes.length; i++) {
+        var mode = overlayBandModes[i];
+        var bands = parsed[mode];
+        if (!Array.isArray(bands)) { result[mode] = defaults[mode]; continue; }
+
+        var cleaned = [];
+        // Interior bands (all but the last) must have a real threshold; a
+        // null there would swallow every higher band, so it gets dropped.
+        for (var j = 0; j < bands.length - 1; j++) {
+            if (!isValidBand(bands[j])) continue;
+            if (bands[j].upTo !== null) cleaned.push({ upTo: bands[j].upTo, color: bands[j].color });
+        }
+        // The last band always becomes the open-ended catch-all.
+        var last = bands[bands.length - 1];
+        if (isValidBand(last)) cleaned.push({ upTo: null, color: last.color });
+
+        result[mode] = cleaned.length > 0 ? cleaned : defaults[mode];
+    }
+    return result;
+}
+
+function resolveBandColor(color, colors) {
+    if (colors[color] !== undefined) return colors[color]; // theme token
+    return color; // literal #rrggbb
+}
+
+// colors: { disabled, negative, neutral, positive, text }
+function gradeBandColor(serviceOnline, value, bands, colors) {
+    if (!serviceOnline) return colors.disabled;
+    if (value === undefined || value === null || isNaN(value) || value < 0) return colors.text;
+    for (var i = 0; i < bands.length; i++) {
+        if (bands[i].upTo === null || value <= bands[i].upTo) {
+            return resolveBandColor(bands[i].color, colors);
+        }
+    }
+    return colors.text; // unreachable for normalized bands, defensive
+}

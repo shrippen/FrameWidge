@@ -54,7 +54,8 @@ The widget handles three states:
 
 - Custom monochrome chip glyph (`icons/framewidge.svg`), rendered via `Kirigami.Icon { isMask: true }` so it recolors to match the panel like Breeze's own symbolic icons; opacity 0.4 when offline
 - Tooltip with CPU temp, fan RPM, battery SoC, and fan mode
-- Configurable via `compactDisplay` (temp/RPM/SoC/icon-only) and `compactShowIcon` (bool): the latter, when true and a data mode is selected, stacks the icon above the number instead of one replacing the other
+- Configurable via `compactDisplay` (temp/RPM/SoC/icon-only), `compactShowIcon` (bool): the latter, when true and a data mode is selected, stacks the icon above the number instead of one replacing the other — and `compactOverlayScale` (int, 50–200 %): scales the data overlay's size
+- The overlay text is plain background-free text, colored by the displayed value through user-configurable bands (`compactOverlayBands`, JSON: per mode an ordered list of `{upTo, color}` thresholds, last band open-ended). Band colors are theme tokens (`positive`/`neutral`/`negative`/…, resolved against the active Breeze scheme at render time) or custom `#rrggbb` values picked in the KCM color dialog; any number of bands ≥ 1 works, editable per mode in the KCM with reset-to-defaults. Only the status dot in icon-only mode keeps its own hardcoded temperature grading
 
 ### Full representation (popup)
 
