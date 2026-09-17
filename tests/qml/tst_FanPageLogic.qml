@@ -24,6 +24,17 @@ Item {
         if (callback) callback(true);
     }
 
+    // FanPage's preset storage writes through the unqualified `plasmoid`
+    // identifier (a real context property in the actual widget); mocked the
+    // same way `root` is, since persistPresets() is imperative code where an
+    // unresolved reference throws instead of just failing a binding silently.
+    QtObject {
+        id: plasmoid
+        property QtObject configuration: QtObject {
+            property string fanCurvePresetsJson: "[]"
+        }
+    }
+
     Component { id: fanPageComponent; UI.FanPage {} }
 
     TestCase {
@@ -36,6 +47,7 @@ Item {
             root.savedPatches = [];
             root.configData = null;
             root.thermalData = null;
+            plasmoid.configuration.fanCurvePresetsJson = "[]";
             fanPage = createTemporaryObject(fanPageComponent, root);
         }
 
@@ -111,6 +123,71 @@ Item {
             compare(fanPage.availableSensors, ["CPU", "GPU"]);
             compare(fanPage.fanCount, 2);
             compare(fanPage.fanNames, ["Left", "Right"]);
+        }
+
+        // --- Presets ---
+        // The real org.kde.activities model is exercised live (see roadmap.md
+        // for how its id/name/current roles were verified against
+        // org.kde.ActivityManager's D-Bus API); these tests drive the pure
+        // logic directly via currentActivityId/availableActivities, which
+        // FanPage's onCurrentActivityIdChanged handler reacts to the same way
+        // regardless of what set them.
+
+        function test_saveCurrentAsPreset_storesActivityMapping() {
+            fanPage.curvePoints = [[30, 0], [70, 100]];
+            fanPage.saveCurrentAsPreset("Gaming", "activity-123");
+            compare(fanPage.presets.length, 1);
+            compare(fanPage.presets[0].activity_id, "activity-123");
+            compare(fanPage.presets[0].points, [[30, 0], [70, 100]]);
+        }
+
+        function test_saveCurrentAsPreset_withoutActivityStoresEmptyString() {
+            fanPage.saveCurrentAsPreset("Quiet", "");
+            compare(fanPage.presets[0].activity_id, "");
+        }
+
+        function test_saveCurrentAsPreset_overwritesByName() {
+            fanPage.saveCurrentAsPreset("Gaming", "activity-123");
+            fanPage.curvePoints = [[50, 50]];
+            fanPage.saveCurrentAsPreset("Gaming", "activity-456");
+            compare(fanPage.presets.length, 1, "saving under an existing name must replace it, not duplicate it");
+            compare(fanPage.presets[0].activity_id, "activity-456");
+        }
+
+        function test_applyPreset_forcesCurveMode() {
+            fanPage.fanMode = "manual";
+            fanPage.saveCurrentAsPreset("Gaming", "");
+            fanPage.fanMode = "manual"; // saving doesn't change mode; reset for the actual assertion
+            fanPage.applyPreset(0);
+            compare(fanPage.fanMode, "curve", "loading a curve preset only means something in curve mode");
+        }
+
+        function test_activityChange_autoAppliesMatchingPreset() {
+            fanPage.curvePoints = [[20, 0], [80, 100]];
+            fanPage.saveCurrentAsPreset("Gaming", "activity-123");
+            fanPage.fanMode = "disabled";
+            root.savedPatches = [];
+
+            fanPage.currentActivityId = "activity-123";
+
+            compare(fanPage.fanMode, "curve");
+            compare(fanPage.curvePoints, [[20, 0], [80, 100]]);
+            compare(fanPage.selectedPresetIndex, 0);
+        }
+
+        function test_activityChange_ignoresWhenNoPresetMatches() {
+            fanPage.saveCurrentAsPreset("Gaming", "activity-123");
+            fanPage.fanMode = "disabled";
+
+            fanPage.currentActivityId = "some-other-activity";
+
+            compare(fanPage.fanMode, "disabled", "an unmapped activity must not touch the current fan mode");
+        }
+
+        function test_activityNameFor_looksUpAvailableActivities() {
+            fanPage.availableActivities = [{ id: "a1", name: "Gaming" }, { id: "a2", name: "Work" }];
+            compare(fanPage.activityNameFor("a2"), "Work");
+            compare(fanPage.activityNameFor("missing"), "");
         }
     }
 }

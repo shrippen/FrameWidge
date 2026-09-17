@@ -45,7 +45,7 @@ PlasmoidItem {
         return powerData.battery.percentage !== undefined ? powerData.battery.percentage : -1;
     }
 
-    Plasmoid.icon: "cpu"
+    Plasmoid.icon: Qt.resolvedUrl("icons/framewidge.svg")
     Plasmoid.backgroundHints: PlasmaCore.Types.DefaultBackground | PlasmaCore.Types.TranslucentBackground
     toolTipMainText: "FrameWidge"
     toolTipSubText: {

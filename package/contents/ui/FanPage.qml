@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
+import org.kde.activities as Activities
 
 ColumnLayout {
     id: fanPage
@@ -76,7 +77,8 @@ ColumnLayout {
         plasmoid.configuration.fanCurvePresetsJson = JSON.stringify(presets);
     }
 
-    function saveCurrentAsPreset(name) {
+    // activityId: an id from availableActivities, or "" for no auto-activation.
+    function saveCurrentAsPreset(name, activityId) {
         var preset = {
             name: name,
             points: curvePoints,
@@ -85,7 +87,8 @@ ColumnLayout {
             rate_limit_down_enabled: rateLimitDownEnabled,
             rate_limit_down_pct_per_step: rateLimitDownPctPerStep,
             poll_ms: pollMs,
-            sensors: selectedSensors
+            sensors: selectedSensors,
+            activity_id: activityId || ""
         };
         var updated = presets.slice();
         var existingIndex = updated.findIndex(function(p) { return p.name === name; });
@@ -99,6 +102,7 @@ ColumnLayout {
     function applyPreset(index) {
         if (index < 0 || index >= presets.length) return;
         var p = presets[index];
+        fanMode = "curve"; // a curve preset only means something under curve mode
         curvePoints = p.points || curvePoints;
         hysteresisC = p.hysteresis_c !== undefined ? p.hysteresis_c : hysteresisC;
         rateLimitPctPerStep = p.rate_limit_pct_per_step || rateLimitPctPerStep;
@@ -116,6 +120,57 @@ ColumnLayout {
         presets = updated;
         persistPresets();
         selectedPresetIndex = -1;
+    }
+
+    function activityNameFor(activityId) {
+        for (var i = 0; i < availableActivities.length; i++) {
+            if (availableActivities[i].id === activityId) return availableActivities[i].name;
+        }
+        return "";
+    }
+
+    // --- Activity-based auto-activation ---
+    // Verified empirically against a live session (ActivityModel's "id"/
+    // "name"/"current" roles match org.kde.ActivityManager's D-Bus
+    // CurrentActivity/ActivityName exactly) rather than assumed from docs,
+    // since a wrong guess here would silently never fire.
+    property var availableActivities: [] // [{id, name}]
+    property string currentActivityId: ""
+
+    onCurrentActivityIdChanged: {
+        if (!currentActivityId) return;
+        for (var i = 0; i < presets.length; i++) {
+            if (presets[i].activity_id && presets[i].activity_id === currentActivityId) {
+                selectedPresetIndex = i;
+                applyPreset(i);
+                break;
+            }
+        }
+    }
+
+    Activities.ActivityModel { id: activityModel }
+
+    Instantiator {
+        id: activityInstantiator
+        model: activityModel
+        delegate: QtObject {
+            readonly property string activityId: model.id
+            readonly property string activityName: model.name
+            readonly property bool isCurrent: model.current
+            onIsCurrentChanged: if (isCurrent) fanPage.currentActivityId = activityId
+            Component.onCompleted: if (isCurrent) fanPage.currentActivityId = activityId
+        }
+        onObjectAdded: fanPage.rebuildAvailableActivities()
+        onObjectRemoved: fanPage.rebuildAvailableActivities()
+    }
+
+    function rebuildAvailableActivities() {
+        var list = [];
+        for (var i = 0; i < activityInstantiator.count; i++) {
+            var obj = activityInstantiator.objectAt(i);
+            if (obj) list.push({ id: obj.activityId, name: obj.activityName || i18n("(unnamed activity)") });
+        }
+        availableActivities = list;
     }
 
     Component.onCompleted: {
@@ -447,7 +502,9 @@ ColumnLayout {
             QQC2.ComboBox {
                 id: presetCombo
                 Layout.fillWidth: true
-                model: presets.map(function(p) { return p.name; })
+                model: presets.map(function(p) {
+                    return p.activity_id ? p.name + "  (→ " + activityNameFor(p.activity_id) + ")" : p.name;
+                })
                 currentIndex: selectedPresetIndex
                 enabled: presets.length > 0
                 displayText: currentIndex >= 0 ? currentText : i18n("(none selected)")
@@ -479,6 +536,14 @@ ColumnLayout {
                 onClicked: deletePreset(selectedPresetIndex)
             }
         }
+
+        PlasmaComponents.Label {
+            Layout.leftMargin: Kirigami.Units.smallSpacing
+            visible: currentActivityId.length > 0
+            text: i18n("Current activity: %1", activityNameFor(currentActivityId) || i18n("(unnamed)"))
+            opacity: 0.6
+            font.pointSize: Kirigami.Theme.smallFont.pointSize
+        }
     }
 
     QQC2.Dialog {
@@ -487,8 +552,20 @@ ColumnLayout {
         modal: true
         standardButtons: QQC2.Dialog.Save | QQC2.Dialog.Cancel
 
+        onAboutToShow: {
+            // index 0 is the "no auto-activation" entry, so offset by one
+            var existingActivity = selectedPresetIndex >= 0 ? presets[selectedPresetIndex].activity_id : "";
+            var idx = 0;
+            for (var i = 0; i < availableActivities.length; i++) {
+                if (availableActivities[i].id === existingActivity) { idx = i + 1; break; }
+            }
+            activityCombo.currentIndex = idx;
+        }
+
         onAccepted: {
-            if (presetNameField.text.length > 0) saveCurrentAsPreset(presetNameField.text);
+            if (presetNameField.text.length === 0) return;
+            var activityId = activityCombo.currentIndex > 0 ? availableActivities[activityCombo.currentIndex - 1].id : "";
+            saveCurrentAsPreset(presetNameField.text, activityId);
         }
 
         ColumnLayout {
@@ -506,6 +583,19 @@ ColumnLayout {
                 Layout.fillWidth: true
                 placeholderText: i18n("Preset name")
                 onAccepted: savePresetDialog.accept()
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                PlasmaComponents.Label { text: i18n("Auto-apply on activity:") }
+
+                QQC2.ComboBox {
+                    id: activityCombo
+                    Layout.fillWidth: true
+                    model: [i18n("(none)")].concat(availableActivities.map(function(a) { return a.name || i18n("(unnamed activity)"); }))
+                }
             }
         }
     }

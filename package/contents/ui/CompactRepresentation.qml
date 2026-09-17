@@ -54,7 +54,12 @@ MouseArea {
         anchors.centerIn: parent
         width: Math.min(parent.width, parent.height)
         height: width
-        source: "cpu"
+        source: Qt.resolvedUrl("icons/framewidge.svg")
+        // isMask repaints the SVG as a flat silhouette in `color`, the same
+        // way Breeze's own symbolic tray icons adapt to light/dark panels -
+        // the source file's own fill/stroke colors are irrelevant once masked.
+        isMask: true
+        color: Kirigami.Theme.textColor
         active: compactRoot.containsMouse
         opacity: root.serviceOnline ? 1.0 : 0.4
         visible: compactRoot.showIconOnly
