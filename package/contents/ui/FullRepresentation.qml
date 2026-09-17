@@ -130,26 +130,16 @@ ColumnLayout {
                 icon.name: "speedometer-symbolic"
             }
             QQC2.TabButton {
-                id: powerTab
                 text: i18n("Power")
-                // No "-symbolic" icon fit "power management" well enough, so
-                // this is our own glyph. icon.color does NOT recolor a custom
-                // icon.source on QQC2.TabButton (verified empirically - it
-                // only auto-tints named theme icons), so Kirigami.Icon's
-                // isMask is used directly via a custom contentItem instead.
-                contentItem: RowLayout {
-                    spacing: Kirigami.Units.smallSpacing
-                    Kirigami.Icon {
-                        Layout.preferredWidth: Kirigami.Units.iconSizes.small
-                        Layout.preferredHeight: width
-                        source: Qt.resolvedUrl("icons/tab-power.svg")
-                        isMask: true
-                        color: Kirigami.Theme.textColor
-                    }
-                    PlasmaComponents.Label {
-                        text: powerTab.text
-                    }
-                }
+                // A previous attempt shipped a custom SVG + a hand-built
+                // contentItem here because no "-symbolic" icon seemed to fit
+                // "power management" well; that custom contentItem caused
+                // its label to overlap the icon (TabBar's per-tab width
+                // allocation doesn't measure a custom contentItem the same
+                // way it measures icon+text). A real theme icon avoids the
+                // whole problem and happens to fit the tab's actual content
+                // (EPP/governor/TDP power *profiles*) better anyway.
+                icon.name: "battery-profile-balanced-symbolic"
             }
             QQC2.TabButton {
                 text: i18n("Battery")
@@ -163,13 +153,18 @@ ColumnLayout {
         // contents still lets you reach every control, instead of clipping
         // the bottom of the page off under the panel.
         QQC2.ScrollView {
+            id: contentScrollView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
             QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
 
             StackLayout {
-                width: parent.width
+                // availableWidth (not parent.width) accounts for the
+                // vertical scrollbar's reserved space when it's visible, so
+                // it no longer overlaps the last few pixels of sliders/
+                // labels on the right edge once a page needs to scroll.
+                width: contentScrollView.availableWidth
                 currentIndex: tabBar.currentIndex
 
                 SensorsPage {}

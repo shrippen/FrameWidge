@@ -44,6 +44,22 @@ MouseArea {
             text: Kirigami.Theme.textColor
         })
 
+    // The status dot is a health indicator, not a data readout - it must
+    // always grade by temperature regardless of what compactDisplay is
+    // showing, unlike indicatorColor above (which only grades when the
+    // *displayed value itself* is temp). Passing compactDisplay's actual
+    // mode here (e.g. "icon") made gradeIndicatorColor fall through to a
+    // flat, never-changing text color - this is the fix for that.
+    property color statusDotColor: ColorGrading.gradeIndicatorColor(
+        root.serviceOnline, "temp", root.cpuTemp,
+        {
+            disabled: Kirigami.Theme.disabledTextColor,
+            negative: Kirigami.Theme.negativeTextColor,
+            neutral: Kirigami.Theme.neutralTextColor,
+            positive: Kirigami.Theme.positiveTextColor,
+            text: Kirigami.Theme.textColor
+        })
+
     // "icon" mode shows the plain icon (+ a small status dot). The other
     // modes (temp/rpm/soc) show the live number by itself, unless
     // compactShowIcon is also set, in which case both share the slot
@@ -75,7 +91,7 @@ MouseArea {
         width: Math.max(4, trayIcon.width * 0.22)
         height: width
         radius: width / 2
-        color: compactRoot.indicatorColor
+        color: compactRoot.statusDotColor
         border.color: Kirigami.Theme.backgroundColor
         border.width: 1
         anchors.right: trayIcon.right
