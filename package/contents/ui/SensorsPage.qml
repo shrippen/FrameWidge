@@ -36,6 +36,7 @@ ColumnLayout {
     Connections {
         target: root
         function onConfigDataChanged() { seedTelemetryConfig(root.configData); }
+        function onExpandedChanged() { if (root.expanded) fetchHistory(); }
         function onThermalDataChanged() {
             if (!root.thermalData || !root.thermalData.temps) return;
             availableSensors = Object.keys(root.thermalData.temps);
@@ -48,7 +49,12 @@ ColumnLayout {
     Timer {
         id: historyTimer
         interval: Math.max(1000, telemetryPollMs)
-        running: true
+        // SensorsPage lives inside the popup's StackLayout, which Plasma may
+        // keep instantiated in the background after the popup is closed for
+        // faster reopening - without this it would keep polling
+        // /api/thermal/history forever, well past whatever's actually
+        // visible, adding to how much the backend service logs.
+        running: root.expanded
         repeat: true
         onTriggered: fetchHistory()
     }

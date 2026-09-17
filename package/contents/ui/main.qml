@@ -66,9 +66,17 @@ PlasmoidItem {
 
     property string baseUrl: "http://127.0.0.1:" + plasmoid.configuration.servicePort
 
+    // Polling continues even while the popup is closed (only the compact
+    // tray icon is visible) so its temp/RPM/SoC overlay stays live, but at
+    // that point sub-2s precision isn't needed - and every poll is a
+    // request the backend service may log, so an idle multiplier keeps a
+    // widget just sitting in the tray from generating years' worth of
+    // journal/service-log noise for no visible benefit.
+    readonly property int idlePollMultiplier: 5
+
     Timer {
         id: healthTimer
-        interval: plasmoid.configuration.pollIntervalMs
+        interval: plasmoid.configuration.pollIntervalMs * (root.expanded ? 1 : root.idlePollMultiplier)
         running: true
         repeat: true
         triggeredOnStart: true
@@ -77,11 +85,20 @@ PlasmoidItem {
 
     Timer {
         id: dataTimer
-        interval: Math.max(1000, plasmoid.configuration.pollIntervalMs)
+        interval: Math.max(1000, plasmoid.configuration.pollIntervalMs * (root.expanded ? 1 : root.idlePollMultiplier))
         running: root.serviceOnline
         repeat: true
         triggeredOnStart: true
         onTriggered: root.pollData()
+    }
+
+    // Refresh immediately on opening rather than waiting out whatever's
+    // left of the slower idle interval.
+    onExpandedChanged: {
+        if (expanded) {
+            pollHealth();
+            pollData();
+        }
     }
 
     function pollHealth() {
