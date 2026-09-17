@@ -104,12 +104,10 @@ ColumnLayout {
         icon.name: "utilities-log-viewer"
         onClicked: {
             if (!logsVisible) {
-                Api.get(root.baseUrl + "/api/logs", function(ok, data) {
-                    // /api/logs returns plain text, but Api.js tries JSON parse
-                    // Handled gracefully: data will be null, use raw approach
-                    logsVisible = true;
-                });
-                // Direct fetch for plain text
+                logsVisible = true;
+                logs = i18n("Loading…");
+                // /api/logs returns plain text, not JSON, so fetch it directly
+                // rather than via Api.get (which would fail JSON.parse).
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function() {
                     if (xhr.readyState === XMLHttpRequest.DONE) {

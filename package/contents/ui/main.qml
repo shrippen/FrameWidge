@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
+import org.kde.kirigami as Kirigami
 
 import "js/Api.js" as Api
 
@@ -84,10 +85,12 @@ PlasmoidItem {
 
     function pollHealth() {
         Api.get(baseUrl + "/api/health", function(ok, data) {
+            var wasOnline = serviceOnline;
             if (ok && data) {
                 serviceOnline = true;
                 cliPresent = data.cli_present || false;
                 serviceVersion = data.service_version || "";
+                if (!wasOnline || configData === null) loadConfig();
             } else {
                 serviceOnline = false;
                 cliPresent = false;

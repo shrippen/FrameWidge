@@ -5,8 +5,6 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
-import "js/Api.js" as Api
-
 ColumnLayout {
     id: powerPage
     spacing: Kirigami.Units.smallSpacing
@@ -43,16 +41,27 @@ ColumnLayout {
          capabilities.supports_frequency_limits || capabilities.supports_tdp ||
          capabilities.supports_thermal)
 
-    Component.onCompleted: loadPowerConfig()
+    property bool configLoaded: false
+    property bool applyGuard: false // suppress re-apply while seeding from server state
 
-    function loadPowerConfig() {
-        Api.get(root.baseUrl + "/api/config", function(ok, data) {
-            if (!ok || !data || !data.power) return;
-            var p = data.power;
-            if (p.ac) mergeProfile("ac", p.ac);
-            if (p.battery) mergeProfile("battery", p.battery);
-            powerConfig = powerConfig; // trigger binding update
-        });
+    Component.onCompleted: {
+        if (root.configData) seedFromConfig(root.configData);
+    }
+
+    Connections {
+        target: root
+        function onConfigDataChanged() { seedFromConfig(root.configData); }
+    }
+
+    function seedFromConfig(data) {
+        if (!data || !data.power) return;
+        applyGuard = true;
+        var p = data.power;
+        if (p.ac) mergeProfile("ac", p.ac);
+        if (p.battery) mergeProfile("battery", p.battery);
+        powerConfig = powerConfig; // trigger binding update
+        configLoaded = true;
+        applyGuard = false;
     }
 
     function mergeProfile(key, src) {
@@ -68,6 +77,7 @@ ColumnLayout {
     }
 
     function applyField(field) {
+        if (applyGuard) return;
         var setting = activeConfig[field];
         if (!setting) return;
         var patch = { power: {} };
@@ -77,12 +87,25 @@ ColumnLayout {
     }
 
     function applyFreqLimits() {
+        if (applyGuard) return;
         var patch = { power: {} };
         patch.power[activeProfile] = {
             min_freq_mhz: { enabled: activeConfig.min_freq_mhz.enabled, value: activeConfig.min_freq_mhz.value },
             max_freq_mhz: { enabled: activeConfig.max_freq_mhz.enabled, value: activeConfig.max_freq_mhz.value }
         };
         root.saveConfig(patch);
+    }
+
+    // Coalesce rapid slider drags (TDP / thermal) into a single request each
+    Timer {
+        id: tdpDebounce
+        interval: 350
+        onTriggered: applyField("tdp_watts")
+    }
+    Timer {
+        id: thermalDebounce
+        interval: 350
+        onTriggered: applyField("thermal_limit_c")
     }
 
     // --- Current state bar ---
@@ -165,6 +188,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: Kirigami.Units.smallSpacing
         visible: hasAnyCapability
+        enabled: configLoaded
         spacing: Kirigami.Units.smallSpacing
 
         // EPP
@@ -248,7 +272,7 @@ ColumnLayout {
                 enabled: activeConfig.tdp_watts.enabled
                 onMoved: {
                     activeConfig.tdp_watts.value = Math.round(value);
-                    applyField("tdp_watts");
+                    tdpDebounce.restart();
                 }
             }
 
@@ -283,7 +307,7 @@ ColumnLayout {
                 enabled: activeConfig.thermal_limit_c.enabled
                 onMoved: {
                     activeConfig.thermal_limit_c.value = Math.round(value);
-                    applyField("thermal_limit_c");
+                    thermalDebounce.restart();
                 }
             }
 

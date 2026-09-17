@@ -5,8 +5,6 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
-import "js/Api.js" as Api
-
 ColumnLayout {
     id: fanPage
     spacing: Kirigami.Units.smallSpacing
@@ -20,11 +18,8 @@ ColumnLayout {
     property int pollMs: 2000
     property var curvePoints: [[40, 0], [60, 40], [75, 80], [85, 100]]
     property var selectedSensors: []
-    property var availableSensors: []
 
     // Per-fan overrides
-    property int fanCount: 0
-    property var fanNames: []
     property var overrides: []
     property var activeFan: "all" // "all" or fan index
 
@@ -32,47 +27,61 @@ ColumnLayout {
     property int liveRpm: root.fanRpm
     property real liveTemp: root.cpuTemp
 
+    // Sensors / fan topology come from the shared thermal poll, not a private fetch
+    readonly property var availableSensors: root.thermalData && root.thermalData.temps ? Object.keys(root.thermalData.temps) : []
+    readonly property int fanCount: root.thermalData && root.thermalData.fans ? root.thermalData.fans.length : 0
+    readonly property var fanNames: {
+        if (!root.thermalData || !root.thermalData.fans) return [];
+        var names = [];
+        for (var i = 0; i < root.thermalData.fans.length; i++) {
+            names.push(root.thermalData.fans[i].name || i18n("Fan %1", i + 1));
+        }
+        return names;
+    }
+
     property bool configLoaded: false
+    property bool applyGuard: false // suppress re-apply while seeding from server state
 
-    Component.onCompleted: loadFanConfig()
+    Component.onCompleted: {
+        if (root.configData) seedFromConfig(root.configData);
+    }
 
-    function loadFanConfig() {
-        Api.get(root.baseUrl + "/api/config", function(ok, data) {
-            if (!ok || !data || !data.fan) return;
-            var fan = data.fan;
-            fanMode = fan.mode || "disabled";
-            if (fan.manual) manualDutyPct = fan.manual.duty_pct || 50;
-            if (fan.curve) {
-                var c = fan.curve;
-                curvePoints = c.points || curvePoints;
-                hysteresisC = c.hysteresis_c !== undefined ? c.hysteresis_c : 2;
-                rateLimitPctPerStep = Math.max(1, c.rate_limit_pct_per_step || 100);
-                rateLimitDownEnabled = c.rate_limit_down_pct_per_step !== undefined;
-                rateLimitDownPctPerStep = c.rate_limit_down_pct_per_step || rateLimitPctPerStep;
-                pollMs = c.poll_ms || 2000;
-                selectedSensors = c.sensors || [];
-            }
-            overrides = fan.overrides || [];
-            configLoaded = true;
-        });
+    // Coalesces rapid slider drags into a single request instead of one POST per pixel
+    Timer {
+        id: applyDebounce
+        interval: 350
+        onTriggered: applyMode()
+    }
+    function scheduleApply() { applyDebounce.restart(); }
 
-        // Fetch available sensors
-        Api.get(root.baseUrl + "/api/thermal", function(ok, data) {
-            if (ok && data && data.temps) {
-                availableSensors = Object.keys(data.temps);
-            }
-            if (ok && data && data.fans) {
-                fanCount = data.fans.length;
-                var names = [];
-                for (var i = 0; i < data.fans.length; i++) {
-                    names.push(data.fans[i].name || ("Fan " + (i + 1)));
-                }
-                fanNames = names;
-            }
-        });
+    Connections {
+        target: root
+        function onConfigDataChanged() { seedFromConfig(root.configData); }
+    }
+
+    function seedFromConfig(data) {
+        if (!data || !data.fan) return;
+        applyGuard = true;
+        var fan = data.fan;
+        fanMode = fan.mode || "disabled";
+        if (fan.manual) manualDutyPct = fan.manual.duty_pct || 50;
+        if (fan.curve) {
+            var c = fan.curve;
+            curvePoints = c.points || curvePoints;
+            hysteresisC = c.hysteresis_c !== undefined ? c.hysteresis_c : 2;
+            rateLimitPctPerStep = Math.max(1, c.rate_limit_pct_per_step || 100);
+            rateLimitDownEnabled = c.rate_limit_down_pct_per_step !== undefined;
+            rateLimitDownPctPerStep = c.rate_limit_down_pct_per_step || rateLimitPctPerStep;
+            pollMs = c.poll_ms || 2000;
+            selectedSensors = c.sensors || [];
+        }
+        overrides = fan.overrides || [];
+        configLoaded = true;
+        applyGuard = false;
     }
 
     function applyMode() {
+        if (applyGuard) return;
         var patch = { fan: { mode: fanMode } };
         if (fanMode === "manual") {
             patch.fan.manual = { duty_pct: Math.max(0, Math.min(100, manualDutyPct)) };
@@ -138,6 +147,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: Kirigami.Units.largeSpacing
         spacing: Kirigami.Units.smallSpacing
+        enabled: configLoaded
 
         QQC2.RadioButton {
             text: i18n("Auto")
@@ -185,6 +195,7 @@ ColumnLayout {
         Layout.leftMargin: Kirigami.Units.largeSpacing
         Layout.rightMargin: Kirigami.Units.largeSpacing
         visible: fanMode === "manual"
+        enabled: configLoaded
         spacing: Kirigami.Units.smallSpacing
 
         PlasmaComponents.Label { text: i18n("Duty:") }
@@ -197,7 +208,7 @@ ColumnLayout {
             value: manualDutyPct
             onMoved: {
                 manualDutyPct = Math.round(value);
-                applyMode();
+                scheduleApply();
             }
         }
 
@@ -212,6 +223,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: Kirigami.Units.smallSpacing
         visible: fanMode === "curve"
+        enabled: configLoaded
         spacing: Kirigami.Units.smallSpacing
 
         // Curve editor placeholder — will be replaced by CurveEditor
@@ -221,7 +233,7 @@ ColumnLayout {
             points: fanPage.curvePoints
             onPointsChanged: {
                 fanPage.curvePoints = points;
-                applyMode();
+                scheduleApply();
             }
         }
 

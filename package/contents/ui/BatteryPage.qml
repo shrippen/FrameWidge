@@ -5,8 +5,6 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
-import "js/Api.js" as Api
-
 ColumnLayout {
     id: batteryPage
     spacing: Kirigami.Units.smallSpacing
@@ -21,27 +19,36 @@ ColumnLayout {
     property var socThresholdPct: undefined
 
     property bool configLoaded: false
+    property bool applyGuard: false // suppress re-apply while seeding from server state
 
-    Component.onCompleted: loadBatteryConfig()
+    Component.onCompleted: {
+        if (root.configData) seedFromConfig(root.configData);
+    }
 
-    function loadBatteryConfig() {
-        Api.get(root.baseUrl + "/api/config", function(ok, data) {
-            if (!ok || !data || !data.battery) return;
-            var bat = data.battery;
-            if (bat.charge_limit_max_pct) {
-                clEnabled = !!bat.charge_limit_max_pct.enabled;
-                clValue = bat.charge_limit_max_pct.value || 100;
-            }
-            if (bat.charge_rate_c) {
-                rateEnabled = !!bat.charge_rate_c.enabled;
-                rateC = bat.charge_rate_c.value || 1.0;
-            }
-            socThresholdPct = bat.charge_rate_soc_threshold_pct;
-            configLoaded = true;
-        });
+    Connections {
+        target: root
+        function onConfigDataChanged() { seedFromConfig(root.configData); }
+    }
+
+    function seedFromConfig(data) {
+        if (!data || !data.battery) return;
+        applyGuard = true;
+        var bat = data.battery;
+        if (bat.charge_limit_max_pct) {
+            clEnabled = !!bat.charge_limit_max_pct.enabled;
+            clValue = bat.charge_limit_max_pct.value || 100;
+        }
+        if (bat.charge_rate_c) {
+            rateEnabled = !!bat.charge_rate_c.enabled;
+            rateC = bat.charge_rate_c.value || 1.0;
+        }
+        socThresholdPct = bat.charge_rate_soc_threshold_pct;
+        configLoaded = true;
+        applyGuard = false;
     }
 
     function applyChargeLimit() {
+        if (applyGuard) return;
         root.saveConfig({
             battery: {
                 charge_limit_max_pct: {
@@ -53,6 +60,7 @@ ColumnLayout {
     }
 
     function applyRateLimit() {
+        if (applyGuard) return;
         var value = rateEnabled ? Math.max(0.05, Math.min(1.0, rateC)) : 1.0;
         var patch = {
             battery: {
@@ -64,6 +72,18 @@ ColumnLayout {
             }
         };
         root.saveConfig(patch);
+    }
+
+    // Coalesce rapid slider drags into a single request each
+    Timer {
+        id: chargeLimitDebounce
+        interval: 350
+        onTriggered: applyChargeLimit()
+    }
+    Timer {
+        id: rateLimitDebounce
+        interval: 350
+        onTriggered: applyRateLimit()
     }
 
     // --- Info bar ---
@@ -125,6 +145,7 @@ ColumnLayout {
         Layout.leftMargin: Kirigami.Units.largeSpacing
         Layout.rightMargin: Kirigami.Units.largeSpacing
         spacing: Kirigami.Units.smallSpacing
+        enabled: configLoaded
 
         QQC2.CheckBox {
             id: clCheck
@@ -144,7 +165,7 @@ ColumnLayout {
             enabled: clEnabled
             onMoved: {
                 clValue = Math.round(value);
-                applyChargeLimit();
+                chargeLimitDebounce.restart();
             }
         }
 
@@ -166,6 +187,7 @@ ColumnLayout {
         Layout.leftMargin: Kirigami.Units.largeSpacing
         Layout.rightMargin: Kirigami.Units.largeSpacing
         spacing: Kirigami.Units.smallSpacing
+        enabled: configLoaded
 
         QQC2.CheckBox {
             checked: rateEnabled
@@ -184,7 +206,7 @@ ColumnLayout {
             enabled: rateEnabled
             onMoved: {
                 rateC = Math.round(value * 20) / 20;
-                applyRateLimit();
+                rateLimitDebounce.restart();
             }
         }
 

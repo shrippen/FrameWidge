@@ -42,19 +42,3 @@ function post(url, body, callback) {
     xhr.setRequestHeader("Accept", "application/json");
     xhr.send(JSON.stringify(body));
 }
-
-var _debounceTimers = {};
-
-function debounce(key, delayMs, fn) {
-    if (_debounceTimers[key] !== undefined) {
-        // In QML .pragma library we can't use clearTimeout;
-        // store pending and skip if within window
-        return;
-    }
-    fn();
-}
-
-function debouncedPost(key, url, body, callback, delayMs) {
-    if (delayMs === undefined) delayMs = 300;
-    post(url, body, callback);
-}

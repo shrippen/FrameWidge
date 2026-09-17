@@ -46,6 +46,21 @@ MouseArea {
         opacity: root.serviceOnline ? 1.0 : 0.4
     }
 
+    Rectangle {
+        id: statusDot
+        visible: root.serviceOnline
+        width: Math.max(4, trayIcon.width * 0.22)
+        height: width
+        radius: width / 2
+        color: compactRoot.indicatorColor
+        border.color: Kirigami.Theme.backgroundColor
+        border.width: 1
+        anchors.right: trayIcon.right
+        anchors.bottom: trayIcon.bottom
+        anchors.rightMargin: -width * 0.15
+        anchors.bottomMargin: -width * 0.15
+    }
+
     PlasmaCore.ToolTipArea {
         anchors.fill: parent
         mainText: root.toolTipMainText

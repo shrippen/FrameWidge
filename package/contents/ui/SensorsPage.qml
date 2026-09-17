@@ -18,8 +18,20 @@ ColumnLayout {
     property int telemetryPollMs: 2000
 
     Component.onCompleted: {
-        loadTelemetryConfig();
+        seedTelemetryConfig(root.configData);
         fetchHistory();
+    }
+
+    Connections {
+        target: root
+        function onConfigDataChanged() { seedTelemetryConfig(root.configData); }
+        function onThermalDataChanged() {
+            if (!root.thermalData || !root.thermalData.temps) return;
+            availableSensors = Object.keys(root.thermalData.temps);
+            if (selectedSensors.length === 0) {
+                selectedSensors = availableSensors.slice();
+            }
+        }
     }
 
     Timer {
@@ -30,21 +42,17 @@ ColumnLayout {
         onTriggered: fetchHistory()
     }
 
-    function loadTelemetryConfig() {
-        Api.get(root.baseUrl + "/api/config", function(ok, data) {
-            if (ok && data && data.telemetry) {
-                telemetryPollMs = data.telemetry.poll_ms || 2000;
-                historyTimer.interval = Math.max(1000, telemetryPollMs);
-            }
-        });
-        Api.get(root.baseUrl + "/api/thermal", function(ok, data) {
-            if (ok && data && data.temps) {
-                availableSensors = Object.keys(data.temps);
-                if (selectedSensors.length === 0) {
-                    selectedSensors = availableSensors.slice();
-                }
-            }
-        });
+    // Debounces the window-size slider so dragging doesn't fire a fetch per pixel
+    Timer {
+        id: fetchDebounce
+        interval: 250
+        onTriggered: fetchHistory()
+    }
+
+    function seedTelemetryConfig(data) {
+        if (!data || !data.telemetry) return;
+        telemetryPollMs = data.telemetry.poll_ms || 2000;
+        historyTimer.interval = Math.max(1000, telemetryPollMs);
     }
 
     function fetchHistory() {
@@ -213,7 +221,7 @@ ColumnLayout {
             value: windowSeconds
             onMoved: {
                 windowSeconds = Math.round(value);
-                fetchHistory();
+                fetchDebounce.restart();
             }
         }
 
