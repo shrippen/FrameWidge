@@ -16,6 +16,8 @@ import "js/Api.js" as Api
 KCM.SimpleKCM {
     id: page
 
+    property alias cfg_debugBackgroundPolling: debugPollCheck.checked
+
     readonly property string baseUrl: "http://127.0.0.1:" + plasmoid.configuration.servicePort
 
     property string serviceVersion: ""
@@ -113,6 +115,26 @@ KCM.SimpleKCM {
                 text: '<a href="https://github.com/ozturkkl/framework-control">framework-control on GitHub</a>'
                 textFormat: Text.RichText
                 onLinkActivated: function(link) { Qt.openUrlExternally(link); }
+            }
+        }
+
+        Kirigami.Separator { Layout.fillWidth: true }
+
+        Kirigami.FormLayout {
+            Layout.fillWidth: true
+
+            QQC2.Label {
+                Kirigami.FormData.isSection: true
+                text: i18n("Debug")
+            }
+
+            QQC2.CheckBox {
+                id: debugPollCheck
+                Kirigami.FormData.label: i18n("Background polling:")
+                text: i18n("Keep polling while the popup is closed")
+                QQC2.ToolTip.text: i18n("Keeps the tray readout live with the popup closed. Off by default because the service logs every request to the journal.")
+                QQC2.ToolTip.visible: hovered
+                QQC2.ToolTip.delay: 500
             }
         }
 

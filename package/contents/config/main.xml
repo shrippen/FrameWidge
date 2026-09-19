@@ -41,6 +41,16 @@
             <label>JSON-encoded value-to-color bands for the tray overlay text, per display mode</label>
             <default>{"temp":[{"upTo":60,"color":"positive"},{"upTo":80,"color":"neutral"},{"upTo":null,"color":"negative"}],"rpm":[{"upTo":2500,"color":"positive"},{"upTo":4000,"color":"neutral"},{"upTo":null,"color":"negative"}],"soc":[{"upTo":20,"color":"negative"},{"upTo":50,"color":"neutral"},{"upTo":null,"color":"positive"}]}</default>
         </entry>
+        <!--
+            The backend service logs every HTTP request to the journal, so
+            polling while the popup is closed is opt-in: default off keeps
+            an idle tray widget from spamming the journal. Opening the
+            popup always polls regardless.
+        -->
+        <entry name="debugBackgroundPolling" type="Bool">
+            <label>Keep polling the service while the popup is closed (debug)</label>
+            <default>false</default>
+        </entry>
     </group>
 
     <group name="FanCurvePresets">

@@ -66,18 +66,19 @@ PlasmoidItem {
 
     property string baseUrl: "http://127.0.0.1:" + plasmoid.configuration.servicePort
 
-    // Polling continues even while the popup is closed (only the compact
-    // tray icon is visible) so its temp/RPM/SoC overlay stays live, but at
-    // that point sub-2s precision isn't needed - and every poll is a
-    // request the backend service may log, so an idle multiplier keeps a
-    // widget just sitting in the tray from generating years' worth of
-    // journal/service-log noise for no visible benefit.
+    // Every poll is a request the backend service logs to the journal, so
+    // by default polling only runs while the popup is open. Background
+    // polling (to keep the tray overlay live with the popup closed) is
+    // opt-in via the debug setting on the System Info KCM page; the idle
+    // multiplier still applies there, since sub-2s precision isn't needed
+    // for a widget just sitting in the tray.
     readonly property int idlePollMultiplier: 5
+    readonly property bool pollingActive: root.expanded || plasmoid.configuration.debugBackgroundPolling
 
     Timer {
         id: healthTimer
         interval: plasmoid.configuration.pollIntervalMs * (root.expanded ? 1 : root.idlePollMultiplier)
-        running: true
+        running: root.pollingActive
         repeat: true
         triggeredOnStart: true
         onTriggered: root.pollHealth()
@@ -86,7 +87,7 @@ PlasmoidItem {
     Timer {
         id: dataTimer
         interval: Math.max(1000, plasmoid.configuration.pollIntervalMs * (root.expanded ? 1 : root.idlePollMultiplier))
-        running: root.serviceOnline
+        running: root.serviceOnline && root.pollingActive
         repeat: true
         triggeredOnStart: true
         onTriggered: root.pollData()

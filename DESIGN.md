@@ -34,6 +34,8 @@ Plasma 5's `executable` DataEngine is deprecated in Plasma 6. Since the backend 
 
 The health poll tries the configured port. The default is `30912` to match the AUR package.
 
+Polling only runs while the popup is open; the service logs every request to the journal, so background polling (live tray overlay with the popup closed) is opt-in via the `debugBackgroundPolling` setting on the System Info KCM page.
+
 ---
 
 ## Service States
