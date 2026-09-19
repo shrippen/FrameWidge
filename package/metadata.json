@@ -4,7 +4,7 @@
         "Name": "FrameWidge",
         "Description": "Native Plasma widget for Framework Laptop control (fans, power, battery, sensors)",
         "Icon": "framewidge",
-        "Version": "1.0.0",
+        "Version": "1.0",
         "Authors": [
             {
                 "Name": "Arian",
