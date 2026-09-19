@@ -401,6 +401,11 @@ ColumnLayout {
             points: fanPage.curvePoints
             liveMarkers: fanPage.curveLiveMarkers
             onPointsChanged: {
+                // A var array assignment always re-emits pointsChanged, so
+                // every config reseed re-fires this handler with identical
+                // content; scheduling a save here loops saveConfig ->
+                // loadConfig -> reseed at ~1 POST per debounce interval.
+                if (JSON.stringify(points) === JSON.stringify(fanPage.curvePoints)) return;
                 fanPage.curvePoints = points;
                 scheduleApply();
             }

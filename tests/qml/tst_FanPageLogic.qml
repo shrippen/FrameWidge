@@ -61,6 +61,19 @@ Item {
             verify(fanPage.configLoaded);
         }
 
+        // Regression test for the journal-spam loop: seeding assigns a fresh
+        // curvePoints array, the CurveEditor's points binding re-emits
+        // pointsChanged, and FanPage's handler must not schedule a debounced
+        // save for identical content - otherwise saveConfig -> loadConfig ->
+        // reseed loops forever at ~1 POST per debounce interval.
+        function test_seedingCurvePointsDoesNotScheduleApply() {
+            root.configData = {
+                fan: { mode: "curve", curve: { points: [[30, 10], [80, 90]], hysteresis_c: 5, rate_limit_pct_per_step: 20, poll_ms: 1000, sensors: [] } }
+            };
+            wait(600); // outlast the 350 ms apply debounce
+            compare(root.savedPatches.length, 0, "reseeding identical state must not schedule a debounced save");
+        }
+
         function test_reseedingOnExternalConfigChangeUpdatesLocalState() {
             root.configData = { fan: { mode: "manual", manual: { duty_pct: 30 } } };
             compare(fanPage.fanMode, "manual");
