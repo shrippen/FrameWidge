@@ -44,7 +44,13 @@ or via the [AUR](https://aur.archlinux.org/packages/framework-control) / [nixpkg
 
 *Optional:* the Store install doesn't copy FrameWidge's app icon into your icon theme, so the widget picker, the tray's "Customize" menu, and the Configure dialog's window icon fall back to a generic icon (the tray icon itself is unaffected). To fix that cosmetic detail, copy `contents/icons/hicolor/scalable/apps/framewidge.svg` from the installed package to `~/.local/share/icons/hicolor/scalable/apps/framewidge.svg`.
 
-For the one-command installer that sets up both the backend and the widget together, see the [GitHub repository](https://github.com/shrippen/FrameWidge) and [project page](https://shrippen.github.io/FrameWidge/).
+Or skip the Store and use the one-command installer, which sets up both the backend and the widget:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shrippen/FrameWidge/main/install.sh | bash
+```
+
+More on the [GitHub repository](https://github.com/shrippen/FrameWidge) and the [project page](https://shrippen.github.io/FrameWidge/).
 
 ### License
 
