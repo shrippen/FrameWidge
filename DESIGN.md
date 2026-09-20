@@ -2,7 +2,7 @@
 
 This document records the architectural, visual, and UX decisions made for FrameWidge.
 
-**Visual design standard**: [shrippen/DesignDefault](https://github.com/shrippen/DesignDefault) — Gruvbox-inspired, warm, dark-first palette with Rajdhani headings. All landing pages, badges, and branding assets follow that shared design language. Plasma widget UI defers to `Kirigami.Theme.*` for interactive elements; only brand accent (`#E8DCC4`) and semantic colors are used for non-theme-dependent elements (icon marks, priority bands, badges).
+**Visual design standard**: [shrippen/shrippen.github.io](https://github.com/shrippen/shrippen.github.io) — Gruvbox-inspired, warm, dark-first palette with Rajdhani headings. All landing pages, badges, and branding assets follow that shared design language. Plasma widget UI defers to `Kirigami.Theme.*` for interactive elements; only brand accent (`#E8DCC4`) and semantic colors are used for non-theme-dependent elements (icon marks, priority bands, badges).
 
 ---
 
@@ -119,7 +119,7 @@ Mirrors the web UI's `CalibrationModal.svelte` logic:
 
 ## Visual Design (Landing Page & Branding)
 
-All web-facing assets follow [shrippen/DesignDefault](https://github.com/shrippen/DesignDefault):
+All web-facing assets follow [shrippen/shrippen.github.io](https://github.com/shrippen/shrippen.github.io):
 
 - **Palette**: Gruvbox warm-dark (`--bg0: #282828`, `--fg1: #ebdbb2`, `--accent: #e8dcc4`, `--blue: #83a598`)
 - **Typography**: Rajdhani 600/700 for headings, system sans for body, JetBrains Mono for code
