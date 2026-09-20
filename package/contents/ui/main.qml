@@ -78,7 +78,11 @@ PlasmoidItem {
     Timer {
         id: healthTimer
         interval: plasmoid.configuration.pollIntervalMs * (root.expanded ? 1 : root.idlePollMultiplier)
-        running: root.pollingActive
+        // Also retry (at the slow idle rate) until the first data arrived:
+        // at login the backend service may not be up yet when plasmashell
+        // starts, and a single failed startup poll would otherwise leave
+        // the overlay empty until the popup is opened.
+        running: root.pollingActive || !root.serviceOnline || root.thermalData === null
         repeat: true
         triggeredOnStart: true
         onTriggered: root.pollHealth()
@@ -110,6 +114,10 @@ PlasmoidItem {
                 cliPresent = data.cli_present || false;
                 serviceVersion = data.service_version || "";
                 if (!wasOnline || configData === null) loadConfig();
+                // Without background polling nothing else fetches data
+                // before the popup is first opened, leaving the tray
+                // overlay empty after a plasmashell restart.
+                if (thermalData === null || powerData === null) pollData();
             } else {
                 serviceOnline = false;
                 cliPresent = false;
