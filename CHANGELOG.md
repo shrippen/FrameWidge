@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2
+
+### Changed
+
+- New logo: the tray uses the monochrome variant (follows the panel's text color), the app icon uses the variant with the color accent.
+- Packaged `dist/framewidge-1.2.plasmoid`.
+
 ## 1.1
 
 ### Fixed
