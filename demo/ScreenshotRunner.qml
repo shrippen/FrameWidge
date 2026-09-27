@@ -1,4 +1,5 @@
 import QtQuick
+import org.kde.kirigami as Kirigami
 
 import "js/Api.js" as Api  // resolved in the staged package copy
 
@@ -8,8 +9,9 @@ import "js/Api.js" as Api  // resolved in the staged package copy
  * framework-control answers 404 and nothing happens). Plan:
  *   { "dir": "/out", "shots": [ { "name": "sensors", "tab": 0 } ] }
  * Each tab of the popup is grabbed into dir/name.png, then the viewer quits
- * ("FRAMEWIDGE_SCREENSHOT_DONE" in the log). The grabs are transparent where Plasma would
- * draw the popup frame; demo/shots.sh puts them on the colour scheme's window colour.
+ * ("FRAMEWIDGE_SCREENSHOT_DONE" in the log). Plasma draws the popup frame outside the grabbed
+ * item, and the offscreen grab has no alpha (the gaps come out black), so while a plan runs a
+ * rectangle in the colour scheme's window colour stands in for that frame.
  *
  * Internal only: this file is not part of the widget package. demo/common.sh copies it into
  * the staged package copy and adds it to main.qml there.
@@ -66,7 +68,8 @@ Item {
             wait = 2500
             break
         case "shot": {
-            var target = plasmoidRoot.fullRepresentationItem
+            // The popup's container (same size as the popup) holds the frame stand-in below it.
+            var target = plasmoidRoot.fullRepresentationItem.parent
             trace("FRAMEWIDGE_SCREENSHOT " + item.name + " " + Math.round(target.width) + "x" + Math.round(target.height))
             var ok = target.grabToImage(function(result) {
                 result.saveToFile(runner.plan.dir + "/" + item.name + ".png")
@@ -92,6 +95,18 @@ Item {
         id: ticker
         repeat: false
         onTriggered: runner.step()
+    }
+
+    // Stand-in for Plasma's popup frame, in the window colour (not the widget's own colour set).
+    // A sibling behind the popup: inside it, the ColumnLayout would lay it out as a row.
+    Rectangle {
+        parent: runner.active && runner.plasmoidRoot ? runner.plasmoidRoot.fullRepresentationItem.parent : null
+        anchors.fill: parent
+        z: -100
+        visible: runner.active
+        Kirigami.Theme.inherit: false
+        Kirigami.Theme.colorSet: Kirigami.Theme.Window
+        color: Kirigami.Theme.backgroundColor
     }
 
     Connections {

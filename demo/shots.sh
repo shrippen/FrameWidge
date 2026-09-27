@@ -28,15 +28,3 @@ if ! grep -q "FRAMEWIDGE_SCREENSHOT_DONE" "${LOG}"; then
     tail -30 "${LOG}"
     exit 1
 fi
-# Plasma draws the popup background; use the colour scheme's window colour instead.
-BG="$(python3 - "${CONFIG}/kdeglobals" <<'PY'
-import configparser, sys
-c = configparser.ConfigParser(interpolation=None, strict=False)
-c.read(sys.argv[1])
-rgb = c.get("Colors:Window", "BackgroundNormal", fallback="40,40,40").split(",")[:3]
-print("#%02x%02x%02x" % tuple(int(v) for v in rgb))
-PY
-)"
-for f in "${OUT}"/*.png; do
-    magick "${f}" -background "${BG}" -flatten "${f}"
-done
