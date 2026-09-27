@@ -1,0 +1,476 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the FrameWidge package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FrameWidge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-27 17:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "General"
+msgstr ""
+
+msgid "System Info"
+msgstr ""
+
+msgctxt "color band: everything above N"
+msgid "Above %1:"
+msgstr ""
+
+msgid "Any value:"
+msgstr ""
+
+msgid "Up to:"
+msgstr ""
+
+msgid ""
+"Band color (defaults follow the system color scheme; picking one here sets a "
+"fixed custom color)"
+msgstr ""
+
+msgid "Color for band %1"
+msgstr ""
+
+msgid "Remove this band"
+msgstr ""
+
+msgid "Remove band %1"
+msgstr ""
+
+msgid "Add band"
+msgstr ""
+
+msgid "Reset to defaults"
+msgstr ""
+
+msgid "State of Charge:"
+msgstr ""
+
+msgid "Power:"
+msgstr ""
+
+msgid "Health:"
+msgstr ""
+
+msgid "Cycles:"
+msgstr ""
+
+msgid "Charge Limit:"
+msgstr ""
+
+msgid "AC:"
+msgstr ""
+
+msgid "Plugged in"
+msgstr ""
+
+msgid "On battery"
+msgstr ""
+
+msgid "Loading battery configuration…"
+msgstr ""
+
+msgid "Charge Limit"
+msgstr ""
+
+msgid "Charge Rate Limit"
+msgstr ""
+
+msgid ""
+"Limits charging speed in \"C-rate\": 1.0C charges the battery in about an "
+"hour, 0.5C in about two. Slower charging generates less heat and can extend "
+"battery lifespan."
+msgstr ""
+
+msgid "SoC threshold:"
+msgstr ""
+
+msgid "Clear"
+msgstr ""
+
+msgid "Fan Calibration"
+msgstr ""
+
+msgid ""
+"Calibrate to enable accurate RPM overlay.\n"
+"This takes about a minute and will spin the fan at different speeds.\n"
+"Your current fan settings will be restored after calibration."
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Start Calibration"
+msgstr ""
+
+msgid "Starting calibration..."
+msgstr ""
+
+msgid "Testing %1% duty..."
+msgstr ""
+
+msgid "Saving calibration..."
+msgstr ""
+
+msgid "Done!"
+msgstr ""
+
+msgid "Service port:"
+msgstr ""
+
+msgid "Poll interval (ms):"
+msgstr ""
+
+msgid "Tray display:"
+msgstr ""
+
+msgid "CPU Temperature"
+msgstr ""
+
+msgid "Fan RPM"
+msgstr ""
+
+msgid "Battery %"
+msgstr ""
+
+msgid "Icon only"
+msgstr ""
+
+msgid "With data value:"
+msgstr ""
+
+msgid "Also show the icon"
+msgstr ""
+
+msgid ""
+"Shows the plain chip icon together with the data value above, instead of the "
+"number filling the whole tray slot by itself."
+msgstr ""
+
+msgid "Overlay size:"
+msgstr ""
+
+msgid "%1 %"
+msgstr ""
+
+msgid ""
+"Scales the data value shown on the tray icon, in percent of its default size."
+msgstr ""
+
+msgid "Overlay text colors by value"
+msgstr ""
+
+msgid "CPU temperature"
+msgstr ""
+
+msgid "Fan speed"
+msgstr ""
+
+msgid "Battery charge"
+msgstr ""
+
+msgid "Service version:"
+msgstr ""
+
+msgid "CPU:"
+msgstr ""
+
+msgid "Memory:"
+msgstr ""
+
+msgid "OS:"
+msgstr ""
+
+msgid "BIOS:"
+msgstr ""
+
+msgid "Mainboard:"
+msgstr ""
+
+msgid "framework_tool:"
+msgstr ""
+
+msgid "Telemetry poll (ms):"
+msgstr ""
+
+msgid "Web UI:"
+msgstr ""
+
+msgid "Debug"
+msgstr ""
+
+msgid "Background polling:"
+msgstr ""
+
+msgid "Keep polling while the popup is closed"
+msgstr ""
+
+msgid ""
+"Keeps the tray readout live with the popup closed. Off by default because "
+"the service logs every request to the journal."
+msgstr ""
+
+msgid "Service Logs"
+msgstr ""
+
+msgid "Reload"
+msgstr ""
+
+msgid "Loading…"
+msgstr ""
+
+msgid "Failed to load logs"
+msgstr ""
+
+msgid "Click Reload to fetch the service log (last 500 lines)."
+msgstr ""
+
+msgid "Fan curve editor"
+msgstr ""
+
+msgid "Fan curve editor, selected point: %1°C → %2%"
+msgstr ""
+
+msgid ""
+"Click to add a point, drag to move it, double-click to remove it. Use arrow "
+"keys to fine-tune the selected point, Tab to select another, Delete to "
+"remove it."
+msgstr ""
+
+msgid "%1°C → %2%"
+msgstr ""
+
+msgid "Fan %1"
+msgstr ""
+
+msgid "(unnamed activity)"
+msgstr ""
+
+msgid "Mode: Auto"
+msgstr ""
+
+msgid "Mode: Manual (%1%)"
+msgstr ""
+
+msgid "Mode: Curve"
+msgstr ""
+
+msgid "CPU: %1 °C"
+msgstr ""
+
+msgid "Fan: %1 RPM"
+msgstr ""
+
+msgid "Loading fan configuration…"
+msgstr ""
+
+msgid "Auto"
+msgstr ""
+
+msgid "Manual"
+msgstr ""
+
+msgid "Curve"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "Duty:"
+msgstr ""
+
+msgid "Hysteresis (°C):"
+msgstr ""
+
+msgid "Rate limit (%/step):"
+msgstr ""
+
+msgid "Separate down rate:"
+msgstr ""
+
+msgid "Poll (ms):"
+msgstr ""
+
+msgid "Sensors:"
+msgstr ""
+
+msgid "Preset:"
+msgstr ""
+
+msgid "(none selected)"
+msgstr ""
+
+msgid "Load"
+msgstr ""
+
+msgid "Save as…"
+msgstr ""
+
+msgid "Delete preset"
+msgstr ""
+
+msgid "(unnamed)"
+msgstr ""
+
+msgid "Current activity: %1"
+msgstr ""
+
+msgid "Save Fan Curve Preset"
+msgstr ""
+
+msgid ""
+"Saves the current curve, hysteresis, rate limit, and sensor selection under "
+"this name."
+msgstr ""
+
+msgid "Preset name"
+msgstr ""
+
+msgid "Auto-apply on activity:"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid "%1 °C"
+msgstr ""
+
+msgid "CPU temperature: %1 °C"
+msgstr ""
+
+msgid "CPU temperature unavailable"
+msgstr ""
+
+msgid "Sensors"
+msgstr ""
+
+msgid "Fan"
+msgstr ""
+
+msgid "Power"
+msgstr ""
+
+msgid "Battery"
+msgstr ""
+
+msgid "Service offline"
+msgstr ""
+
+msgid "framework_tool not found"
+msgstr ""
+
+msgid "Battery: %1%"
+msgstr ""
+
+msgid "Connected"
+msgstr ""
+
+msgid "Service Not Reachable"
+msgstr ""
+
+msgid "framework_tool Not Found"
+msgstr ""
+
+msgid ""
+"The framework-control backend service is not running or not installed.\n"
+"\n"
+"Install it with the command below, or start it if already installed."
+msgstr ""
+
+msgid ""
+"The service is running but cannot find framework_tool.\n"
+"Check the service logs for details."
+msgstr ""
+
+msgid "Install:"
+msgstr ""
+
+msgid "Copy"
+msgstr ""
+
+msgid "Already installed? Start the service:"
+msgstr ""
+
+msgid "Trying port %1. Change in widget settings if different."
+msgstr ""
+
+msgid ""
+"Whether the laptop is running on AC power or battery. Power profiles below "
+"can be configured separately for each."
+msgstr ""
+
+msgid "TDP:"
+msgstr ""
+
+msgid ""
+"Thermal Design Power: the sustained power budget the CPU is allowed to draw. "
+"Lower means cooler and quieter but less performance; higher means the "
+"opposite."
+msgstr ""
+
+msgid "Thermal:"
+msgstr ""
+
+msgid "EPP:"
+msgstr ""
+
+msgid ""
+"Energy Performance Preference: biases the CPU scheduler toward power savings "
+"or performance within the current frequency/TDP limits, without changing "
+"them."
+msgstr ""
+
+msgid "Governor:"
+msgstr ""
+
+msgid ""
+"The kernel's CPU frequency governor - the policy deciding how quickly clock "
+"speed ramps up and down in response to load (e.g. schedutil, performance, "
+"powersave)."
+msgstr ""
+
+msgid "Frequency:"
+msgstr ""
+
+msgid "Loading power configuration…"
+msgstr ""
+
+msgid "No supported power management interface detected."
+msgstr ""
+
+msgid "AC"
+msgstr ""
+
+msgid "TDP (W):"
+msgstr ""
+
+msgid "Thermal (°C):"
+msgstr ""
+
+msgid "Min freq (MHz):"
+msgstr ""
+
+msgid "Max freq (MHz):"
+msgstr ""
+
+msgid "Sensor temperature chart, no data yet"
+msgstr ""
+
+msgid "Sensor temperature chart. Latest: %1"
+msgstr ""
+
+msgid "Waiting for sensor data…"
+msgstr ""
+
+msgid "Window:"
+msgstr ""

@@ -79,6 +79,13 @@ Right-click the widget → Configure.
 | Poll interval | `2000` ms | Health check and data polling interval |
 | Tray display | `temp` | Compact icon content: `temp`, `rpm`, `soc`, `icon` |
 
+## Translations
+
+The widget is in English and German. `po/update.sh` extracts the `i18n()` strings into
+`po/framewidge.pot`, merges them into every `po/<lang>.po` and compiles
+`package/contents/locale/<lang>/LC_MESSAGES/plasma_applet_org.kde.plasma.framewidge.mo`, which ships
+with the package. Add a language by copying the template to `po/<lang>.po` and running the script.
+
 ## Demo
 
 `demo/start.sh` opens the widget in plasmoidviewer against `demo/backend.py`, a stand-in for

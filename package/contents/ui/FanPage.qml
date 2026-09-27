@@ -267,9 +267,11 @@ ColumnLayout {
                 return "";
             }
             font.bold: true
+            // Takes the free space and gives it up first: longer translations of the live
+            // values on the right must not be pushed past the edge.
+            Layout.fillWidth: true
+            elide: Text.ElideRight
         }
-
-        Item { Layout.fillWidth: true }
 
         PlasmaComponents.Label {
             visible: liveTemp >= 0

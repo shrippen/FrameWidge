@@ -1,0 +1,507 @@
+# German translation of FrameWidge.
+msgid ""
+msgstr ""
+"Project-Id-Version: FrameWidge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-27 11:33+0200\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "General"
+msgstr "Allgemein"
+
+msgid "System Info"
+msgstr "Systeminfo"
+
+msgctxt "color band: everything above N"
+msgid "Above %1:"
+msgstr "Über %1:"
+
+msgid "Any value:"
+msgstr "Jeder Wert:"
+
+msgid "Up to:"
+msgstr "Bis:"
+
+msgid ""
+"Band color (defaults follow the system color scheme; picking one here sets a "
+"fixed custom color)"
+msgstr ""
+"Farbe des Bereichs (Standard folgt dem Farbschema des Systems; eine Auswahl "
+"hier setzt eine feste eigene Farbe)"
+
+msgid "Color for band %1"
+msgstr "Farbe für Bereich %1"
+
+msgid "Remove this band"
+msgstr "Diesen Bereich entfernen"
+
+msgid "Remove band %1"
+msgstr "Bereich %1 entfernen"
+
+msgid "Add band"
+msgstr "Bereich hinzufügen"
+
+msgid "Reset to defaults"
+msgstr "Auf Standard zurücksetzen"
+
+msgid "State of Charge:"
+msgstr "Ladestand:"
+
+msgid "Power:"
+msgstr "Leistung:"
+
+msgid "Health:"
+msgstr "Zustand:"
+
+msgid "Cycles:"
+msgstr "Ladezyklen:"
+
+msgid "Charge Limit:"
+msgstr "Ladelimit:"
+
+msgid "AC:"
+msgstr "Netzteil:"
+
+msgid "Plugged in"
+msgstr "Angeschlossen"
+
+msgid "On battery"
+msgstr "Akkubetrieb"
+
+msgid "Loading battery configuration…"
+msgstr "Akkueinstellungen werden geladen …"
+
+msgid "Charge Limit"
+msgstr "Ladelimit"
+
+msgid "Charge Rate Limit"
+msgstr "Ladegeschwindigkeit begrenzen"
+
+msgid ""
+"Limits charging speed in \"C-rate\": 1.0C charges the battery in about an "
+"hour, 0.5C in about two. Slower charging generates less heat and can extend "
+"battery lifespan."
+msgstr ""
+"Begrenzt die Ladegeschwindigkeit als „C-Rate“: 1,0 C lädt den Akku in etwa "
+"einer Stunde, 0,5 C in etwa zwei. Langsameres Laden erzeugt weniger Wärme "
+"und kann die Lebensdauer des Akkus verlängern."
+
+msgid "SoC threshold:"
+msgstr "Ab Ladestand:"
+
+msgid "Clear"
+msgstr "Leeren"
+
+msgid "Fan Calibration"
+msgstr "Lüfterkalibrierung"
+
+msgid ""
+"Calibrate to enable accurate RPM overlay.\n"
+"This takes about a minute and will spin the fan at different speeds.\n"
+"Your current fan settings will be restored after calibration."
+msgstr ""
+"Kalibrieren, damit die Drehzahlanzeige stimmt.\n"
+"Das dauert etwa eine Minute und lässt den Lüfter verschieden schnell "
+"laufen.\n"
+"Deine aktuellen Lüftereinstellungen werden danach wiederhergestellt."
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Start Calibration"
+msgstr "Kalibrierung starten"
+
+msgid "Starting calibration..."
+msgstr "Kalibrierung startet …"
+
+msgid "Testing %1% duty..."
+msgstr "Teste %1 % Leistung …"
+
+msgid "Saving calibration..."
+msgstr "Kalibrierung wird gespeichert …"
+
+msgid "Done!"
+msgstr "Fertig!"
+
+msgid "Service port:"
+msgstr "Port des Dienstes:"
+
+msgid "Poll interval (ms):"
+msgstr "Abfrageintervall (ms):"
+
+msgid "Tray display:"
+msgstr "Anzeige im Systemabschnitt:"
+
+msgid "CPU Temperature"
+msgstr "CPU-Temperatur"
+
+msgid "Fan RPM"
+msgstr "Lüfterdrehzahl"
+
+msgid "Battery %"
+msgstr "Akku in %"
+
+msgid "Icon only"
+msgstr "Nur Symbol"
+
+msgid "With data value:"
+msgstr "Mit Messwert:"
+
+msgid "Also show the icon"
+msgstr "Symbol zusätzlich anzeigen"
+
+msgid ""
+"Shows the plain chip icon together with the data value above, instead of the "
+"number filling the whole tray slot by itself."
+msgstr ""
+"Zeigt das Chip-Symbol zusammen mit dem Messwert darüber, statt dass die Zahl "
+"allein den ganzen Platz im Systemabschnitt füllt."
+
+msgid "Overlay size:"
+msgstr "Größe der Einblendung:"
+
+msgid "%1 %"
+msgstr "%1 %"
+
+msgid ""
+"Scales the data value shown on the tray icon, in percent of its default size."
+msgstr ""
+"Skaliert den Messwert auf dem Symbol im Systemabschnitt, in Prozent der "
+"Standardgröße."
+
+msgid "Overlay text colors by value"
+msgstr "Textfarben der Einblendung nach Wert"
+
+msgid "CPU temperature"
+msgstr "CPU-Temperatur"
+
+msgid "Fan speed"
+msgstr "Lüfterdrehzahl"
+
+msgid "Battery charge"
+msgstr "Akkuladung"
+
+msgid "Service version:"
+msgstr "Dienstversion:"
+
+msgid "CPU:"
+msgstr "CPU:"
+
+msgid "Memory:"
+msgstr "Arbeitsspeicher:"
+
+msgid "OS:"
+msgstr "Betriebssystem:"
+
+msgid "BIOS:"
+msgstr "BIOS:"
+
+msgid "Mainboard:"
+msgstr "Mainboard:"
+
+msgid "framework_tool:"
+msgstr "framework_tool:"
+
+msgid "Telemetry poll (ms):"
+msgstr "Telemetrie-Abfrage (ms):"
+
+msgid "Web UI:"
+msgstr "Weboberfläche:"
+
+msgid "Debug"
+msgstr "Fehlersuche"
+
+msgid "Background polling:"
+msgstr "Abfrage im Hintergrund:"
+
+msgid "Keep polling while the popup is closed"
+msgstr "Auch bei geschlossenem Popup abfragen"
+
+msgid ""
+"Keeps the tray readout live with the popup closed. Off by default because "
+"the service logs every request to the journal."
+msgstr ""
+"Hält die Anzeige im Systemabschnitt aktuell, auch wenn das Popup geschlossen "
+"ist. Standardmäßig aus, weil der Dienst jede Anfrage ins Journal schreibt."
+
+msgid "Service Logs"
+msgstr "Dienstprotokoll"
+
+msgid "Reload"
+msgstr "Neu laden"
+
+msgid "Loading…"
+msgstr "Wird geladen …"
+
+msgid "Failed to load logs"
+msgstr "Protokoll konnte nicht geladen werden"
+
+msgid "Click Reload to fetch the service log (last 500 lines)."
+msgstr "„Neu laden“ holt das Dienstprotokoll (letzte 500 Zeilen)."
+
+msgid "Fan curve editor"
+msgstr "Lüfterkurve bearbeiten"
+
+msgid "Fan curve editor, selected point: %1°C → %2%"
+msgstr "Lüfterkurve bearbeiten, gewählter Punkt: %1 °C → %2 %"
+
+msgid ""
+"Click to add a point, drag to move it, double-click to remove it. Use arrow "
+"keys to fine-tune the selected point, Tab to select another, Delete to "
+"remove it."
+msgstr ""
+"Klicken fügt einen Punkt hinzu, Ziehen verschiebt ihn, Doppelklick entfernt "
+"ihn. Mit den Pfeiltasten den gewählten Punkt fein einstellen, mit Tab einen "
+"anderen wählen, mit Entf entfernen."
+
+msgid "%1°C → %2%"
+msgstr "%1 °C → %2 %"
+
+msgid "Fan %1"
+msgstr "Lüfter %1"
+
+msgid "(unnamed activity)"
+msgstr "(Aktivität ohne Namen)"
+
+msgid "Mode: Auto"
+msgstr "Modus: Automatisch"
+
+msgid "Mode: Manual (%1%)"
+msgstr "Modus: Manuell (%1 %)"
+
+msgid "Mode: Curve"
+msgstr "Modus: Kurve"
+
+msgid "CPU: %1 °C"
+msgstr "CPU %1 °C"
+
+msgid "Fan: %1 RPM"
+msgstr "Lüfter %1 U/min"
+
+msgid "Loading fan configuration…"
+msgstr "Lüftereinstellungen werden geladen …"
+
+msgid "Auto"
+msgstr "Automatisch"
+
+msgid "Manual"
+msgstr "Manuell"
+
+msgid "Curve"
+msgstr "Kurve"
+
+msgid "All"
+msgstr "Alle"
+
+msgid "Duty:"
+msgstr "Leistung:"
+
+msgid "Hysteresis (°C):"
+msgstr "Hysterese (°C):"
+
+msgid "Rate limit (%/step):"
+msgstr "Max. %/Schritt:"
+
+msgid "Separate down rate:"
+msgstr "Absenkrate:"
+
+msgid "Poll (ms):"
+msgstr "Abfrage (ms):"
+
+msgid "Sensors:"
+msgstr "Sensoren:"
+
+msgid "Preset:"
+msgstr "Vorlage:"
+
+msgid "(none selected)"
+msgstr "(keine gewählt)"
+
+msgid "Load"
+msgstr "Laden"
+
+msgid "Save as…"
+msgstr "Speichern unter …"
+
+msgid "Delete preset"
+msgstr "Vorlage löschen"
+
+msgid "(unnamed)"
+msgstr "(ohne Namen)"
+
+msgid "Current activity: %1"
+msgstr "Aktuelle Aktivität: %1"
+
+msgid "Save Fan Curve Preset"
+msgstr "Lüfterkurve als Vorlage speichern"
+
+msgid ""
+"Saves the current curve, hysteresis, rate limit, and sensor selection under "
+"this name."
+msgstr ""
+"Speichert die aktuelle Kurve, Hysterese, Änderungsrate und Sensorauswahl "
+"unter diesem Namen."
+
+msgid "Preset name"
+msgstr "Name der Vorlage"
+
+msgid "Auto-apply on activity:"
+msgstr "Automatisch anwenden bei Aktivität:"
+
+msgid "(none)"
+msgstr "(keine)"
+
+msgid "%1 °C"
+msgstr "%1 °C"
+
+msgid "CPU temperature: %1 °C"
+msgstr "CPU-Temperatur: %1 °C"
+
+msgid "CPU temperature unavailable"
+msgstr "CPU-Temperatur nicht verfügbar"
+
+msgid "Sensors"
+msgstr "Sensoren"
+
+msgid "Fan"
+msgstr "Lüfter"
+
+msgid "Power"
+msgstr "Energie"
+
+msgid "Battery"
+msgstr "Akku"
+
+msgid "Service offline"
+msgstr "Dienst offline"
+
+msgid "framework_tool not found"
+msgstr "framework_tool nicht gefunden"
+
+msgid "Battery: %1%"
+msgstr "Akku: %1 %"
+
+msgid "Connected"
+msgstr "Verbunden"
+
+msgid "Service Not Reachable"
+msgstr "Dienst nicht erreichbar"
+
+msgid "framework_tool Not Found"
+msgstr "framework_tool nicht gefunden"
+
+msgid ""
+"The framework-control backend service is not running or not installed.\n"
+"\n"
+"Install it with the command below, or start it if already installed."
+msgstr ""
+"Der Hintergrunddienst framework-control läuft nicht oder ist nicht "
+"installiert.\n"
+"\n"
+"Installiere ihn mit dem Befehl unten oder starte ihn, falls er schon "
+"installiert ist."
+
+msgid ""
+"The service is running but cannot find framework_tool.\n"
+"Check the service logs for details."
+msgstr ""
+"Der Dienst läuft, findet aber framework_tool nicht.\n"
+"Einzelheiten stehen im Dienstprotokoll."
+
+msgid "Install:"
+msgstr "Installieren:"
+
+msgid "Copy"
+msgstr "Kopieren"
+
+msgid "Already installed? Start the service:"
+msgstr "Schon installiert? Dienst starten:"
+
+msgid "Trying port %1. Change in widget settings if different."
+msgstr ""
+"Versuche Port %1. Falls er anders ist, in den Widget-Einstellungen ändern."
+
+msgid ""
+"Whether the laptop is running on AC power or battery. Power profiles below "
+"can be configured separately for each."
+msgstr ""
+"Ob der Laptop am Netzteil oder am Akku läuft. Die Energieprofile unten "
+"lassen sich für beides getrennt einstellen."
+
+msgid "TDP:"
+msgstr "TDP:"
+
+msgid ""
+"Thermal Design Power: the sustained power budget the CPU is allowed to draw. "
+"Lower means cooler and quieter but less performance; higher means the "
+"opposite."
+msgstr ""
+"Thermal Design Power: die Leistung, die die CPU dauerhaft aufnehmen darf. "
+"Weniger heißt kühler und leiser, aber langsamer; mehr heißt das Gegenteil."
+
+msgid "Thermal:"
+msgstr "Temperaturgrenze:"
+
+msgid "EPP:"
+msgstr "EPP:"
+
+msgid ""
+"Energy Performance Preference: biases the CPU scheduler toward power savings "
+"or performance within the current frequency/TDP limits, without changing "
+"them."
+msgstr ""
+"Energy Performance Preference: gewichtet die CPU-Steuerung innerhalb der "
+"aktuellen Frequenz- und TDP-Grenzen in Richtung Energiesparen oder Leistung, "
+"ohne diese Grenzen zu ändern."
+
+msgid "Governor:"
+msgstr "Governor:"
+
+msgid ""
+"The kernel's CPU frequency governor - the policy deciding how quickly clock "
+"speed ramps up and down in response to load (e.g. schedutil, performance, "
+"powersave)."
+msgstr ""
+"Der CPU-Frequenz-Governor des Kernels: die Regel, wie schnell der Takt bei "
+"Last steigt und wieder fällt (z. B. schedutil, performance, powersave)."
+
+msgid "Frequency:"
+msgstr "Frequenz:"
+
+msgid "Loading power configuration…"
+msgstr "Energieeinstellungen werden geladen …"
+
+msgid "No supported power management interface detected."
+msgstr "Keine unterstützte Energieverwaltung gefunden."
+
+msgid "AC"
+msgstr "Netzteil"
+
+msgid "TDP (W):"
+msgstr "TDP (W):"
+
+msgid "Thermal (°C):"
+msgstr "Temperaturgrenze (°C):"
+
+msgid "Min freq (MHz):"
+msgstr "Min. Frequenz (MHz):"
+
+msgid "Max freq (MHz):"
+msgstr "Max. Frequenz (MHz):"
+
+msgid "Sensor temperature chart, no data yet"
+msgstr "Temperaturverlauf der Sensoren, noch keine Daten"
+
+msgid "Sensor temperature chart. Latest: %1"
+msgstr "Temperaturverlauf der Sensoren. Zuletzt: %1"
+
+msgid "Waiting for sensor data…"
+msgstr "Warte auf Sensordaten …"
+
+msgid "Window:"
+msgstr "Zeitraum:"
