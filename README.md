@@ -93,7 +93,7 @@ framework-control with the editing laptop of Studio Weber, the demo world shared
 projects (`demo/world.json`, copied from `shrippen.github.io/demo`): a render job heats the APU, the
 fan runs on a curve, the battery stops at 80 %. No Framework hardware needed; the installed widget
 and a running framework-control are not touched. `demo/shots.sh` renders the landing-page
-screenshots offscreen (`demo/shots.json`, run by `shrippen.github.io/tools/screenshots.py`).
+screenshots offscreen (`demo/shots.json`, run by `shrippen.github.io/demo/tools/screenshots.py`).
 
 ## Architecture
 

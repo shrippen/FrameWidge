@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Landing-page screenshots against the demo backend, for shrippen.github.io/tools/screenshots.py
+# Landing-page screenshots against the demo backend, for shrippen.github.io/demo/tools/screenshots.py
 # (demo/shots.json). Renders offscreen; ScreenshotRunner.qml grabs each tab into $SHOT_DIR.
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
