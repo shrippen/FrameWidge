@@ -89,6 +89,15 @@ else
     fi
 fi
 
+# The demo (screenshots) is internal: nothing of it may be in the widget package.
+echo "== package: no internal demo =="
+if grep -rniE 'ScreenshotRunner|__shots|demo/backend|studio weber' "$REPO_ROOT/package" >&2; then
+    echo "FAIL: the package references the internal demo (lines above)"
+    FAILED=1
+else
+    echo "ok: no demo code or data in package/"
+fi
+
 echo
 if [[ $FAILED -eq 0 ]]; then
     echo "smoke_package: all checks passed"

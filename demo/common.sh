@@ -30,6 +30,16 @@ text = re.sub(r'(<entry name="servicePort" type="Int">.*?<default>)\d+(</default
 open(path, "w").write(text)
 PY
     grep -q "<default>${PORT}</default>" "${PACKAGE}/contents/config/main.xml" || { echo "could not set the demo port"; exit 1; }
+    # The screenshot runner is internal and only exists in this copy.
+    cp "${ROOT}/demo/ScreenshotRunner.qml" "${PACKAGE}/contents/ui/"
+    python3 - "${PACKAGE}/contents/ui/main.qml" <<'PY'
+import sys
+path = sys.argv[1]
+text = open(path).read()
+anchor = "    fullRepresentation: FullRepresentation {}\n"
+assert anchor in text, "main.qml changed: cannot add the screenshot runner"
+open(path, "w").write(text.replace(anchor, anchor + "\n    ScreenshotRunner {\n        plasmoidRoot: root\n    }\n", 1))
+PY
 }
 
 LANG_="${1:-${DEMO_LANG:-de}}"

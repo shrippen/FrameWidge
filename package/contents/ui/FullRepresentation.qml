@@ -13,7 +13,7 @@ ColumnLayout {
     // Brand accent per DESIGN.md - reserved for the icon mark and small
     // live-status accents, everything else stays on Kirigami.Theme.*
     readonly property color brandAccent: "#E8DCC4"
-    // Selected tab (0 Sensors, 1 Fan, 2 Power, 3 Battery); ScreenshotRunner sets it.
+    // Selected tab (0 Sensors, 1 Fan, 2 Power, 3 Battery).
     property alias currentTab: tabBar.currentIndex
 
     // Width is fixed: the tab content (sliders, ComboBoxes, curve graph)

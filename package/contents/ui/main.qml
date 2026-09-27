@@ -64,11 +64,6 @@ PlasmoidItem {
     compactRepresentation: CompactRepresentation {}
     fullRepresentation: FullRepresentation {}
 
-    // Screenshots of the demo backend only (demo/shots.sh); idle otherwise.
-    ScreenshotRunner {
-        plasmoidRoot: root
-    }
-
     property string baseUrl: "http://127.0.0.1:" + plasmoid.configuration.servicePort
 
     // Every poll is a request the backend service logs to the journal, so

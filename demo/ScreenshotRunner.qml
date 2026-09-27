@@ -1,6 +1,6 @@
 import QtQuick
 
-import "js/Api.js" as Api
+import "js/Api.js" as Api  // resolved in the staged package copy
 
 /**
  * Landing-page screenshots, only against the demo backend: once the service is online
@@ -10,6 +10,9 @@ import "js/Api.js" as Api
  * Each tab of the popup is grabbed into dir/name.png, then the viewer quits
  * ("FRAMEWIDGE_SCREENSHOT_DONE" in the log). The grabs are transparent where Plasma would
  * draw the popup frame; demo/shots.sh puts them on the colour scheme's window colour.
+ *
+ * Internal only: this file is not part of the widget package. demo/common.sh copies it into
+ * the staged package copy and adds it to main.qml there.
  */
 Item {
     id: runner
