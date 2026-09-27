@@ -22,5 +22,11 @@
   ],
   "langs": [
     "en"
-  ]
+  ],
+  "page": {
+    "fan.jpg": "fan",
+    "sensors.jpg": "sensors",
+    "power.jpg": "power",
+    "battery.jpg": "battery"
+  }
 }
