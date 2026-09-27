@@ -12,7 +12,14 @@ RUNTIME_DIR="$SCRIPT_DIR/.runtime"
 PORT_FILE="$RUNTIME_DIR/mock_port.txt"
 MOCK_LOG="$RUNTIME_DIR/mock_backend.log"
 
-QMLTESTRUNNER="$(command -v qmltestrunner-qt6 || command -v qmltestrunner || true)"
+# Qt 6 only: on distributions that ship both, a plain "qmltestrunner" on PATH can be the
+# Qt 5 one (Arch: /usr/bin/qmltestrunner from qt5-declarative), which cannot load the Qt 6
+# imports and exits 1 without printing anything.
+QMLTESTRUNNER="${QMLTESTRUNNER:-}"
+for candidate in /usr/lib/qt6/bin/qmltestrunner "$(command -v qmltestrunner-qt6 || true)" "$(command -v qmltestrunner || true)"; do
+    [[ -n "$QMLTESTRUNNER" ]] && break
+    [[ -x "$candidate" ]] && QMLTESTRUNNER="$candidate"
+done
 if [[ -z "$QMLTESTRUNNER" ]]; then
     echo "error: no qmltestrunner (qt6) binary found on PATH" >&2
     exit 1
