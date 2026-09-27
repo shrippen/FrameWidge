@@ -79,6 +79,15 @@ Right-click the widget → Configure.
 | Poll interval | `2000` ms | Health check and data polling interval |
 | Tray display | `temp` | Compact icon content: `temp`, `rpm`, `soc`, `icon` |
 
+## Demo
+
+`demo/start.sh` opens the widget in plasmoidviewer against `demo/backend.py`, a stand-in for
+framework-control with the editing laptop of Studio Weber, the demo world shared by all shrippen
+projects (`demo/world.json`, copied from `shrippen.github.io/demo`): a render job heats the APU, the
+fan runs on a curve, the battery stops at 80 %. No Framework hardware needed; the installed widget
+and a running framework-control are not touched. `demo/shots.sh` renders the landing-page
+screenshots offscreen (`demo/shots.json`, run by `shrippen.github.io/tools/screenshots.py`).
+
 ## Architecture
 
 ```

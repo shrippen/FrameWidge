@@ -1,0 +1,26 @@
+{
+  "kind": "command",
+  "start": "demo/shots.sh",
+  "timeout": 180,
+  "shots": [
+    {
+      "name": "sensors",
+      "tab": 0
+    },
+    {
+      "name": "fan",
+      "tab": 1
+    },
+    {
+      "name": "power",
+      "tab": 2
+    },
+    {
+      "name": "battery",
+      "tab": 3
+    }
+  ],
+  "langs": [
+    "en"
+  ]
+}
