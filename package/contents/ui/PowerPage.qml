@@ -145,7 +145,7 @@ ColumnLayout {
 
         PlasmaComponents.Label {
             Kirigami.FormData.label: i18n("EPP:")
-            visible: currentState && currentState.epp_preference
+            visible: !!(currentState && currentState.epp_preference)
             text: currentState ? (currentState.epp_preference || "") : ""
             HoverHandler { id: eppStateHover }
             QQC2.ToolTip.visible: eppStateHover.hovered
@@ -155,7 +155,7 @@ ColumnLayout {
 
         PlasmaComponents.Label {
             Kirigami.FormData.label: i18n("Governor:")
-            visible: currentState && currentState.governor
+            visible: !!(currentState && currentState.governor)
             text: currentState ? (currentState.governor || "") : ""
             HoverHandler { id: governorStateHover }
             QQC2.ToolTip.visible: governorStateHover.hovered
@@ -237,7 +237,7 @@ ColumnLayout {
         // EPP
         RowLayout {
             Layout.fillWidth: true
-            visible: capabilities && capabilities.supports_epp
+            visible: !!(capabilities && capabilities.supports_epp)
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
@@ -273,7 +273,7 @@ ColumnLayout {
         // Governor
         RowLayout {
             Layout.fillWidth: true
-            visible: capabilities && capabilities.supports_governor
+            visible: !!(capabilities && capabilities.supports_governor)
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
@@ -309,7 +309,7 @@ ColumnLayout {
         // TDP
         RowLayout {
             Layout.fillWidth: true
-            visible: capabilities && capabilities.supports_tdp
+            visible: !!(capabilities && capabilities.supports_tdp)
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
@@ -352,7 +352,7 @@ ColumnLayout {
         // Thermal limit
         RowLayout {
             Layout.fillWidth: true
-            visible: capabilities && capabilities.supports_thermal
+            visible: !!(capabilities && capabilities.supports_thermal)
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
@@ -389,7 +389,7 @@ ColumnLayout {
         // Min frequency
         RowLayout {
             Layout.fillWidth: true
-            visible: capabilities && capabilities.supports_frequency_limits
+            visible: !!(capabilities && capabilities.supports_frequency_limits)
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
