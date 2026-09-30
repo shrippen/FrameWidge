@@ -17,6 +17,7 @@
 - `CalibrationDialog` and the preset dialog in Kante: the title strip and buttons are Kante's now (`KanteDialogSkin` themes header and footer); before, the platform's light strip stayed on the dark card.
 - `PowerPage` visibility bindings are boolean (real Kirigami warned about `undefined`).
 - Fan page fits the 432 px popup: hysteresis, rate limits and poll interval stack one per row below 32 grid units (were two per row, clipping the curve editor and spin box arrows).
+- System curve editor: marker captions move left of the guide when a point's handle would cover them ("CPU 58°" showed as "U 58°").
 - Kante offline state: headings no longer truncate ("INSTA..."), and the state has real side margins (the Loader ignored `Layout.margins`).
 
 ### Known gaps

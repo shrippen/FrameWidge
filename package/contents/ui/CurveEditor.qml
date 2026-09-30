@@ -31,6 +31,11 @@ Item {
     readonly property int padTop: 12
     readonly property int padBottom: 22
 
+    // Marker captions: text height, gap to the guide, handle radius + margin.
+    readonly property int captionHeight: 10
+    readonly property int captionGap: 6
+    readonly property int handleClearance: 8
+
     activeFocusOnTab: true
     focus: false
     Accessible.role: Accessible.Slider
@@ -68,6 +73,37 @@ Item {
             }
         }
         return points[points.length - 1][1];
+    }
+
+    // Left edge of a marker caption at (cx, cy): right of the guide, or
+    // left of it when a curve point's handle would cover the text there.
+    // e.g. marker at 58 °C next to the point at 60 °C -> caption goes left.
+    function captionX(cx, cy, textWidth) {
+        var top = cy - padTop < 14 ? cy : cy - captionHeight;
+        var right = Math.min(cx + captionGap, width - padRight - textWidth);
+        var left = Math.max(padLeft, cx - captionGap - textWidth);
+
+        if (!captionHitsPoint(right, top, textWidth)) {
+            return right;
+        }
+        if (!captionHitsPoint(left, top, textWidth)) {
+            return left;
+        }
+        return right;
+    }
+
+    // Whether any point's handle overlaps the caption box.
+    function captionHitsPoint(x, top, textWidth) {
+        for (var i = 0; i < points.length; i++) {
+            var px = tempToX(points[i][0]);
+            var py = dutyToY(points[i][1]);
+            var nearX = clamp(px, x, x + textWidth);
+            var nearY = clamp(py, top, top + captionHeight);
+            if (Math.hypot(px - nearX, py - nearY) < handleClearance) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function yToDuty(y) {
@@ -208,13 +244,6 @@ Item {
                 ctx.beginPath();
                 ctx.arc(lx, ly, 4, 0, 2 * Math.PI);
                 ctx.fill();
-
-                ctx.textAlign = "left";
-                ctx.textBaseline = ly - padTop < 14 ? "top" : "bottom";
-                ctx.font = "bold 9px sans-serif";
-                var label = (marker.label ? marker.label + " " : "") + Math.round(marker.temp) + "°";
-                ctx.fillText(label, Math.min(lx + 6, width - padRight - (label.length * 5)), ly);
-                ctx.textBaseline = "alphabetic";
             }
 
             // Points
@@ -234,6 +263,30 @@ Item {
                     ctx.stroke();
                 }
             }
+
+            // Marker captions after the points and clear of their handles
+            // ("CPU 58°" was cut to "U 58°"); a background halo keeps them
+            // readable where they cross the curve.
+            ctx.textAlign = "left";
+            ctx.font = "bold 9px sans-serif";
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = Kirigami.Theme.backgroundColor;
+            for (var ci = 0; ci < liveMarkers.length; ci++) {
+                var cm = liveMarkers[ci];
+                if (cm.temp < tempMin || cm.temp > tempMax) {
+                    continue;
+                }
+
+                var cx = tempToX(cm.temp);
+                var cy = dutyToY(interpolatedDutyAt(cm.temp));
+                var label = (cm.label ? cm.label + " " : "") + Math.round(cm.temp) + "°";
+                var labelX = captionX(cx, cy, ctx.measureText(label).width);
+                ctx.textBaseline = cy - padTop < 14 ? "top" : "bottom";
+                ctx.strokeText(label, labelX, cy);
+                ctx.fillStyle = cm.color || Kirigami.Theme.neutralTextColor;
+                ctx.fillText(label, labelX, cy);
+            }
+            ctx.textBaseline = "alphabetic";
         }
     }
 
