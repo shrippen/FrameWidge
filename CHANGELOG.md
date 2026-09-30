@@ -14,11 +14,13 @@
 
 ### Fixed
 
+- `CalibrationDialog` and the preset dialog in Kante: the title strip and buttons are Kante's now (`KanteDialogSkin` themes header and footer); before, the platform's light strip stayed on the dark card.
+- `PowerPage` visibility bindings are boolean (real Kirigami warned about `undefined`).
 - Kante offline state: headings no longer truncate ("INSTA..."), and the state has real side margins (the Loader ignored `Layout.margins`).
 
 ### Known gaps
 
-- `CalibrationDialog` in Kante: the dialog's title strip is still the platform's (`KanteDialogSkin` only replaces the background). Not changed without a real Kirigami dialog to check against.
+- The fan page's Hysteresis / Rate limit row is wider than the 432 px popup with a wide font, in every style (seen with real Kirigami, not changed here).
 - Kante's line chart has no time axis; the hover read-out shows the time.
 
 ## 1.2
