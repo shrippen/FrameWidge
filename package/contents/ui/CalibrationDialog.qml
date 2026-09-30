@@ -4,6 +4,8 @@ import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
 
+import "Kante"
+import "KantePlasma"
 import "js/Api.js" as Api
 
 QQC2.Dialog {
@@ -20,6 +22,9 @@ QQC2.Dialog {
     property string prevMode: "curve"
 
     signal calibrationDone(var points)
+
+    // Kante look of the dialog (nothing in the System style).
+    readonly property Item kanteSkin: KanteDialogSkin { dialog: calibrationDialog }
 
     ColumnLayout {
         anchors.fill: parent
@@ -43,9 +48,16 @@ QQC2.Dialog {
 
             QQC2.ProgressBar {
                 Layout.fillWidth: true
+                visible: !KanteStyle.active
                 from: 0
                 to: 100
                 value: progress
+            }
+
+            KanteProgressBar {
+                Layout.fillWidth: true
+                visible: KanteStyle.active
+                value: progress / 100
             }
         }
 
@@ -57,7 +69,7 @@ QQC2.Dialog {
 
             Item { Layout.fillWidth: true }
 
-            PlasmaComponents.Button {
+            KantePlasmaButton {
                 text: running ? i18n("Cancel") : i18n("Cancel")
                 onClicked: {
                     running = false;
@@ -65,7 +77,7 @@ QQC2.Dialog {
                 }
             }
 
-            PlasmaComponents.Button {
+            KantePlasmaButton {
                 text: i18n("Start Calibration")
                 visible: !running
                 highlighted: true
