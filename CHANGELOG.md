@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Style setting (System / Kante / Kante Light) for the popup. System is the default and unchanged. Kante 1.4 is vendored in `package/contents/ui/Kante` and `KantePlasma`.
+
 ## 1.2
 
 ### Changed

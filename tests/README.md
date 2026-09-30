@@ -24,6 +24,8 @@ Test-only routes of the mock:
 - `GET /__requests`: log of received requests. Asserts a debounced slider drag sends one call, not one per pixel.
 - `POST /__reset`: clears the log, resets `/api/config` to defaults.
 
+`tst_KanteStyle.qml` checks that the `visualStyle` setting maps to `KanteStyle.kind`, `tst_KanteWidget.qml` that the Kante-styled parts load and survive switching the style.
+
 `main.qml` is not unit tested. Instantiating a `PlasmoidItem` outside a Plasma containment fails with `Could not create attached properties object 'PlasmaQuick::PlasmoidAttached'`. The smoke test covers it.
 
 ## Smoke tests

@@ -78,6 +78,9 @@ Right-click the widget → Configure.
 | Service port | `30912` | framework-control port (AUR default) |
 | Poll interval | `2000` ms | Health check and data polling interval |
 | Tray display | `temp` | Compact icon content: `temp`, `rpm`, `soc`, `icon` |
+| Style | System | Popup look: System (Plasma theme), Kante, Kante Light |
+
+The popup follows your Plasma theme by default. Kante and Kante Light are opt-in: they use the [Kante](https://github.com/shrippen/shrippen.github.io) QML module, vendored unchanged in `package/contents/ui/Kante` and `KantePlasma` (`scripts/sync-kante.sh` refreshes it). The tray icon and the settings pages keep the Plasma look.
 
 ## Translations
 
