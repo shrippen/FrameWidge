@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FrameWidge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 11:33+0200\n"
+"POT-Creation-Date: 2026-09-30 17:31+0000\n"
 "Language-Team: German\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
@@ -127,6 +127,18 @@ msgstr "Kalibrierung wird gespeichert …"
 
 msgid "Done!"
 msgstr "Fertig!"
+
+msgid "Style:"
+msgstr "Stil:"
+
+msgid "System (Plasma theme)"
+msgstr "System (Plasma-Design)"
+
+msgid "Kante"
+msgstr "Kante"
+
+msgid "Kante Light"
+msgstr "Kante Light"
 
 msgid "Service port:"
 msgstr "Port des Dienstes:"
@@ -301,6 +313,9 @@ msgstr "Alle"
 msgid "Duty:"
 msgstr "Leistung:"
 
+msgid "%1 °C"
+msgstr "%1 °C"
+
 msgid "Hysteresis (°C):"
 msgstr "Hysterese (°C):"
 
@@ -356,9 +371,6 @@ msgstr "Automatisch anwenden bei Aktivität:"
 msgid "(none)"
 msgstr "(keine)"
 
-msgid "%1 °C"
-msgstr "%1 °C"
-
 msgid "CPU temperature: %1 °C"
 msgstr "CPU-Temperatur: %1 °C"
 
@@ -376,18 +388,6 @@ msgstr "Energie"
 
 msgid "Battery"
 msgstr "Akku"
-
-msgid "Service offline"
-msgstr "Dienst offline"
-
-msgid "framework_tool not found"
-msgstr "framework_tool nicht gefunden"
-
-msgid "Battery: %1%"
-msgstr "Akku: %1 %"
-
-msgid "Connected"
-msgstr "Verbunden"
 
 msgid "Service Not Reachable"
 msgstr "Dienst nicht erreichbar"
@@ -416,9 +416,6 @@ msgstr ""
 msgid "Install:"
 msgstr "Installieren:"
 
-msgid "Copied"
-msgstr "Kopiert"
-
 msgid "Copy"
 msgstr "Kopieren"
 
@@ -428,6 +425,9 @@ msgstr "Schon installiert? Dienst starten:"
 msgid "Trying port %1. Change in widget settings if different."
 msgstr ""
 "Versuche Port %1. Falls er anders ist, in den Widget-Einstellungen ändern."
+
+msgid "Copied"
+msgstr "Kopiert"
 
 msgid ""
 "Whether the laptop is running on AC power or battery. Power profiles below "
@@ -508,3 +508,15 @@ msgstr "Warte auf Sensordaten …"
 
 msgid "Window:"
 msgstr "Zeitraum:"
+
+msgid "Service offline"
+msgstr "Dienst offline"
+
+msgid "framework_tool not found"
+msgstr "framework_tool nicht gefunden"
+
+msgid "Battery: %1%"
+msgstr "Akku: %1 %"
+
+msgid "Connected"
+msgstr "Verbunden"

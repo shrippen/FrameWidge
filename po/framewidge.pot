@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FrameWidge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 17:43+0200\n"
+"POT-Creation-Date: 2026-09-30 17:32+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -123,6 +123,18 @@ msgid "Saving calibration..."
 msgstr ""
 
 msgid "Done!"
+msgstr ""
+
+msgid "Style:"
+msgstr ""
+
+msgid "System (Plasma theme)"
+msgstr ""
+
+msgid "Kante"
+msgstr ""
+
+msgid "Kante Light"
 msgstr ""
 
 msgid "Service port:"
@@ -289,6 +301,9 @@ msgstr ""
 msgid "Duty:"
 msgstr ""
 
+msgid "%1 °C"
+msgstr ""
+
 msgid "Hysteresis (°C):"
 msgstr ""
 
@@ -342,9 +357,6 @@ msgstr ""
 msgid "(none)"
 msgstr ""
 
-msgid "%1 °C"
-msgstr ""
-
 msgid "CPU temperature: %1 °C"
 msgstr ""
 
@@ -361,18 +373,6 @@ msgid "Power"
 msgstr ""
 
 msgid "Battery"
-msgstr ""
-
-msgid "Service offline"
-msgstr ""
-
-msgid "framework_tool not found"
-msgstr ""
-
-msgid "Battery: %1%"
-msgstr ""
-
-msgid "Connected"
 msgstr ""
 
 msgid "Service Not Reachable"
@@ -395,9 +395,6 @@ msgstr ""
 msgid "Install:"
 msgstr ""
 
-msgid "Copied"
-msgstr ""
-
 msgid "Copy"
 msgstr ""
 
@@ -405,6 +402,9 @@ msgid "Already installed? Start the service:"
 msgstr ""
 
 msgid "Trying port %1. Change in widget settings if different."
+msgstr ""
+
+msgid "Copied"
 msgstr ""
 
 msgid ""
@@ -476,4 +476,16 @@ msgid "Waiting for sensor data…"
 msgstr ""
 
 msgid "Window:"
+msgstr ""
+
+msgid "Service offline"
+msgstr ""
+
+msgid "framework_tool not found"
+msgstr ""
+
+msgid "Battery: %1%"
+msgstr ""
+
+msgid "Connected"
 msgstr ""
