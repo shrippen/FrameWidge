@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 
 import "Kante"
@@ -34,25 +33,11 @@ ColumnLayout {
             text: i18n("Install:")
         }
 
-        QQC2.TextArea {
-            id: installCmd
+        KanteCommandBox {
             Layout.fillWidth: true
-            readOnly: true
-            wrapMode: TextEdit.WrapAnywhere
-            font: KanteStyle.monoFont(KanteStyle.smallFont.pointSize, false)
             text: "curl -fsSL https://raw.githubusercontent.com/ozturkkl/framework-control/main/install-linux.sh | sudo bash"
-            KanteFieldSkin { control: parent }
-        }
-
-        KantePlasmaButton {
-            Layout.alignment: Qt.AlignRight
-            icon.name: "edit-copy"
-            text: i18n("Copy")
-            onClicked: {
-                installCmd.selectAll();
-                installCmd.copy();
-                installCmd.deselect();
-            }
+            copyText: i18n("Copy")
+            copiedText: i18n("Copied")
         }
 
         KantePlasmaHeading {
@@ -60,13 +45,11 @@ ColumnLayout {
             text: i18n("Already installed? Start the service:")
         }
 
-        QQC2.TextArea {
+        KanteCommandBox {
             Layout.fillWidth: true
-            readOnly: true
-            wrapMode: TextEdit.WrapAnywhere
-            font: KanteStyle.monoFont(KanteStyle.smallFont.pointSize, false)
             text: "sudo systemctl start framework-control && sudo systemctl enable framework-control"
-            KanteFieldSkin { control: parent }
+            copyText: i18n("Copy")
+            copiedText: i18n("Copied")
         }
 
         KanteHud {

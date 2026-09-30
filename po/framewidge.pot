@@ -395,6 +395,9 @@ msgstr ""
 msgid "Install:"
 msgstr ""
 
+msgid "Copied"
+msgstr ""
+
 msgid "Copy"
 msgstr ""
 
