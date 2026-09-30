@@ -37,3 +37,10 @@ Rule 7: Use the body to explain what and why vs. how. Assume the code explains t
         the message must explain the context and reasoning. 
 
 - If the prompt indicates that a bug is being fixed, don't write the fix right away. First write the test. Observe it failing. Then write the fix. And observe the test passing.
+
+## Repository rule
+
+- This repository lives on Gitea (`git.arianw.de`). GitHub is only a push mirror of it.
+- Changes arrive as pull requests only: work on a branch, open a PR, leave the merge to the owner (who merges on Gitea; the mirror follows).
+- Never merge a PR, push to `main` (or any default branch), push tags or publish releases on GitHub. A merge there is overwritten by the next Gitea push.
+- Never force-push a branch that someone else's PR depends on.
