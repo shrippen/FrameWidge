@@ -315,7 +315,8 @@ Item {
                 }
             }
             Text {
-                visible: box.stacked && box.parts.length > 1
+                // Only with two or more non-empty parts: one part would repeat its own value.
+                visible: box.stacked && box.parts.filter(function (v) { return v !== 0 }).length > 1
                 text: "Σ " + chart.format(chart.totalOf(chart.hoverIndex))
                 color: KanteStyle.strongTextColor
                 font: KanteStyle.monoFont(KanteStyle.labelFont().pointSize, true)
