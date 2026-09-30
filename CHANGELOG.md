@@ -6,7 +6,7 @@
 
 - Style setting (System / Kante / Kante Light) for the popup. System is the default and unchanged. Kante 1.7 is vendored in `package/contents/ui/Kante` and `KantePlasma`.
 - Kante styles use Kante elements instead of local ones: `KanteCurveEditor` for the fan curve (live readings as its markers), `KanteLineChart` (hover read-out, axis) and `KanteChip` legend for the Sensors tab, `KanteBandEditor` for the tray color bands in the settings, `KanteCommandBox` for the install and start commands. Sensor colors come from `KanteStyle.dataColor`. System keeps the Canvas editor and chart.
-- `Copied` string (translations: run `po/update.sh`).
+- `Copied` and style-setting strings with German translations (`po/update.sh`).
 
 ### Changed
 
@@ -16,11 +16,11 @@
 
 - `CalibrationDialog` and the preset dialog in Kante: the title strip and buttons are Kante's now (`KanteDialogSkin` themes header and footer); before, the platform's light strip stayed on the dark card.
 - `PowerPage` visibility bindings are boolean (real Kirigami warned about `undefined`).
+- Fan page fits the 432 px popup: hysteresis, rate limits and poll interval stack one per row below 32 grid units (were two per row, clipping the curve editor and spin box arrows).
 - Kante offline state: headings no longer truncate ("INSTA..."), and the state has real side margins (the Loader ignored `Layout.margins`).
 
 ### Known gaps
 
-- The fan page's Hysteresis / Rate limit row is wider than the 432 px popup with a wide font, in every style (seen with real Kirigami, not changed here).
 - Kante's line chart has no time axis; the hover read-out shows the time.
 
 ## 1.2
