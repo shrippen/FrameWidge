@@ -122,12 +122,29 @@ ColumnLayout {
                     font: KanteStyle.monoFont(KanteStyle.labelFont().pointSize, false)
                 }
                 Item { Layout.fillWidth: true }
-                KanteButton {
-                    text: "×"
-                    emphasis: KanteButton.Emphasis.Quiet
-                    size: KanteButton.Size.Small
-                    enabled: ed.bands.length > ed.minBands
-                    onClicked: ed.removeBand(row.index)
+                // A plain square: a KanteButton sets its own font, which kept the glyph tiny.
+                Rectangle {
+                    id: remove
+                    readonly property bool live: ed.bands.length > ed.minBands
+                    Layout.preferredWidth: KanteStyle.unit(32)
+                    Layout.preferredHeight: KanteStyle.unit(32)
+                    color: hover.hovered && live ? KanteStyle.tint1Color : "transparent"
+                    opacity: live ? 1 : 0.4
+                    border.width: activeFocus ? 2 : 0
+                    border.color: KanteStyle.focusColor
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: "×"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "×"
+                        color: KanteStyle.mutedTextColor
+                        font.pixelSize: KanteStyle.unit(20)
+                    }
+                    HoverHandler { id: hover }
+                    TapHandler { enabled: remove.live; onTapped: ed.removeBand(row.index) }
+                    Keys.onSpacePressed: if (live) ed.removeBand(row.index)
+                    Keys.onReturnPressed: if (live) ed.removeBand(row.index)
                 }
             }
 
