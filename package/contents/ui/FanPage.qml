@@ -586,7 +586,7 @@ ColumnLayout {
         standardButtons: QQC2.Dialog.Save | QQC2.Dialog.Cancel
 
         // Kante look of the dialog (nothing in the System style).
-        readonly property Item kanteSkin: KanteDialogSkin { dialog: savePresetDialog }
+        readonly property QtObject kanteSkin: KanteDialogSkin { dialog: savePresetDialog }
 
         onAboutToShow: {
             // index 0 is the "no auto-activation" entry, so offset by one

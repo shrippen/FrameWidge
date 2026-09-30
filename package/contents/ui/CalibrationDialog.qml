@@ -24,7 +24,7 @@ QQC2.Dialog {
     signal calibrationDone(var points)
 
     // Kante look of the dialog (nothing in the System style).
-    readonly property Item kanteSkin: KanteDialogSkin { dialog: calibrationDialog }
+    readonly property QtObject kanteSkin: KanteDialogSkin { dialog: calibrationDialog }
 
     ColumnLayout {
         anchors.fill: parent
