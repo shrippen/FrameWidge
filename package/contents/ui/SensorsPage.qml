@@ -5,8 +5,12 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
+import "Kante"
+import "KantePlasma"
+
 import "js/Api.js" as Api
 import "js/ColorGrading.js" as ColorGrading
+import "js/SensorSeries.js" as SensorSeries
 
 ColumnLayout {
     id: sensorsPage
@@ -25,6 +29,24 @@ ColumnLayout {
         var bg = Kirigami.Theme.backgroundColor;
         return (0.299 * bg.r + 0.587 * bg.g + 0.114 * bg.b) < 0.5;
     }
+
+    // Text for screen readers: the drawn lines carry no information for them.
+    readonly property string chartSummary: {
+        var keys = Object.keys(series);
+        if (keys.length === 0) return i18n("Sensor temperature chart, no data yet");
+        var parts = [];
+        for (var i = 0; i < keys.length; i++) {
+            var pts = series[keys[i]];
+            if (pts.length === 0) continue;
+            parts.push(keys[i] + ": " + pts[pts.length - 1][1].toFixed(1) + "°C");
+        }
+        return i18n("Sensor temperature chart. Latest: %1", parts.join(", "));
+    }
+
+    // History for KanteLineChart (Kante styles); the Canvas draws `series` itself.
+    readonly property var kanteData: SensorSeries.align(series, availableSensors)
+    readonly property var kanteScale: SensorSeries.scale(kanteData.values)
+    readonly property var kanteLabels: kanteData.times.map(function(ts) { return Qt.formatTime(new Date(ts), "hh:mm:ss"); })
 
     Component.onCompleted: {
         seedTelemetryConfig(root.configData);
@@ -103,7 +125,18 @@ ColumnLayout {
 
         Repeater {
             model: selectedSensors
+            KanteChip {
+                required property var modelData
+                visible: KanteStyle.active
+                text: modelData
+                chipColor: sensorColor(modelData)
+            }
+        }
+
+        Repeater {
+            model: selectedSensors
             RowLayout {
+                visible: !KanteStyle.active
                 spacing: 2
                 Rectangle {
                     width: 10; height: 10; radius: 5
@@ -126,24 +159,28 @@ ColumnLayout {
 
         readonly property bool hasData: Object.keys(series).length > 0
 
+        KanteLineChart {
+            anchors.fill: parent
+            visible: KanteStyle.active
+            series: sensorsPage.kanteData.values
+            labels: sensorsPage.kanteLabels
+            minValue: sensorsPage.kanteScale.min
+            maxValue: sensorsPage.kanteScale.max
+            unit: "°"
+            axis: true
+            Accessible.role: Accessible.Graphic
+            Accessible.name: sensorsPage.chartSummary
+        }
+
         Canvas {
             id: sensorChart
             anchors.fill: parent
+            visible: !KanteStyle.active
 
             // The drawn lines carry no information for screen reader users,
             // so summarize the latest reading per sensor as text instead.
             Accessible.role: Accessible.Graphic
-            Accessible.name: {
-                var keys = Object.keys(series);
-                if (keys.length === 0) return i18n("Sensor temperature chart, no data yet");
-                var parts = [];
-                for (var i = 0; i < keys.length; i++) {
-                    var pts = series[keys[i]];
-                    if (pts.length === 0) continue;
-                    parts.push(keys[i] + ": " + pts[pts.length - 1][1].toFixed(1) + "°C");
-                }
-                return i18n("Sensor temperature chart. Latest: %1", parts.join(", "));
-            }
+            Accessible.name: sensorsPage.chartSummary
 
             readonly property int padLeft: 36
             readonly property int padRight: 12
@@ -275,7 +312,7 @@ ColumnLayout {
 
         // Floating readout following the crosshair
         ColumnLayout {
-            visible: sensorChart.hoverInfo !== null && sensorChart.hoverInfo.entries.length > 0
+            visible: !KanteStyle.active && sensorChart.hoverInfo !== null && sensorChart.hoverInfo.entries.length > 0
             x: Math.min(Math.max(sensorChart.hoverX + Kirigami.Units.smallSpacing, 0), parent.width - width)
             y: Kirigami.Units.smallSpacing
             spacing: 0
@@ -330,7 +367,9 @@ ColumnLayout {
         }
     }
 
+    // Kante charts color a line by its index in the sensor list.
     function sensorColor(name) {
+        if (KanteStyle.active) return KanteStyle.dataColor(availableSensors.indexOf(name));
         return ColorGrading.sensorColor(name, darkTheme);
     }
 
@@ -347,6 +386,7 @@ ColumnLayout {
         Repeater {
             model: availableSensors
             QQC2.CheckBox {
+                KanteCheckSkin { control: parent }
                 text: modelData
                 checked: selectedSensors.indexOf(modelData) >= 0
                 onToggled: {
@@ -369,6 +409,7 @@ ColumnLayout {
         PlasmaComponents.Label { text: i18n("Window:") }
 
         QQC2.Slider {
+            KanteSliderSkin { control: parent }
             Layout.fillWidth: true
             from: 30
             to: 1800

@@ -27,6 +27,7 @@ Item {
     property string baseUrl: mockPort.length > 0 ? ("http://127.0.0.1:" + mockPort) : "http://127.0.0.1:1"
     property var configData: null
     property var thermalData: null
+    property bool expanded: false
 
     // Synchronous introspection request against the mock backend's request log.
     function requestCount(method, path) {

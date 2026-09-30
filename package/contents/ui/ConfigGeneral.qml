@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
+import "Kante"
 import "js/ColorGrading.js" as ColorGrading
 
 KCM.SimpleKCM {
@@ -11,6 +12,7 @@ KCM.SimpleKCM {
 
     property alias cfg_servicePort: portField.value
     property alias cfg_pollIntervalMs: pollField.value
+    property alias cfg_visualStyle: styleCombo.currentIndex
     property alias cfg_compactDisplay: displayCombo.currentValue
     property alias cfg_compactShowIcon: showIconCheck.checked
     property alias cfg_compactOverlayScale: overlayScaleField.value
@@ -53,6 +55,13 @@ KCM.SimpleKCM {
     }
 
     Kirigami.FormLayout {
+        QQC2.ComboBox {
+            id: styleCombo
+            Kirigami.FormData.label: i18n("Style:")
+            // Index = KanteStyle.Kind: 0 System, 1 Kante, 2 Kante Light.
+            model: [i18n("System (Plasma theme)"), i18n("Kante"), i18n("Kante Light")]
+        }
+
         QQC2.SpinBox {
             id: portField
             Kirigami.FormData.label: i18n("Service port:")
@@ -116,7 +125,7 @@ KCM.SimpleKCM {
 
         BandEditor {
             id: tempBands
-            visible: displayCombo.currentValue !== "icon"
+            visible: displayCombo.currentValue !== "icon" && !KanteStyle.active
             mode: "temp"
             title: i18n("CPU temperature")
             unit: "°C"
@@ -125,9 +134,15 @@ KCM.SimpleKCM {
             onBandsEdited: generalKcm.onBandsEdited()
         }
 
+        KanteBandSection {
+            visible: displayCombo.currentValue !== "icon" && KanteStyle.active
+            source: tempBands
+            Layout.fillWidth: true
+        }
+
         BandEditor {
             id: rpmBands
-            visible: displayCombo.currentValue !== "icon"
+            visible: displayCombo.currentValue !== "icon" && !KanteStyle.active
             mode: "rpm"
             title: i18n("Fan speed")
             unit: "RPM"
@@ -136,15 +151,27 @@ KCM.SimpleKCM {
             onBandsEdited: generalKcm.onBandsEdited()
         }
 
+        KanteBandSection {
+            visible: displayCombo.currentValue !== "icon" && KanteStyle.active
+            source: rpmBands
+            Layout.fillWidth: true
+        }
+
         BandEditor {
             id: socBands
-            visible: displayCombo.currentValue !== "icon"
+            visible: displayCombo.currentValue !== "icon" && !KanteStyle.active
             mode: "soc"
             title: i18n("Battery charge")
             unit: "%"
             maxValue: 100
             Layout.fillWidth: true
             onBandsEdited: generalKcm.onBandsEdited()
+        }
+
+        KanteBandSection {
+            visible: displayCombo.currentValue !== "icon" && KanteStyle.active
+            source: socBands
+            Layout.fillWidth: true
         }
     }
 }

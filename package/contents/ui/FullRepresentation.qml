@@ -5,6 +5,8 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
+import "Kante"
+import "KantePlasma"
 import "js/ColorGrading.js" as ColorGrading
 
 ColumnLayout {
@@ -34,6 +36,9 @@ ColumnLayout {
 
     spacing: 0
 
+    // Kante colors for every control below (nothing in the System style).
+    KanteScope { target: fullRoot }
+
     // Offline / CLI missing state
     Loader {
         Layout.fillWidth: true
@@ -42,7 +47,10 @@ ColumnLayout {
         visible: active
         opacity: active ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Kirigami.Units.longDuration } }
-        sourceComponent: OfflineHint {}
+        sourceComponent: KanteStyle.active ? kanteOfflineHint : plainOfflineHint
+
+        Component { id: plainOfflineHint; OfflineHint {} }
+        Component { id: kanteOfflineHint; OfflineHintKante {} }
     }
 
     // Main content when online
@@ -77,8 +85,10 @@ ColumnLayout {
                 }
             }
 
-            PlasmaExtras.Heading {
-                level: 4
+            KantePlasmaHeading {
+                // Kante shows the app name as a Rajdhani title, not a section label.
+                level: KanteStyle.active ? 3 : 4
+                pageTitle: true
                 text: "FrameWidge"
             }
 
@@ -115,10 +125,27 @@ ColumnLayout {
 
         Kirigami.Separator { Layout.fillWidth: true }
 
-        // Tab bar
+        // Tab bar. In Kante the notched KanteTabBar replaces it; the QQC2 bar
+        // stays the source of currentIndex.
+        KanteTabBar {
+            id: kanteTabs
+            Layout.fillWidth: true
+            visible: KanteStyle.active
+            model: [i18n("Sensors"), i18n("Fan"), i18n("Power"), i18n("Battery")]
+            onActivated: function(index) { tabBar.currentIndex = index; }
+        }
+
+        // A Binding, not a property binding: KanteTabBar assigns currentIndex itself on a click.
+        Binding {
+            target: kanteTabs
+            property: "currentIndex"
+            value: tabBar.currentIndex
+        }
+
         QQC2.TabBar {
             id: tabBar
             Layout.fillWidth: true
+            visible: !KanteStyle.active
 
             QQC2.TabButton {
                 text: i18n("Sensors")

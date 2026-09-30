@@ -24,3 +24,21 @@ function yToDuty(y, height, padTop, padBottom, dutyMin, dutyMax) {
     var raw = dutyMax - ((y - padTop) / h) * (dutyMax - dutyMin);
     return Math.round(Math.max(dutyMin, Math.min(dutyMax, raw)));
 }
+
+// KanteCurveEditor works on [{x, y}] (temperature, duty); the config and the
+// backend keep [[temp, duty], ...].
+function toKantePoints(points) {
+    var out = [];
+    for (var i = 0; i < points.length; i++) {
+        out.push({ x: points[i][0], y: points[i][1] });
+    }
+    return out;
+}
+
+function fromKantePoints(points) {
+    var out = [];
+    for (var i = 0; i < points.length; i++) {
+        out.push([points[i].x, points[i].y]);
+    }
+    return out;
+}

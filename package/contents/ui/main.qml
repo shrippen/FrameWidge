@@ -4,10 +4,19 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 
+import "Kante"
 import "js/Api.js" as Api
 
 PlasmoidItem {
     id: root
+
+    // Style setting (0 System, 1 Kante, 2 Kante Light) -> KanteStyle.kind.
+    // System draws the plain Plasma popup; see FullRepresentation.qml.
+    Binding {
+        target: KanteStyle
+        property: "kind"
+        value: plasmoid.configuration.visualStyle
+    }
 
     // Service state
     property bool serviceOnline: false
