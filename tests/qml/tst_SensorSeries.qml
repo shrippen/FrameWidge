@@ -33,16 +33,16 @@ TestCase {
         compare(out.values, [[]]);
     }
 
-    function test_scale_roundsToWholeTens() {
+    function test_scale_startsAtATenAndSpansTwenties() {
         var s = SensorSeries.scale([[41, 57], [33]]);
         compare(s.min, 30);
-        compare(s.max, 60);
+        compare(s.max, 70);
     }
 
     function test_scale_flatDataStillHasARange() {
         var s = SensorSeries.scale([[50, 50]]);
         compare(s.min, 50);
-        compare(s.max, 60);
+        compare(s.max, 70);
     }
 
     function test_scale_withoutDataUsesFullRange() {

@@ -166,20 +166,21 @@ Item {
             compare(root.savedPatches.length, 0);
         }
 
-        function test_liveReadingsAreChipsInDataColors() {
+        function test_liveReadingsAreMarkersInDataColors() {
             root.visualStyle = 1;
-            var page = seededFanPage();
-            var chips = findAll(page, isChip, []).filter(function(c) { return c.visible; });
-            compare(chips.length, 2);
-            compare(chips[0].chipColor, KanteStyle.dataColor(0));
-            compare(chips[1].chipColor, KanteStyle.dataColor(1));
-            verify(chips[0].text.indexOf("CPU") >= 0);
+            var kante = find(seededFanPage(), isCurveEditor);
+            compare(kante.markers.length, 2);
+            compare(kante.markers[0].x, 55);
+            compare(kante.markers[0].color, KanteStyle.dataColor(0));
+            compare(kante.markers[1].color, KanteStyle.dataColor(1));
+            verify(kante.markers[0].label.indexOf("CPU") >= 0);
         }
 
-        function test_liveChipsHiddenInSystem() {
-            var page = seededFanPage();
-            var chips = findAll(page, isChip, []).filter(function(c) { return c.visible; });
-            compare(chips.length, 0);
+        function test_curveHandlesAreNoDataColor() {
+            root.visualStyle = 1;
+            for (var i = 0; i < 6; i++) {
+                verify(!Qt.colorEqual(KanteStyle.strongTextColor, KanteStyle.dataColor(i)));
+            }
         }
 
         // --- Sensors chart ---
@@ -211,6 +212,7 @@ Item {
             compare(chart.series[1], [41, 57]);
             compare(chart.minValue, 40);
             compare(chart.maxValue, 60);
+            verify(chart.axis);
             compare(chart.labels.length, 2);
         }
 
@@ -240,6 +242,7 @@ Item {
             verify(b.editor);
             compare(b.editor.bands.map(function(x) { return x.value; }), [0, 60, 80]);
             compare(b.editor.max, 120);
+            verify(b.editor.pick);
         }
 
         function test_bandSectionWritesBackThresholds() {

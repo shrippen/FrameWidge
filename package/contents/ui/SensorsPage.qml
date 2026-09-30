@@ -166,7 +166,8 @@ ColumnLayout {
             labels: sensorsPage.kanteLabels
             minValue: sensorsPage.kanteScale.min
             maxValue: sensorsPage.kanteScale.max
-            unit: "°C"
+            unit: "°"
+            axis: true
             Accessible.role: Accessible.Graphic
             Accessible.name: sensorsPage.chartSummary
         }

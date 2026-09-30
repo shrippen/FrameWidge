@@ -32,8 +32,9 @@ ColumnLayout {
 
     KanteBandEditor {
         Layout.fillWidth: true
-        // The tray text uses these colors, so the swatches cycle through them.
+        // The tray text uses these colors: a swatch opens them as choices.
         colors: [section.tokens.positive, section.tokens.neutral, section.tokens.negative, section.tokens.text, section.tokens.disabled]
+        pick: true
         min: 0
         max: section.source.maxValue
         unit: section.source.unit

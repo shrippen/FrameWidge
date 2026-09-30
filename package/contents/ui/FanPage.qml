@@ -409,13 +409,15 @@ ColumnLayout {
         Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
         spacing: Kirigami.Units.smallSpacing
 
-        // Kante styles: KanteCurveEditor. It has no live markers, so the
-        // readings show as chips below (see the CHANGELOG).
+        // Kante styles: KanteCurveEditor; the live readings are its markers.
         KanteCurveEditor {
             Layout.fillWidth: true
             Layout.preferredHeight: Kirigami.Units.gridUnit * 12
             visible: KanteStyle.active
             points: CurveMath.toKantePoints(fanPage.curvePoints)
+            markers: fanPage.curveLiveMarkers.map(function(m) {
+                return { x: m.temp, label: (m.label !== "" ? m.label + " " : "") + i18n("%1 °C", Math.round(m.temp)), color: m.color !== "" ? m.color : KanteStyle.tagColor };
+            })
             xMax: 100
             yMax: 100
             xUnit: "°"
@@ -425,21 +427,6 @@ ColumnLayout {
             onEdited: function (edited) {
                 fanPage.curvePoints = CurveMath.fromKantePoints(edited);
                 scheduleApply();
-            }
-        }
-
-        Flow {
-            Layout.fillWidth: true
-            visible: KanteStyle.active && fanPage.curveLiveMarkers.length > 0
-            spacing: Kirigami.Units.smallSpacing
-
-            Repeater {
-                model: fanPage.curveLiveMarkers
-                KanteChip {
-                    required property var modelData
-                    text: (modelData.label !== "" ? modelData.label : i18n("CPU Temperature")) + " " + i18n("%1 °C", Math.round(modelData.temp))
-                    chipColor: modelData.color !== "" ? modelData.color : KanteStyle.tagColor
-                }
             }
         }
 

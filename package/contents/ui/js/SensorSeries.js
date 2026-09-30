@@ -41,8 +41,8 @@ function align(series, names) {
     return { values: values, times: times };
 }
 
-// Scale of the temperature axis: the data on screen in whole tens, so lines
-// do not squash into a thin band. Returns { min, max }.
+// Scale of the temperature axis: starts at a whole ten and spans a multiple
+// of 20, so the quarter grid lines land on multiples of 5. Returns { min, max }.
 function scale(values) {
     var lo = Infinity, hi = -Infinity;
     for (var i = 0; i < values.length; i++) {
@@ -54,6 +54,6 @@ function scale(values) {
     if (lo === Infinity) return { min: 0, max: 100 };
 
     var min = Math.floor(lo / 10) * 10;
-    var max = Math.ceil(hi / 10) * 10;
-    return { min: min, max: max > min ? max : min + 10 };
+    var span = Math.max(20, Math.ceil((hi - min) / 20) * 20);
+    return { min: min, max: min + span };
 }
