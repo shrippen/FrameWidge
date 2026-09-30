@@ -123,7 +123,7 @@ Item {
     Binding {
         target: skin.spinBox ? skin.control.contentItem : null
         property: "color"
-        value: KanteStyle.textColor
+        value: skin.control && skin.control.enabled ? KanteStyle.textColor : KanteStyle.disabledTextColor
         when: KanteStyle.themed && skin.spinBox && skin.control.contentItem !== null && skin.control.contentItem.color !== undefined
         restoreMode: Binding.RestoreBindingOrValue
     }
