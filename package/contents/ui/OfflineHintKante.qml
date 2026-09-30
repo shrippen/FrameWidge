@@ -8,9 +8,9 @@ import "KantePlasma"
 // (KanteEmptyState). Same texts and actions as OfflineHint.qml, which the
 // System style keeps.
 ColumnLayout {
-    Layout.fillWidth: true
-    Layout.fillHeight: true
-    Layout.margins: KanteStyle.unit(12)
+    // Anchors, not Layout.*: the Loader that holds this ignores them.
+    anchors.fill: parent
+    anchors.margins: KanteStyle.unit(12)
 
     Item { Layout.fillHeight: true }
 
@@ -29,6 +29,7 @@ ColumnLayout {
         spacing: KanteStyle.unit(8)
 
         KantePlasmaHeading {
+            Layout.fillWidth: true
             level: 4
             text: i18n("Install:")
         }
@@ -41,6 +42,7 @@ ColumnLayout {
         }
 
         KantePlasmaHeading {
+            Layout.fillWidth: true
             level: 4
             text: i18n("Already installed? Start the service:")
         }
