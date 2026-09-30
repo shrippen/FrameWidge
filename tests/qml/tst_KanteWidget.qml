@@ -55,5 +55,15 @@ Item {
             }
             root.visualStyle = 0;
         }
+
+        function test_calibrationDialogTitleStripFollowsTheStyle() {
+            var dialog = createTemporaryObject(calibrationComponent, root);
+            var platformHeader = dialog.header;
+            root.visualStyle = 1;
+            verify(dialog.header !== platformHeader);
+            compare(dialog.header.text, dialog.title);
+            root.visualStyle = 0;
+            verify(dialog.header === platformHeader);
+        }
     }
 }

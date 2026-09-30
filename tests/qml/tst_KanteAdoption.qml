@@ -11,6 +11,7 @@ Item {
 
     property var configData: null
     property var thermalData: null
+    property bool expanded: false
     property bool serviceOnline: true
     property bool cliPresent: true
     property real cpuTemp: 42
