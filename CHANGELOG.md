@@ -10,7 +10,7 @@
 
 ### Changed
 
-- Kante 1.4 -> 1.9 (`scripts/sync-kante.sh`). `KanteDialogSkin` is a QtObject now; the dialogs hold it as one. 1.8: `KanteChip` frames colours near the ground (`nearGround`), `KanteSwatch` sizes; no widget code change needed (no swatch or callout used directly). 1.9: `KanteCheckSkin` labels readable on dark Kante under a light Plasma scheme.
+- Kante 1.4 -> 1.9 (`scripts/sync-kante.sh`). `KanteDialogSkin` is a QtObject now; the dialogs hold it as one. 1.8: `KanteChip` frames colours near the ground (`nearGround`), `KanteSwatch` sizes; no widget code change needed (no swatch or callout used directly). 1.9: `KanteCheckSkin` labels and `KanteFieldSkin` spin box text readable on dark Kante under a light Plasma scheme.
 
 ### Fixed
 
