@@ -14,6 +14,13 @@
             <label>Health poll interval in milliseconds</label>
             <default>2000</default>
         </entry>
+        <!-- Visual style of the popup: 0=System (Plasma theme), 1=Kante, 2=Kante Light (opt-in, see ui/Kante/KanteStyle.qml) -->
+        <entry name="visualStyle" type="Int">
+            <label>Visual style of the popup (0 System, 1 Kante, 2 Kante Light)</label>
+            <default>0</default>
+            <min>0</min>
+            <max>2</max>
+        </entry>
         <entry name="compactDisplay" type="String">
             <label>What to show on the compact tray icon (temp, rpm, soc, icon)</label>
             <default>temp</default>

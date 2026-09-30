@@ -11,6 +11,7 @@ KCM.SimpleKCM {
 
     property alias cfg_servicePort: portField.value
     property alias cfg_pollIntervalMs: pollField.value
+    property alias cfg_visualStyle: styleCombo.currentIndex
     property alias cfg_compactDisplay: displayCombo.currentValue
     property alias cfg_compactShowIcon: showIconCheck.checked
     property alias cfg_compactOverlayScale: overlayScaleField.value
@@ -53,6 +54,13 @@ KCM.SimpleKCM {
     }
 
     Kirigami.FormLayout {
+        QQC2.ComboBox {
+            id: styleCombo
+            Kirigami.FormData.label: i18n("Style:")
+            // Index = KanteStyle.Kind: 0 System, 1 Kante, 2 Kante Light.
+            model: [i18n("System (Plasma theme)"), i18n("Kante"), i18n("Kante Light")]
+        }
+
         QQC2.SpinBox {
             id: portField
             Kirigami.FormData.label: i18n("Service port:")
