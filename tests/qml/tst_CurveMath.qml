@@ -56,4 +56,12 @@ TestCase {
         compare(CurveMath.yToDuty(-1000, h, padTop, padBottom, 0, 100), 100);
         compare(CurveMath.yToDuty(10000, h, padTop, padBottom, 0, 100), 0);
     }
+
+    function test_kantePoints_roundTrip() {
+        var points = [[40, 0], [60, 40], [85, 100]];
+        var kante = CurveMath.toKantePoints(points);
+        compare(kante[1].x, 60);
+        compare(kante[1].y, 40);
+        compare(CurveMath.fromKantePoints(kante), points);
+    }
 }

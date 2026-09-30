@@ -10,6 +10,7 @@ import org.kde.activities as Activities
 import "Kante"
 import "KantePlasma"
 import "js/ColorGrading.js" as ColorGrading
+import "js/CurveMath.js" as CurveMath
 
 ColumnLayout {
     id: fanPage
@@ -53,7 +54,12 @@ ColumnLayout {
         for (var i = 0; i < selectedSensors.length; i++) {
             var name = selectedSensors[i];
             var v = temps[name];
-            if (v !== undefined) markers.push({ label: name, temp: v, color: ColorGrading.sensorColor(name, darkTheme) });
+            if (v === undefined) continue;
+            // Kante charts color series by their index in the sensor list (KanteLineChart).
+            var color = KanteStyle.active
+                ? KanteStyle.dataColor(availableSensors.indexOf(name))
+                : ColorGrading.sensorColor(name, darkTheme);
+            markers.push({ label: name, temp: v, color: color });
         }
         return markers;
     }
@@ -403,8 +409,43 @@ ColumnLayout {
         Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
         spacing: Kirigami.Units.smallSpacing
 
-        // Curve editor placeholder — will be replaced by CurveEditor
+        // Kante styles: KanteCurveEditor. It has no live markers, so the
+        // readings show as chips below (see the CHANGELOG).
+        KanteCurveEditor {
+            Layout.fillWidth: true
+            Layout.preferredHeight: Kirigami.Units.gridUnit * 12
+            visible: KanteStyle.active
+            points: CurveMath.toKantePoints(fanPage.curvePoints)
+            xMax: 100
+            yMax: 100
+            xUnit: "°"
+            yUnit: "%"
+            // The backend takes any duty per point; do not force a rising curve.
+            monotonic: false
+            onEdited: function (edited) {
+                fanPage.curvePoints = CurveMath.fromKantePoints(edited);
+                scheduleApply();
+            }
+        }
+
+        Flow {
+            Layout.fillWidth: true
+            visible: KanteStyle.active && fanPage.curveLiveMarkers.length > 0
+            spacing: Kirigami.Units.smallSpacing
+
+            Repeater {
+                model: fanPage.curveLiveMarkers
+                KanteChip {
+                    required property var modelData
+                    text: (modelData.label !== "" ? modelData.label : i18n("CPU Temperature")) + " " + i18n("%1 °C", Math.round(modelData.temp))
+                    chipColor: modelData.color !== "" ? modelData.color : KanteStyle.tagColor
+                }
+            }
+        }
+
+        // System style: the Canvas editor.
         CurveEditor {
+            visible: !KanteStyle.active
             Layout.fillWidth: true
             Layout.preferredHeight: Kirigami.Units.gridUnit * 12
             points: fanPage.curvePoints
