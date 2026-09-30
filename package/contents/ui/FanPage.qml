@@ -26,6 +26,9 @@ ColumnLayout {
     property var curvePoints: [[40, 0], [60, 40], [75, 80], [85, 100]]
     property var selectedSensors: []
 
+    // Width from which the curve settings fit two label | spin box pairs per row.
+    readonly property real wideControlsWidth: Kirigami.Units.gridUnit * 32
+
     // Per-fan overrides
     property var overrides: []
     property var activeFan: "all" // "all" or fan index
@@ -448,10 +451,14 @@ ColumnLayout {
             }
         }
 
-        // Hysteresis + rate limit share a row - neither needs the full width.
-        RowLayout {
+        // Hysteresis, rate limits, poll: label | spin box pairs, two pairs
+        // per row when wide, one pair per row in the popup (432 px), where
+        // two pairs would push the page past its edge.
+        GridLayout {
             Layout.fillWidth: true
-            spacing: Kirigami.Units.largeSpacing
+            columns: fanPage.width >= fanPage.wideControlsWidth ? 4 : 2
+            columnSpacing: Kirigami.Units.largeSpacing
+            rowSpacing: Kirigami.Units.smallSpacing
 
             PlasmaComponents.Label { text: i18n("Hysteresis (°C):") }
             QQC2.SpinBox {
@@ -478,14 +485,6 @@ ColumnLayout {
                     applyMode();
                 }
             }
-
-            Item { Layout.fillWidth: true }
-        }
-
-        // Down-rate override + poll interval likewise share a row.
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Kirigami.Units.largeSpacing
 
             QQC2.CheckBox {
                 KanteCheckSkin { control: parent }
@@ -522,8 +521,6 @@ ColumnLayout {
                     applyMode();
                 }
             }
-
-            Item { Layout.fillWidth: true }
         }
 
         // Sensor selection

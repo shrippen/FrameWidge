@@ -19,6 +19,15 @@ Item {
     property string baseUrl: "http://127.0.0.1:1" // unused: FanPage no longer fetches directly
 
     property var savedPatches: []
+
+    // Plasma injects i18n(); real label texts give the layout real widths.
+    function i18n(text) {
+        for (var i = 1; i < arguments.length; i++) {
+            text = text.replace("%" + i, arguments[i]);
+        }
+        return text;
+    }
+    function i18nc(context, text) { return i18n.apply(null, Array.prototype.slice.call(arguments, 1)); }
     function saveConfig(patch, callback) {
         savedPatches.push(patch);
         if (callback) callback(true);
@@ -221,6 +230,38 @@ Item {
             fanPage.availableActivities = [{ id: "a1", name: "Gaming" }, { id: "a2", name: "Work" }];
             compare(fanPage.activityNameFor("a2"), "Work");
             compare(fanPage.activityNameFor("missing"), "");
+        }
+
+        // Collects the visible spin boxes below `item` (duck-typed: SpinBox
+        // is the only control with up/down indicators).
+        function spinBoxes(item, found) {
+            for (var i = 0; i < item.children.length; i++) {
+                var c = item.children[i];
+                if (!c.visible) {
+                    continue;
+                }
+                if (c.up !== undefined && c.down !== undefined && c.stepSize !== undefined) {
+                    found.push(c);
+                }
+                spinBoxes(c, found);
+            }
+            return found;
+        }
+
+        // The curve settings must fit the 432 px popup: a spin box past the
+        // right edge clips its arrows and widens the page (curve editor too).
+        function test_curveControls_fitPopupWidth() {
+            var popupWidth = 432;
+            fanPage.width = popupWidth;
+            root.configData = { fan: { mode: "curve", curve: { points: [[40, 0], [85, 100]], hysteresis_c: 2, rate_limit_pct_per_step: 20, poll_ms: 1000, sensors: [] } } };
+            waitForRendering(fanPage);
+
+            var boxes = spinBoxes(fanPage, []);
+            verify(boxes.length >= 4, "hysteresis, rate, down rate, poll");
+            for (var i = 0; i < boxes.length; i++) {
+                var right = boxes[i].mapToItem(fanPage, boxes[i].width, 0).x;
+                verify(right <= popupWidth, "spin box " + i + " ends at " + right);
+            }
         }
     }
 }
