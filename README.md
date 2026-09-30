@@ -80,7 +80,7 @@ Right-click the widget → Configure.
 | Tray display | `temp` | Compact icon content: `temp`, `rpm`, `soc`, `icon` |
 | Style | System | Popup look: System (Plasma theme), Kante, Kante Light |
 
-The popup follows your Plasma theme by default. Kante and Kante Light are opt-in: they use the [Kante](https://github.com/shrippen/shrippen.github.io) QML module, vendored unchanged in `package/contents/ui/Kante` and `KantePlasma` (`scripts/sync-kante.sh` refreshes it). The tray icon and the settings pages keep the Plasma look.
+The popup follows your Plasma theme by default. Kante and Kante Light are opt-in: they use the [Kante](https://github.com/shrippen/shrippen.github.io) QML module, vendored unchanged in `package/contents/ui/Kante` and `KantePlasma` (`scripts/sync-kante.sh` refreshes it). The tray icon keeps the Plasma look; the settings page shows the Kante band editor when it runs in the same Kante style as the popup.
 
 ## Translations
 
