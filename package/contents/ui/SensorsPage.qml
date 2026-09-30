@@ -5,6 +5,9 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
+import "Kante"
+import "KantePlasma"
+
 import "js/Api.js" as Api
 import "js/ColorGrading.js" as ColorGrading
 
@@ -347,6 +350,7 @@ ColumnLayout {
         Repeater {
             model: availableSensors
             QQC2.CheckBox {
+                KanteCheckSkin { control: parent }
                 text: modelData
                 checked: selectedSensors.indexOf(modelData) >= 0
                 onToggled: {
@@ -369,6 +373,7 @@ ColumnLayout {
         PlasmaComponents.Label { text: i18n("Window:") }
 
         QQC2.Slider {
+            KanteSliderSkin { control: parent }
             Layout.fillWidth: true
             from: 30
             to: 1800

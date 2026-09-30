@@ -5,6 +5,9 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
+import "Kante"
+import "KantePlasma"
+
 ColumnLayout {
     id: batteryPage
     spacing: Kirigami.Units.smallSpacing
@@ -154,7 +157,7 @@ ColumnLayout {
     }
 
     // --- Charge Limit Control ---
-    PlasmaExtras.Heading {
+    KantePlasmaHeading {
         Layout.leftMargin: Kirigami.Units.smallSpacing
         level: 5
         text: i18n("Charge Limit")
@@ -170,6 +173,7 @@ ColumnLayout {
         Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
 
         QQC2.CheckBox {
+            KanteCheckSkin { control: parent }
             id: clCheck
             checked: clEnabled
             onToggled: {
@@ -179,6 +183,7 @@ ColumnLayout {
         }
 
         QQC2.Slider {
+            KanteSliderSkin { control: parent }
             Layout.fillWidth: true
             from: 25
             to: 100
@@ -198,7 +203,7 @@ ColumnLayout {
     }
 
     // --- Charge Rate Control ---
-    PlasmaExtras.Heading {
+    KantePlasmaHeading {
         Layout.leftMargin: Kirigami.Units.smallSpacing
         level: 5
         text: i18n("Charge Rate Limit")
@@ -218,6 +223,7 @@ ColumnLayout {
         Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
 
         QQC2.CheckBox {
+            KanteCheckSkin { control: parent }
             checked: rateEnabled
             onToggled: {
                 rateEnabled = checked;
@@ -226,6 +232,7 @@ ColumnLayout {
         }
 
         QQC2.Slider {
+            KanteSliderSkin { control: parent }
             Layout.fillWidth: true
             from: 0.05
             to: 1.0
@@ -257,6 +264,7 @@ ColumnLayout {
         }
 
         QQC2.SpinBox {
+            KanteFieldSkin { control: parent }
             from: 0
             to: 100
             value: socThresholdPct !== undefined ? socThresholdPct : 0
@@ -269,7 +277,7 @@ ColumnLayout {
 
         PlasmaComponents.Label { text: "%" }
 
-        PlasmaComponents.Button {
+        KantePlasmaButton {
             text: i18n("Clear")
             visible: socThresholdPct !== undefined
             onClicked: {

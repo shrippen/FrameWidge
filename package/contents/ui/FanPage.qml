@@ -4,8 +4,11 @@ import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
+
 import org.kde.activities as Activities
 
+import "Kante"
+import "KantePlasma"
 import "js/ColorGrading.js" as ColorGrading
 
 ColumnLayout {
@@ -316,16 +319,19 @@ ColumnLayout {
         Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
 
         QQC2.RadioButton {
+            KanteCheckSkin { control: parent; shape: KanteCheckSkin.Shape.Radio }
             text: i18n("Auto")
             checked: fanMode === "disabled"
             onClicked: { fanMode = "disabled"; applyMode(); }
         }
         QQC2.RadioButton {
+            KanteCheckSkin { control: parent; shape: KanteCheckSkin.Shape.Radio }
             text: i18n("Manual")
             checked: fanMode === "manual"
             onClicked: { fanMode = "manual"; applyMode(); }
         }
         QQC2.RadioButton {
+            KanteCheckSkin { control: parent; shape: KanteCheckSkin.Shape.Radio }
             text: i18n("Curve")
             checked: fanMode === "curve"
             onClicked: { fanMode = "curve"; applyMode(); }
@@ -369,6 +375,7 @@ ColumnLayout {
         PlasmaComponents.Label { text: i18n("Duty:") }
 
         QQC2.Slider {
+            KanteSliderSkin { control: parent }
             Layout.fillWidth: true
             from: 0
             to: 100
@@ -420,6 +427,7 @@ ColumnLayout {
 
             PlasmaComponents.Label { text: i18n("Hysteresis (°C):") }
             QQC2.SpinBox {
+                KanteFieldSkin { control: parent }
                 from: 0
                 to: 20
                 value: hysteresisC
@@ -432,6 +440,7 @@ ColumnLayout {
 
             PlasmaComponents.Label { text: i18n("Rate limit (%/step):") }
             QQC2.SpinBox {
+                KanteFieldSkin { control: parent }
                 from: 1
                 to: 100
                 value: rateLimitPctPerStep
@@ -451,6 +460,7 @@ ColumnLayout {
             spacing: Kirigami.Units.largeSpacing
 
             QQC2.CheckBox {
+                KanteCheckSkin { control: parent }
                 text: i18n("Separate down rate:")
                 checked: rateLimitDownEnabled
                 onToggled: {
@@ -459,6 +469,7 @@ ColumnLayout {
                 }
             }
             QQC2.SpinBox {
+                KanteFieldSkin { control: parent }
                 from: 1
                 to: 100
                 value: rateLimitDownPctPerStep
@@ -472,6 +483,7 @@ ColumnLayout {
 
             PlasmaComponents.Label { text: i18n("Poll (ms):") }
             QQC2.SpinBox {
+                KanteFieldSkin { control: parent }
                 from: 100
                 to: 10000
                 stepSize: 100
@@ -497,6 +509,7 @@ ColumnLayout {
             Repeater {
                 model: availableSensors
                 QQC2.CheckBox {
+                    KanteCheckSkin { control: parent }
                     text: modelData
                     checked: selectedSensors.indexOf(modelData) >= 0
                     onToggled: {
@@ -519,6 +532,7 @@ ColumnLayout {
             PlasmaComponents.Label { text: i18n("Preset:") }
 
             QQC2.ComboBox {
+                KanteFieldSkin { control: parent }
                 id: presetCombo
                 Layout.fillWidth: true
                 model: presets.map(function(p) {
@@ -530,14 +544,14 @@ ColumnLayout {
                 onActivated: function(index) { selectedPresetIndex = index; }
             }
 
-            PlasmaComponents.Button {
+            KantePlasmaButton {
                 icon.name: "dialog-ok-apply"
                 text: i18n("Load")
                 enabled: selectedPresetIndex >= 0
                 onClicked: applyPreset(selectedPresetIndex)
             }
 
-            PlasmaComponents.Button {
+            KantePlasmaButton {
                 icon.name: "document-save"
                 text: i18n("Save as…")
                 onClicked: {
@@ -546,7 +560,7 @@ ColumnLayout {
                 }
             }
 
-            PlasmaComponents.Button {
+            KantePlasmaButton {
                 icon.name: "edit-delete"
                 enabled: selectedPresetIndex >= 0
                 QQC2.ToolTip.text: i18n("Delete preset")
@@ -570,6 +584,9 @@ ColumnLayout {
         title: i18n("Save Fan Curve Preset")
         modal: true
         standardButtons: QQC2.Dialog.Save | QQC2.Dialog.Cancel
+
+        // Kante look of the dialog (nothing in the System style).
+        readonly property Item kanteSkin: KanteDialogSkin { dialog: savePresetDialog }
 
         onAboutToShow: {
             // index 0 is the "no auto-activation" entry, so offset by one
@@ -598,6 +615,7 @@ ColumnLayout {
             }
 
             QQC2.TextField {
+                KanteFieldSkin { control: parent }
                 id: presetNameField
                 Layout.fillWidth: true
                 placeholderText: i18n("Preset name")
@@ -611,6 +629,7 @@ ColumnLayout {
                 PlasmaComponents.Label { text: i18n("Auto-apply on activity:") }
 
                 QQC2.ComboBox {
+                    KanteFieldSkin { control: parent }
                     id: activityCombo
                     Layout.fillWidth: true
                     model: [i18n("(none)")].concat(availableActivities.map(function(a) { return a.name || i18n("(unnamed activity)"); }))

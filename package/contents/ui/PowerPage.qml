@@ -5,6 +5,9 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 
+import "Kante"
+import "KantePlasma"
+
 ColumnLayout {
     id: powerPage
     spacing: Kirigami.Units.smallSpacing
@@ -208,11 +211,13 @@ ColumnLayout {
         spacing: Kirigami.Units.smallSpacing
 
         QQC2.RadioButton {
+            KanteCheckSkin { control: parent; shape: KanteCheckSkin.Shape.Radio }
             text: i18n("AC")
             checked: activeProfile === "ac"
             onClicked: activeProfile = "ac"
         }
         QQC2.RadioButton {
+            KanteCheckSkin { control: parent; shape: KanteCheckSkin.Shape.Radio }
             text: i18n("Battery")
             checked: activeProfile === "battery"
             onClicked: activeProfile = "battery"
@@ -236,6 +241,7 @@ ColumnLayout {
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
+                KanteCheckSkin { control: parent }
                 checked: activeConfig.epp_preference.enabled
                 onToggled: {
                     activeConfig.epp_preference.enabled = checked;
@@ -252,6 +258,7 @@ ColumnLayout {
             }
 
             QQC2.ComboBox {
+                KanteFieldSkin { control: parent }
                 Layout.fillWidth: true
                 model: capabilities && capabilities.available_epp_preferences ? capabilities.available_epp_preferences : []
                 currentIndex: model.indexOf(activeConfig.epp_preference.value)
@@ -270,6 +277,7 @@ ColumnLayout {
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
+                KanteCheckSkin { control: parent }
                 checked: activeConfig.governor.enabled
                 onToggled: {
                     activeConfig.governor.enabled = checked;
@@ -286,6 +294,7 @@ ColumnLayout {
             }
 
             QQC2.ComboBox {
+                KanteFieldSkin { control: parent }
                 Layout.fillWidth: true
                 model: capabilities && capabilities.available_governors ? capabilities.available_governors : []
                 currentIndex: model.indexOf(activeConfig.governor.value)
@@ -304,6 +313,7 @@ ColumnLayout {
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
+                KanteCheckSkin { control: parent }
                 checked: activeConfig.tdp_watts.enabled
                 onToggled: {
                     activeConfig.tdp_watts.enabled = checked;
@@ -320,6 +330,7 @@ ColumnLayout {
             }
 
             QQC2.Slider {
+                KanteSliderSkin { control: parent }
                 Layout.fillWidth: true
                 from: capabilities ? (capabilities.tdp_min_watts || 5) : 5
                 to: capabilities ? (capabilities.tdp_max_watts || 120) : 120
@@ -345,6 +356,7 @@ ColumnLayout {
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
+                KanteCheckSkin { control: parent }
                 checked: activeConfig.thermal_limit_c.enabled
                 onToggled: {
                     activeConfig.thermal_limit_c.enabled = checked;
@@ -355,6 +367,7 @@ ColumnLayout {
             PlasmaComponents.Label { text: i18n("Thermal (°C):") }
 
             QQC2.Slider {
+                KanteSliderSkin { control: parent }
                 Layout.fillWidth: true
                 from: 60
                 to: 100
@@ -380,6 +393,7 @@ ColumnLayout {
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
+                KanteCheckSkin { control: parent }
                 checked: activeConfig.min_freq_mhz.enabled
                 onToggled: {
                     activeConfig.min_freq_mhz.enabled = checked;
@@ -390,6 +404,7 @@ ColumnLayout {
             PlasmaComponents.Label { text: i18n("Min freq (MHz):") }
 
             QQC2.SpinBox {
+                KanteFieldSkin { control: parent }
                 from: capabilities ? (capabilities.frequency_min_mhz || 400) : 400
                 to: capabilities ? (capabilities.frequency_max_mhz || 6000) : 6000
                 stepSize: 100
@@ -410,6 +425,7 @@ ColumnLayout {
             spacing: Kirigami.Units.smallSpacing
 
             QQC2.CheckBox {
+                KanteCheckSkin { control: parent }
                 checked: activeConfig.max_freq_mhz.enabled
                 onToggled: {
                     activeConfig.max_freq_mhz.enabled = checked;
@@ -420,6 +436,7 @@ ColumnLayout {
             PlasmaComponents.Label { text: i18n("Max freq (MHz):") }
 
             QQC2.SpinBox {
+                KanteFieldSkin { control: parent }
                 from: capabilities ? (capabilities.frequency_min_mhz || 400) : 400
                 to: capabilities ? (capabilities.frequency_max_mhz || 6000) : 6000
                 stepSize: 100
