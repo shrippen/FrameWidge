@@ -173,4 +173,67 @@ TestCase {
         compare(ColorGrading.gradeBandColor(true, NaN, bands, colors), colors.text);
         compare(ColorGrading.gradeBandColor(true, 50, [], colors), colors.text);
     }
+
+    // --- KanteBandEditor adapter ---
+
+    readonly property var tokenColors: ({
+        disabled: "#888888", negative: "#da4453", neutral: "#f67400", positive: "#27ae60", text: "#232629"
+    })
+    readonly property var tempBands: [
+        { upTo: 60, color: "positive" }, { upTo: 80, color: "neutral" }, { upTo: null, color: "negative" }
+    ]
+
+    function test_toKanteBands_startsEachBandAtThePreviousThreshold() {
+        var kante = ColorGrading.toKanteBands(tempBands, 0, tokenColors);
+        compare(kante.length, 3);
+        compare(kante[0].value, 0);
+        compare(kante[1].value, 60);
+        compare(kante[2].value, 80);
+        compare(kante[1].color, "#f67400");
+    }
+
+    function test_kanteBands_roundTripKeepsTokens() {
+        var kante = ColorGrading.toKanteBands(tempBands, 0, tokenColors);
+        compare(ColorGrading.fromKanteBands(kante, 0, 120, tokenColors), tempBands);
+    }
+
+    function test_fromKanteBands_customColorBecomesHex() {
+        var kante = [{ value: 0, color: "#123abc" }, { value: 50, color: "#27ae60" }];
+        var bands = ColorGrading.fromKanteBands(kante, 0, 100, tokenColors);
+        compare(bands[0].color, "#123abc");
+        compare(bands[1].color, "positive");
+        compare(bands[1].upTo, null);
+    }
+
+    function test_fromKanteBands_ignoresFirstValue() {
+        var kante = [{ value: 15, color: "#27ae60" }, { value: 50, color: "#f67400" }];
+        compare(ColorGrading.fromKanteBands(kante, 0, 100, tokenColors)[0].upTo, 50);
+    }
+
+    function test_fromKanteBands_thresholdsRiseStrictly() {
+        var kante = [
+            { value: 0, color: "#27ae60" }, { value: 40, color: "#f67400" },
+            { value: 40, color: "#da4453" }, { value: 40, color: "#888888" }
+        ];
+        var bands = ColorGrading.fromKanteBands(kante, 0, 100, tokenColors);
+        compare(bands.map(function(b) { return b.upTo; }), [40, 41, 42, null]);
+    }
+
+    function test_fromKanteBands_dropsRowsBeyondMax() {
+        var kante = [
+            { value: 0, color: "#27ae60" }, { value: 100, color: "#f67400" },
+            { value: 100, color: "#da4453" }, { value: 100, color: "#888888" }
+        ];
+        var bands = ColorGrading.fromKanteBands(kante, 0, 100, tokenColors);
+        compare(bands.map(function(b) { return b.upTo; }), [100, null]);
+    }
+
+    function test_fromKanteBands_acceptsColorObjects() {
+        // KanteBandEditor hands back the color values it was given (Qt color type).
+        var kante = [{ value: 0, color: Qt.color("#27ae60") }, { value: 50, color: Qt.color("#ff0000") }];
+        var bands = ColorGrading.fromKanteBands(kante, 0, 100, tokenColors);
+        compare(bands[0].upTo, 50);
+        compare(bands[0].color, "positive");
+        compare(bands[1].color, "#ff0000");
+    }
 }

@@ -149,3 +149,60 @@ function gradeBandColor(serviceOnline, value, bands, colors) {
     }
     return colors.text; // unreachable for normalized bands, defensive
 }
+
+// --- Adapter for KanteBandEditor ---
+//
+// The config keeps thresholds ("up to N", the last band open-ended);
+// KanteBandEditor edits lower bounds ("from N, until the next row").
+//
+//   config  [ {upTo: 60, positive}, {upTo: 80, neutral}, {upTo: null, negative} ]
+//   Kante   [ {value: 0, green},    {value: 60, orange},  {value: 80, red} ]
+//
+// The first row always starts at `min`; its value is not editable in effect.
+
+function toKanteBands(bands, min, colors) {
+    var out = [];
+    for (var i = 0; i < bands.length; i++) {
+        out.push({
+            value: i === 0 ? min : bands[i - 1].upTo,
+            color: resolveBandColor(bands[i].color, colors)
+        });
+    }
+    return out;
+}
+
+function colorToHex(c) {
+    if (typeof c === "string") return c.toLowerCase();
+    function h(v) {
+        var s = Math.round(v * 255).toString(16);
+        return s.length === 1 ? "0" + s : s;
+    }
+    return "#" + h(c.r) + h(c.g) + h(c.b);
+}
+
+// A color equal to a theme token's color is stored as the token, so it keeps
+// following the color scheme; anything else becomes a fixed #rrggbb.
+function bandColorFor(color, colors) {
+    for (var i = 0; i < bandColorTokens.length; i++) {
+        var token = bandColorTokens[i];
+        if (colors[token] !== undefined && Qt.colorEqual(colors[token], color)) return token;
+    }
+    return colorToHex(color);
+}
+
+// Thresholds end up whole numbers, strictly rising, within [min, max]; a row
+// that cannot fit any more is dropped.
+function fromKanteBands(kanteBands, min, max, colors) {
+    var out = [];
+    var prev = min - 1;
+    for (var i = 0; i < kanteBands.length - 1; i++) {
+        var upTo = Math.min(max, Math.max(prev + 1, Math.round(kanteBands[i + 1].value)));
+        if (upTo <= prev) continue;
+        out.push({ upTo: upTo, color: bandColorFor(kanteBands[i].color, colors) });
+        prev = upTo;
+    }
+    if (kanteBands.length > 0) {
+        out.push({ upTo: null, color: bandColorFor(kanteBands[kanteBands.length - 1].color, colors) });
+    }
+    return out;
+}

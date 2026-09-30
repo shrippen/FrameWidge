@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
+import "Kante"
 import "js/ColorGrading.js" as ColorGrading
 
 KCM.SimpleKCM {
@@ -124,7 +125,7 @@ KCM.SimpleKCM {
 
         BandEditor {
             id: tempBands
-            visible: displayCombo.currentValue !== "icon"
+            visible: displayCombo.currentValue !== "icon" && !KanteStyle.active
             mode: "temp"
             title: i18n("CPU temperature")
             unit: "°C"
@@ -133,9 +134,15 @@ KCM.SimpleKCM {
             onBandsEdited: generalKcm.onBandsEdited()
         }
 
+        KanteBandSection {
+            visible: displayCombo.currentValue !== "icon" && KanteStyle.active
+            source: tempBands
+            Layout.fillWidth: true
+        }
+
         BandEditor {
             id: rpmBands
-            visible: displayCombo.currentValue !== "icon"
+            visible: displayCombo.currentValue !== "icon" && !KanteStyle.active
             mode: "rpm"
             title: i18n("Fan speed")
             unit: "RPM"
@@ -144,15 +151,27 @@ KCM.SimpleKCM {
             onBandsEdited: generalKcm.onBandsEdited()
         }
 
+        KanteBandSection {
+            visible: displayCombo.currentValue !== "icon" && KanteStyle.active
+            source: rpmBands
+            Layout.fillWidth: true
+        }
+
         BandEditor {
             id: socBands
-            visible: displayCombo.currentValue !== "icon"
+            visible: displayCombo.currentValue !== "icon" && !KanteStyle.active
             mode: "soc"
             title: i18n("Battery charge")
             unit: "%"
             maxValue: 100
             Layout.fillWidth: true
             onBandsEdited: generalKcm.onBandsEdited()
+        }
+
+        KanteBandSection {
+            visible: displayCombo.currentValue !== "icon" && KanteStyle.active
+            source: socBands
+            Layout.fillWidth: true
         }
     }
 }
