@@ -10,6 +10,10 @@
 
 ### Changed
 
+- No tab scrolls at the default popup size: the popup is taller (35 grid units, enough for the Fan tab) and each tab scrolls by its own height, not the tallest tab's. The Sensors chart has a fixed height, so the sensor choice and time range show without scrolling.
+- Sensor line colors in the System style are spread by the sensor's position (one hue step of 137.5° each); CPU and Battery no longer share one salmon. Kante styles keep `KanteStyle.dataColor`.
+- Vendored Kante 1.9.1 (readable accent text on the platform colors, visible empty check boxes, round line chart axis steps).
+
 - Kante 1.4 -> 1.9 (`scripts/sync-kante.sh`). `KanteDialogSkin` is a QtObject now; the dialogs hold it as one. 1.8: `KanteChip` frames colours near the ground (`nearGround`), `KanteSwatch` sizes; no widget code change needed (no swatch or callout used directly). 1.9: `KanteCheckSkin` labels and `KanteFieldSkin` spin box text readable on dark Kante under a light Plasma scheme.
 
 ### Fixed

@@ -154,7 +154,7 @@ ColumnLayout {
     // --- Chart ---
     Item {
         Layout.fillWidth: true
-        Layout.fillHeight: true
+        Layout.preferredHeight: Kirigami.Units.gridUnit * 11
         Layout.minimumHeight: Kirigami.Units.gridUnit * 10
 
         readonly property bool hasData: Object.keys(series).length > 0
@@ -369,8 +369,9 @@ ColumnLayout {
 
     // Kante charts color a line by its index in the sensor list.
     function sensorColor(name) {
-        if (KanteStyle.active) return KanteStyle.dataColor(availableSensors.indexOf(name));
-        return ColorGrading.sensorColor(name, darkTheme);
+        var i = availableSensors.indexOf(name);
+        if (KanteStyle.active) return KanteStyle.dataColor(i);
+        return ColorGrading.hslToHex((210 + i * 137.5) % 360, 65, darkTheme ? 68 : 40);
     }
 
     Kirigami.Separator { Layout.fillWidth: true }

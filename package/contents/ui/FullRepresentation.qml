@@ -32,7 +32,8 @@ ColumnLayout {
     Layout.maximumWidth: fixedWidth
     Layout.preferredWidth: fixedWidth
     Layout.minimumHeight: Kirigami.Units.gridUnit * 18
-    Layout.preferredHeight: Kirigami.Units.gridUnit * 28
+    // Tall enough for the tallest tab (Fan: mode, curve, bands), so no tab scrolls by default.
+    Layout.preferredHeight: Kirigami.Units.gridUnit * 35
 
     spacing: 0
 
@@ -187,8 +188,12 @@ ColumnLayout {
             Layout.fillHeight: true
             clip: true
             QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
+            // A StackLayout is as tall as its tallest page, so one long tab made every tab
+            // scroll. Scroll by the page on show: short tabs get no scrollbar.
+            contentHeight: pages.children[pages.currentIndex] ? pages.children[pages.currentIndex].implicitHeight : 0
 
             StackLayout {
+                id: pages
                 // availableWidth (not parent.width) accounts for the
                 // vertical scrollbar's reserved space when it's visible, so
                 // it no longer overlaps the last few pixels of sliders/
