@@ -21,53 +21,55 @@ import mock_backend as mock  # noqa: E402
 
 WORLD = json.loads((HERE / "world.json").read_text(encoding="utf-8"))
 HW = WORLD["hardware"]
+RENDER = HW["render"]
 START = time.time()
 
 
 def load(t):
-    """Render load 0..1: a job that started 20 minutes ago, with small bursts."""
-    phase = (t - START + 1200) / 60.0
-    return max(0.15, min(1.0, 0.55 + 0.35 * math.sin(phase / 6.0) + 0.1 * math.sin(phase * 1.7)))
+    """Render load 0..1: a job that started a while ago (world: hardware.render), with small bursts."""
+    phase = (t - START + RENDER["started_min"] * 60) / 60.0
+    return max(RENDER["floor"], min(1.0, RENDER["base"] + RENDER["swing"] * math.sin(phase / 6.0)
+                                    + RENDER["burst"] * math.sin(phase * 1.7)))
 
 
 def temps(t):
     x = load(t)
-    return {"APU": round(48 + 38 * x, 1), "CPU": round(46 + 40 * x, 1),
-            "Battery": round(31 + 4 * x, 1), "SSD": round(38 + 9 * x, 1)}
+    return {name: round(idle + rise * x, 1) for name, (idle, rise) in HW["sensors"].items()}
 
 
 def fan_rpm(t):
-    return int(1800 + 3600 * load(t))
+    idle, rise = HW["fan"]["rpm"]
+    return int(idle + rise * load(t))
 
 
 def thermal():
     t = time.time()
-    return {"temps": temps(t), "fans": [{"name": "Fan 1", "rpm": fan_rpm(t)}]}
+    return {"temps": temps(t), "fans": [{"name": HW["fan"]["name"], "rpm": fan_rpm(t)}]}
 
 
 def history():
     now = time.time()
-    return [{"ts_ms": int((now - s) * 1000), "temps": temps(now - s)} for s in range(1800, -1, -10)]
+    return [{"ts_ms": int((now - s) * 1000), "temps": temps(now - s)} for s in range(HW["history_min"] * 60, -1, -10)]
 
 
 mock.INITIAL_CONFIG["fan"]["mode"] = "curve"
 mock.INITIAL_CONFIG["fan"]["curve"]["points"] = HW["fan_curve"]
-mock.INITIAL_CONFIG["fan"]["curve"]["sensors"] = ["APU"]
+mock.INITIAL_CONFIG["fan"]["curve"]["sensors"] = [HW["fan"]["sensor"]]
 mock.INITIAL_CONFIG["battery"]["charge_limit_max_pct"] = {"enabled": True, "value": HW["charge_limit"]}
 for profile in ("ac", "battery"):
     mock.INITIAL_CONFIG["power"][profile]["epp_preference"]["enabled"] = True
-mock.INITIAL_CONFIG["power"]["ac"]["tdp_watts"] = {"enabled": True, "value": 28}
+mock.INITIAL_CONFIG["power"]["ac"]["tdp_watts"] = {"enabled": True, "value": HW["tdp_watts"]}
 mock.STATE.reset()
 
 mock.POWER["battery"].update({
     "percentage": HW["battery_percent"], "ac_present": True, "charging": True,
-    "present_rate_ma": 2100, "present_voltage_mv": 16800, "cycle_count": HW["cycle_count"],
-    "design_capacity_mah": round(HW["design_capacity_mwh"] / 15.4),
-    "last_full_charge_capacity_mah": round(HW["full_capacity_mwh"] / 15.4),
+    "present_rate_ma": HW["charging"]["rate_ma"], "present_voltage_mv": HW["charging"]["voltage_mv"], "cycle_count": HW["cycle_count"],
+    "design_capacity_mah": round(HW["design_capacity_mwh"] / HW["nominal_voltage"]),
+    "last_full_charge_capacity_mah": round(HW["full_capacity_mwh"] / HW["nominal_voltage"]),
     "charge_limit_max_pct": HW["charge_limit"]})
-mock.POWER["power_control"]["current_state"].update({"tdp_limit_watts": 28, "epp_preference": "balance_performance"})
+mock.POWER["power_control"]["current_state"].update({"tdp_limit_watts": HW["tdp_watts"], "epp_preference": HW["epp"]})
 mock.SYSTEM.update({"cpu": HW["cpu"], "hostname": WORLD["studio"]["laptop"], "model": HW["model"]})
-mock.LOGS_TEXT = "framework-control demo\nfan curve active (APU)\ncharge limit %d %%\n" % HW["charge_limit"]
+mock.LOGS_TEXT = "".join(line.replace("{charge_limit}", str(HW["charge_limit"])) + "\n" for line in HW["log"])
 
 PLAN = Path(sys.argv[2]).read_text(encoding="utf-8") if len(sys.argv) > 2 else None
 _get = mock.Handler.do_GET
