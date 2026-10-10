@@ -1,0 +1,43 @@
+# Checks on every pull request and on main: tests/run_all.sh (QML unit tests against the mock
+# backend, package and lint checks, the widget loaded in plasmawindowed offscreen).
+#
+# Arch Linux container: current Qt 6, KF6 and Plasma from the packages, as on the development
+# machine. The smoke tests skip a check whose tool is missing; the step below fails instead, so
+# a missing package cannot turn the run green.
+#
+# This same file lives in .gitea/workflows and .github/workflows: Gitea reads only .gitea/workflows
+# as soon as it exists, GitHub only ever reads .github/workflows. Kept as two files, so a change
+# here is a reminder to update the other one too.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# One runner works the queue in order. A newer push to the same branch or PR replaces the
+# older run instead of queueing behind it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    timeout-minutes: 30
+    steps:
+      - name: Tools
+        run: |
+          pacman -Syu --noconfirm --needed git nodejs python qt6-declarative qt6-5compat \
+            kirigami libplasma plasma-workspace kpackage kcmutils plasma-activities
+          # qmllint and qmltestrunner of Qt 6 live here; the smoke test looks them up on PATH.
+          export PATH="/usr/lib/qt6/bin:$PATH" && echo /usr/lib/qt6/bin >> "$GITHUB_PATH"
+          for t in qmltestrunner qmllint kpackagetool6 plasmawindowed; do
+            command -v "$t" >/dev/null || { echo "::error::$t missing"; exit 1; }
+          done
+      - uses: actions/checkout@v4
+      - name: Tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: tests/run_all.sh
