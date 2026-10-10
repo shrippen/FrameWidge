@@ -29,7 +29,7 @@ jobs:
     steps:
       - name: Tools
         run: |
-          pacman -Syu --noconfirm --needed git nodejs python qt6-declarative qt6-5compat \
+          pacman -Syu --noconfirm --needed git nodejs python dbus qt6-declarative qt6-5compat \
             kirigami libplasma plasma-workspace kpackage kcmutils plasma-activities
           # qmllint and qmltestrunner of Qt 6 live here; the smoke test looks them up on PATH.
           export PATH="/usr/lib/qt6/bin:$PATH" && echo /usr/lib/qt6/bin >> "$GITHUB_PATH"
@@ -37,7 +37,12 @@ jobs:
             command -v "$t" >/dev/null || { echo "::error::$t missing"; exit 1; }
           done
       - uses: actions/checkout@v4
+      # plasmawindowed needs a session bus (without one it exits with status 1). Services it
+      # starts over D-Bus (kactivitymanagerd, the portal, ksecretd) outlive it and inherit its
+      # output: into a file, so no open pipe keeps the step waiting.
       - name: Tests
         env:
           QT_QPA_PLATFORM: offscreen
-        run: tests/run_all.sh
+        run: |
+          rc=0; dbus-run-session -- tests/run_all.sh > tests.log 2>&1 || rc=$?
+          cat tests.log; exit $rc
