@@ -14,13 +14,13 @@
 - System Info page: the web UI link is gone (framewidged has none).
 - `uninstall.sh` offers to remove the service too.
 - No tab scrolls at the default popup size: the popup is taller (35 grid units, enough for the Fan tab) and each tab scrolls by its own height, not the tallest tab's. The Sensors chart has a fixed height, so the sensor choice and time range show without scrolling.
-- Sensor line colors in the System style are spread by the sensor's position (one hue step of 137.5° each); CPU and Battery no longer share one salmon. Kante styles keep `KanteStyle.dataColor`.
+- Sensor line colors in the System style are spread by the sensor's position (one hue step of 137.5° each); CPU and Battery no longer share one salmon.
 
 ### Added
 
-- Style setting (System / Kante / Kante Light) for the popup. System is the default and unchanged. Kante 1.13 is vendored in `package/contents/ui/Kante` and `KantePlasma`.
-- Kante styles use Kante elements instead of local ones: `KanteCurveEditor` for the fan curve (live readings as its markers), `KanteLineChart` (hover read-out, axis) and `KanteChip` legend for the Sensors tab, `KanteBandEditor` for the tray color bands in the settings, `KanteCommandBox` for the install and start commands. Sensor colors come from `KanteStyle.dataColor`. System keeps the Canvas editor and chart.
-- `Copied` and style-setting strings with German translations (`po/update.sh`).
+- Style setting (System / Kante / Kante Light) for the popup. System is the default. Kante 1.13 is vendored in `package/contents/ui/Kante` and `KantePlasma`.
+- The Kante styles use Kante elements: `KanteCurveEditor` for the fan curve (live readings as its markers), `KanteLineChart` (hover read-out, axis) and `KanteChip` legend for the Sensors tab, `KanteBandEditor` for the tray color bands in the settings, `KanteCommandBox` for the install and start commands. Sensor colors come from `KanteStyle.dataColor`. System keeps the Canvas editor and chart.
+- German translation of the widget.
 
 ### Fixed
 
