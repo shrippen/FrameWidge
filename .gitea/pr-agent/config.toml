@@ -17,8 +17,8 @@ enable_review_labels_security = false
 extra_instructions = """
 You review pull requests of FrameWidge, a KDE Plasma 6 tray widget (QML,
 Kirigami, KantePlasma) for Framework laptops: fan control, power
-management, battery and sensor telemetry through the REST API of
-framework-control.
+profile, battery and sensor telemetry through its own service framewidged
+(Rust, system D-Bus, polkit; service/).
 The PRs are written by an AI agent; review them as a careful second
 reader, not as their author.
 
@@ -26,8 +26,9 @@ Report only findings that matter:
 - Bugs: a concrete input or state and the wrong result or crash it gives.
   Name file and line.
 - Hardware: fan curves, duty or power settings that can overheat the
-  machine, or leave a fan in manual mode when the API fails or is gone.
-- API calls without error handling or timeout; tokens in logs.
+  machine, or leave a fan in manual mode when the service stops or
+  framework_tool fails.
+- D-Bus calls without error handling; writes without the polkit check.
 - Kante copies (package/contents/ui/Kante*) edited instead of synced;
   raw colours or sizes instead of Kante roles.
 - Missing tests for new behaviour.
@@ -36,9 +37,4 @@ Report only findings that matter:
 Skip style, naming and formatting (the tests run separately), praise, and
 guesses you cannot back with the diff. When you find nothing that
 matters, say so in one line.
-"""
-
-[pr_code_suggestions]
-extra_instructions = """
-Only suggestions that fix a bug or a missing check; no style.
 """
