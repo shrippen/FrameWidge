@@ -15,7 +15,6 @@
 - `uninstall.sh` offers to remove the service too.
 - No tab scrolls at the default popup size: the popup is taller (35 grid units, enough for the Fan tab) and each tab scrolls by its own height, not the tallest tab's. The Sensors chart has a fixed height, so the sensor choice and time range show without scrolling.
 - Sensor line colors in the System style are spread by the sensor's position (one hue step of 137.5° each); CPU and Battery no longer share one salmon. Kante styles keep `KanteStyle.dataColor`.
-- Kante updated from 1.4 to 1.13 (`scripts/sync-kante.sh`): readable accent text on the platform colors, visible empty check boxes, readable labels and spin box text in dark Kante under a light Plasma scheme, round line chart axis steps.
 
 ### Added
 
