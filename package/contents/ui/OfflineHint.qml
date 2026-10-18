@@ -44,7 +44,7 @@ ColumnLayout {
         opacity: 0.7
         text: {
             if (!root.serviceOnline)
-                return i18n("The framework-control backend service is not running or not installed.\n\nInstall it with the command below, or start it if already installed.");
+                return i18n("The FrameWidge service (framewidged) is not running or not installed.\n\nInstall it with the command below, or start it if already installed.");
             if (!root.cliPresent)
                 return i18n("The service is running but cannot find framework_tool.\nCheck the service logs for details.");
             return "";
@@ -71,7 +71,7 @@ ColumnLayout {
             readOnly: true
             wrapMode: TextEdit.WrapAnywhere
             font.family: "monospace"
-            text: "curl -fsSL https://raw.githubusercontent.com/ozturkkl/framework-control/main/install-linux.sh | sudo bash"
+            text: "curl -fsSL https://raw.githubusercontent.com/shrippen/FrameWidge/main/install.sh | bash"
             background: Rectangle {
                 color: Kirigami.Theme.alternateBackgroundColor
                 radius: 4
@@ -108,7 +108,7 @@ ColumnLayout {
             Layout.fillWidth: true
             readOnly: true
             font.family: "monospace"
-            text: "sudo systemctl start framework-control && sudo systemctl enable framework-control"
+            text: "sudo systemctl enable --now framewidged"
             wrapMode: TextEdit.WrapAnywhere
             background: Rectangle {
                 color: Kirigami.Theme.alternateBackgroundColor

@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FrameWidge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 17:31+0000\n"
+"POT-Creation-Date: 2026-10-18 11:56+0200\n"
 "Language-Team: German\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
@@ -222,9 +222,6 @@ msgstr "framework_tool:"
 msgid "Telemetry poll (ms):"
 msgstr "Telemetrie-Abfrage (ms):"
 
-msgid "Web UI:"
-msgstr "Weboberfläche:"
-
 msgid "Debug"
 msgstr "Fehlersuche"
 
@@ -389,6 +386,18 @@ msgstr "Energie"
 msgid "Battery"
 msgstr "Akku"
 
+msgid "Service offline"
+msgstr "Dienst offline"
+
+msgid "framework_tool not found"
+msgstr "framework_tool nicht gefunden"
+
+msgid "Battery: %1%"
+msgstr "Akku: %1 %"
+
+msgid "Connected"
+msgstr "Verbunden"
+
 msgid "Service Not Reachable"
 msgstr "Dienst nicht erreichbar"
 
@@ -396,11 +405,11 @@ msgid "framework_tool Not Found"
 msgstr "framework_tool nicht gefunden"
 
 msgid ""
-"The framework-control backend service is not running or not installed.\n"
+"The FrameWidge service (framewidged) is not running or not installed.\n"
 "\n"
 "Install it with the command below, or start it if already installed."
 msgstr ""
-"Der Hintergrunddienst framework-control läuft nicht oder ist nicht "
+"Der FrameWidge-Dienst (framewidged) läuft nicht oder ist nicht "
 "installiert.\n"
 "\n"
 "Installiere ihn mit dem Befehl unten oder starte ihn, falls er schon "
@@ -419,15 +428,15 @@ msgstr "Installieren:"
 msgid "Copy"
 msgstr "Kopieren"
 
+msgid "Copied"
+msgstr "Kopiert"
+
 msgid "Already installed? Start the service:"
 msgstr "Schon installiert? Dienst starten:"
 
 msgid "Trying port %1. Change in widget settings if different."
 msgstr ""
 "Versuche Port %1. Falls er anders ist, in den Widget-Einstellungen ändern."
-
-msgid "Copied"
-msgstr "Kopiert"
 
 msgid ""
 "Whether the laptop is running on AC power or battery. Power profiles below "
@@ -509,14 +518,5 @@ msgstr "Warte auf Sensordaten …"
 msgid "Window:"
 msgstr "Zeitraum:"
 
-msgid "Service offline"
-msgstr "Dienst offline"
-
-msgid "framework_tool not found"
-msgstr "framework_tool nicht gefunden"
-
-msgid "Battery: %1%"
-msgstr "Akku: %1 %"
-
-msgid "Connected"
-msgstr "Verbunden"
+#~ msgid "Web UI:"
+#~ msgstr "Weboberfläche:"

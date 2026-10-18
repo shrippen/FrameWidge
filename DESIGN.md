@@ -8,19 +8,41 @@ This document records the architectural, visual, and UX decisions made for Frame
 
 ## Architecture
 
-### Client-only plasmoid, no backend fork
+### QML widget plus own service (framewidged)
 
-The plasmoid is a pure QML frontend. It talks to the existing [framework-control](https://github.com/ozturkkl/framework-control) REST API on `http://127.0.0.1:<port>/api/`. The Rust systemd service handles all privileged operations (EC access via `framework_tool`, fan curve enforcement, power management, telemetry collection).
+```
+┌──────────────┐  HTTP 127.0.0.1:30913  ┌──────────────────────────────┐
+│ Plasma widget│ ─────────────────────▶ │ framewidged (Rust, root)     │
+│ (pure QML)   │   GET/POST /api/*      │  loops: fan, battery, power, │
+└──────────────┘                        │         telemetry            │
+                                        │  drivers: framework_tool→EC, │
+                                        │           cpufreq sysfs      │
+                                        └──────────────────────────────┘
+```
 
-**Rationale**: The backend is MIT-licensed, stable, and already packaged (AUR, nixpkgs, install script). Forking it would duplicate maintenance without adding value. If API changes are needed in the future, a fork can be introduced then.
+The plasmoid is a pure QML frontend. Everything privileged runs in `framewidged` (`service/`), a small Rust systemd service: EC access via `framework_tool`, fan curve enforcement, charge limits, cpufreq power profiles, telemetry history.
 
-### No C++ / CMake build step
+**Until 1.2** the widget used the REST API of [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk. framework-control 0.5.5 (October 2026) moved the fan settings into profiles and the widget's fan writes were silently dropped. Upstream takes no PRs, its API changes with its web UI, and the part FrameWidge needs is small and stable: the `framework_tool` calls and output parsers, the cpufreq sysfs files and the curve state machine (all untouched upstream since July 2026). So the service carries that part itself, ported from framework-control (MIT, credited in LICENSE and the source files), and keeps the API schema the widget already spoke.
 
-The plasmoid is a pure QML package installed via `kpackagetool6`. No native compilation needed. This keeps the install trivial and avoids build-time dependencies.
+The EC stays behind `framework_tool` (FrameworkComputer/framework-system, BSD-3): Framework's own tool knows the per-model EC commands; talking to `/dev/cros_ec` directly would make this project responsible for that.
+
+What framewidged leaves out compared to framework-control: web UI, self-update, battery history, fan profiles (the widget has its own presets), TDP/thermal limits via ryzenadj (Windows-only upstream).
+
+### No C++ / CMake build step for the widget
+
+The plasmoid is a pure QML package installed via `kpackagetool6`. The service is a separate binary: release builds download it from the GitHub release (static musl build), the `main` channel builds it with cargo.
 
 ### HTTP via XMLHttpRequest, not DataEngine
 
-Plasma 5's `executable` DataEngine is deprecated in Plasma 6. Since the backend already exposes a REST API on loopback, `XMLHttpRequest` in QML is the natural choice. CORS is not a blocker because QML is not a browser origin.
+Plasma 5's `executable` DataEngine is deprecated in Plasma 6. The service exposes a REST API on loopback, so `XMLHttpRequest` in QML is the natural choice. CORS is not a blocker because QML is not a browser origin.
+
+### Loopback API safety
+
+Every local process can reach the port, web pages in a browser too. framewidged answers a POST only with `Content-Type: application/json` (a page cannot send that cross-site without a CORS preflight, which is never answered) and only when the Host header names the loopback address (blocks DNS rebinding).
+
+### Fan safety
+
+`ExecStopPost=framewidged --restore-fan` hands the fans back to the EC's own curve whenever the service stops or crashes, so a fan never stays at a fixed duty without its control loop.
 
 ---
 
@@ -29,10 +51,9 @@ Plasma 5's `executable` DataEngine is deprecated in Plasma 6. Since the backend 
 | Priority | Port | Source |
 |----------|-------|--------|
 | 1 | User-configured (`plasmoid.configuration.servicePort`) | Widget settings dialog |
-| 2 | `30912` | AUR/release build default (baked at compile time) |
-| 3 | `8090` | Dev default from `.env` |
+| 2 | `30913` | framewidged default (`--port`) |
 
-The health poll tries the configured port. The default is `30912` to match the AUR package.
+The health poll tries the configured port. The default is `30913`, one above framework-control's `30912`, so a widget never reads a leftover framework-control by accident. Widgets on the old default move to the new one by themselves (KConfig stores only changed values).
 
 Polling only runs while the popup is open; the service logs every request to the journal, so background polling (live tray overlay with the popup closed) is opt-in via the `debugBackgroundPolling` setting on the System Info KCM page.
 
@@ -143,17 +164,18 @@ All web-facing assets follow [shrippen/shrippen.github.io](https://github.com/sh
 
 ### install.sh
 
-Wrapper script that installs both backend and plasmoid:
+Wrapper script that installs both service and plasmoid:
 
 1. Check prerequisites (`kpackagetool6`, `curl`)
-2. If `framework-control.service` is not running, offer to install via the official upstream script
-3. Clone/download this repo, install plasmoid via `kpackagetool6 -t Plasma/Applet -i package/`
+2. Download this repo at the chosen channel's tag or `main`
+3. Service: the release asset `framewidged-x86_64-linux` (or a cargo build on `main`) to `/usr/local/bin`, `service/framewidged.service` to `/etc/systemd/system`, `framework_tool` from FrameworkComputer/framework-system to `/usr/local/lib/framewidge` unless one is on PATH. A framework-control unit is disabled; `Conflicts=` stops it. framewidged imports `/etc/framework-control/config.json` on its first start (fan settings of the active profile, battery, power, telemetry).
+4. Install plasmoid via `kpackagetool6 -t Plasma/Applet -i package/`
 
-Backend install requires `sudo`; plasmoid install does not.
+Service install requires `sudo`; plasmoid install does not.
 
 ### Uninstall
 
-`uninstall.sh` removes only the plasmoid. Backend removal is documented separately (upstream's `uninstall-linux.sh`).
+`uninstall.sh` removes the plasmoid and, if confirmed, the service with its settings (`/var/lib/framewidged`).
 
 ### Release channels
 
@@ -192,8 +214,9 @@ These features from the web UI are intentionally excluded:
 ## Licensing
 
 - **This project**: MIT
-- **Backend**: MIT ([ozturkkl/framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk)
-- **No code copied** from the Svelte frontend — the QML is written from scratch against the public API
+- **Service** (`service/`): MIT. The `framework_tool` parsers, the cpufreq driver and the fan curve state machine are ported from [ozturkkl/framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk (MIT); each such file names its source.
+- **framework_tool**: BSD-3-Clause ([FrameworkComputer/framework-system](https://github.com/FrameworkComputer/framework-system)), downloaded by install.sh, not bundled
+- **No code copied** from the Svelte frontend — the QML is written from scratch
 - **Credit** to the original author in LICENSE and README
 - Upstream does not accept PRs — this is an independent project
 
@@ -212,5 +235,4 @@ These features from the web UI are intentionally excluded:
 | GET | `/api/system` | ConfigSystemInfo KCM page (CPU, memory, OS) |
 | GET | `/api/versions` | ConfigSystemInfo KCM page (BIOS, mainboard, tool version) |
 | GET | `/api/logs` | ConfigSystemInfo KCM page (plain text, last 500 lines) |
-| GET | `/api/update/check` | ConfigSystemInfo KCM page (optional) |
-| GET | `/api/framework_tool/versions` | ConfigSystemInfo KCM page (optional) |
+The schema of `/api/config` is `Config` in `service/src/config.rs`; a POST is a partial patch (objects merge, everything else replaces), validated before it is saved. Settings live in `/var/lib/framewidged/config.json`.

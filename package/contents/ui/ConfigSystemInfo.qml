@@ -94,32 +94,6 @@ KCM.SimpleKCM {
 
         Kirigami.Separator { Layout.fillWidth: true }
 
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Kirigami.Units.smallSpacing
-
-            QQC2.Label {
-                text: i18n("Web UI:")
-            }
-            QQC2.Label {
-                text: "http://127.0.0.1:" + plasmoid.configuration.servicePort
-                textFormat: Text.RichText
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Qt.openUrlExternally(page.baseUrl)
-                }
-            }
-            Item { Layout.fillWidth: true }
-            QQC2.Label {
-                text: '<a href="https://github.com/ozturkkl/framework-control">framework-control on GitHub</a>'
-                textFormat: Text.RichText
-                onLinkActivated: function(link) { Qt.openUrlExternally(link); }
-            }
-        }
-
-        Kirigami.Separator { Layout.fillWidth: true }
-
         Kirigami.FormLayout {
             Layout.fillWidth: true
 

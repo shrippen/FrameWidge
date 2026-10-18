@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Demo stand-in for framework-control: tests/fixtures/mock_backend.py with the laptop of the
+"""Demo stand-in for framewidged (the FrameWidge service): tests/fixtures/mock_backend.py with the laptop of the
 shrippen demo world (Studio Weber's editing laptop rendering a rough cut, see demo/world.json).
 
 Temperatures and fan follow a render job that ramps up and down, the history covers the last

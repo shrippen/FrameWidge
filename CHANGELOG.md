@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Changed
+
+- **Own service instead of framework-control.** framework-control 0.5.5 moved the fan settings into profiles; the Fan tab could no longer read or change them. FrameWidge now brings its own backend, `framewidged` (Rust, `service/`): fan curve and manual duty (also per fan), charge limit and charge rate, AC/battery power profiles (governor, EPP, frequency limits), sensor history. It talks to the EC through Framework's `framework_tool`, like framework-control did.
+- `install.sh` installs `framewidged` (release binary, or a cargo build on the `main` channel) and `framework_tool` if missing, and stops and disables framework-control. On its first start framewidged takes over `/etc/framework-control/config.json` (fan settings of the active profile, calibration of the first fan, battery, power, telemetry).
+- Default service port 30913 (was framework-control's 30912). Widgets on the old default follow by themselves; a port set by hand must be changed in the settings.
+- When the service stops or crashes, the fans go back to the firmware's own curve.
+- System Info page: the web UI link is gone (framewidged has none).
+- `uninstall.sh` offers to remove the service too.
+
 ### Added
 
 - Style setting (System / Kante / Kante Light) for the popup. System is the default and unchanged. Kante 1.9 is vendored in `package/contents/ui/Kante` and `KantePlasma`.

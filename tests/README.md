@@ -17,7 +17,7 @@ The pages (`FanPage`, `PowerPage`, `BatteryPage`, `SensorsPage`) use an unqualif
 
 `i18n()` is injected by Plasma and undefined in `qmltestrunner`. The resulting `ReferenceError: i18n is not defined` warnings are harmless. A real failure is a `FAIL!` line.
 
-`tst_Api.qml` and `tst_SensorsPageLogic.qml` make real HTTP calls. `run_unit_tests.sh` starts `tests/fixtures/mock_backend.py` (stdlib-only, emulates the used subset of the framework-control API) and writes its port to `tests/.runtime/mock_port.txt` (gitignored). QML has no `Qt.getenv()`, hence the file. Without it, network tests `skip()`.
+`tst_Api.qml` and `tst_SensorsPageLogic.qml` make real HTTP calls. `run_unit_tests.sh` starts `tests/fixtures/mock_backend.py` (stdlib-only, emulates the used subset of the framewidged API) and writes its port to `tests/.runtime/mock_port.txt` (gitignored). QML has no `Qt.getenv()`, hence the file. Without it, network tests `skip()`.
 
 Test-only routes of the mock:
 

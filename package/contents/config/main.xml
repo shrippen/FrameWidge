@@ -7,8 +7,8 @@
 
     <group name="General">
         <entry name="servicePort" type="Int">
-            <label>Port of the framework-control service</label>
-            <default>30912</default>
+            <label>Port of the FrameWidge service (framewidged)</label>
+            <default>30913</default>
         </entry>
         <entry name="pollIntervalMs" type="Int">
             <label>Health poll interval in milliseconds</label>

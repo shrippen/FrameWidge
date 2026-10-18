@@ -4,7 +4,7 @@
 
 KDE Plasma 6 tray widget for [Framework Laptops](https://frame.work): fan control, power management, battery and sensor telemetry.
 
-> **Not a fork.** Independent frontend for the REST API of [ozturkkl/framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk.
+> Comes with its own small service, `framewidged`, which talks to the laptop's embedded controller through Framework's `framework_tool`. Parts of it are ported from [ozturkkl/framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk, which FrameWidge used as its backend up to 1.2.
 
 ## Features
 
@@ -20,11 +20,11 @@ KDE Plasma 6 tray widget for [Framework Laptops](https://frame.work): fan contro
 - Framework Laptop 13 or 16 (AMD/Intel)
 - KDE Plasma 6 (Wayland or X11)
 - Linux with systemd
-- [framework-control](https://github.com/ozturkkl/framework-control/blob/main/LINUX_INSTALL.MD) backend
+- The `framewidged` service (installed by `install.sh`, see below)
 
 ## Install
 
-Installs backend and widget:
+Installs the service and the widget. A running framework-control is stopped and disabled; its fan, power and battery settings are taken over:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/shrippen/FrameWidge/main/install.sh | bash
@@ -34,15 +34,18 @@ Then add **FrameWidge** via the Plasma widget picker.
 
 ### Manual install
 
-1. Backend:
+1. Service (needs Rust and [`framework_tool`](https://github.com/FrameworkComputer/framework-system/releases) on PATH or in `/usr/local/lib/framewidge`):
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/ozturkkl/framework-control/main/install-linux.sh | sudo bash
+   git clone https://github.com/shrippen/FrameWidge.git
+   cd FrameWidge
+   cargo build --release --locked --manifest-path service/Cargo.toml
+   sudo install -Dm755 service/target/release/framewidged /usr/local/bin/framewidged
+   sudo install -Dm644 service/framewidged.service /etc/systemd/system/framewidged.service
+   sudo systemctl daemon-reload && sudo systemctl enable --now framewidged
    ```
 
 2. Plasmoid:
    ```bash
-   git clone https://github.com/shrippen/FrameWidge.git
-   cd FrameWidge
    kpackagetool6 -t Plasma/Applet -i package/
    ```
 
@@ -65,8 +68,10 @@ kpackagetool6 -t Plasma/Applet -u package/
 # Plasmoid
 kpackagetool6 -t Plasma/Applet -r org.kde.plasma.framewidge
 
-# Backend (optional)
-curl -fsSL https://raw.githubusercontent.com/ozturkkl/framework-control/main/uninstall-linux.sh | sudo bash
+# Service (optional; stopping it hands the fans back to the firmware)
+sudo systemctl disable --now framewidged
+sudo rm -f /usr/local/bin/framewidged /etc/systemd/system/framewidged.service
+sudo rm -rf /var/lib/framewidged /usr/local/lib/framewidge
 ```
 
 ## Configuration
@@ -75,7 +80,7 @@ Right-click the widget → Configure.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Service port | `30912` | framework-control port (AUR default) |
+| Service port | `30913` | Port of `framewidged` |
 | Poll interval | `2000` ms | Health check and data polling interval |
 | Tray display | `temp` | Compact icon content: `temp`, `rpm`, `soc`, `icon` |
 | Style | System | Popup look: System (Plasma theme), Kante, Kante Light |
@@ -92,15 +97,15 @@ with the package. Add a language by copying the template to `po/<lang>.po` and r
 ## Architecture
 
 ```
-┌──────────────────┐       HTTP (127.0.0.1)       ┌─────────────────────────┐
-│  Plasma Widget   │ ──────────────────────────── │  framework-control      │
+┌──────────────────┐     HTTP (127.0.0.1:30913)    ┌─────────────────────────┐
+│  Plasma Widget   │ ──────────────────────────── │  framewidged            │
 │  (QML)           │    GET/POST /api/*            │  service (Rust/systemd) │
-│                  │                               │  → framework_tool CLI   │
+│                  │                               │  → framework_tool → EC  │
 └──────────────────┘                               └─────────────────────────┘
 ```
 
-Pure QML, no compilation. Talks to `http://127.0.0.1:<port>/api/` via `XMLHttpRequest`.
+The widget is pure QML and talks to `http://127.0.0.1:<port>/api/` via `XMLHttpRequest`. The service (`service/`) runs as root, keeps the fan curve, charge limit and power profile applied without the widget, and stores its settings in `/var/lib/framewidged/config.json`. See [DESIGN.md](DESIGN.md).
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Based on [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk (MIT).
+MIT, see [LICENSE](LICENSE). The service ports parts of [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk (MIT).

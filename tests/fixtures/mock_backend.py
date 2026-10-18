@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Minimal stand-in for the framework-control REST API, used by the
+"""Minimal stand-in for the framewidged REST API (service/), used by the
 plasmoid's tests instead of a real Framework laptop + backend service.
 
 Stdlib only (no dependencies). Serves the subset of /api/* endpoints the

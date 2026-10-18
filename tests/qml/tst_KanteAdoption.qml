@@ -284,7 +284,8 @@ Item {
             var hint = createTemporaryObject(hintComponent, root);
             var boxes = findAll(hint, isCommandBox, []);
             compare(boxes.length, 2);
-            verify(boxes[0].text.indexOf("install-linux.sh") >= 0);
+            verify(boxes[0].text.indexOf("shrippen/FrameWidge/main/install.sh") >= 0);
+            verify(boxes[1].text.indexOf("framewidged") >= 0);
             root.serviceOnline = true;
         }
     }

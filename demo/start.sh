@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Opens FrameWidge in plasmoidviewer against the demo backend (demo/backend.py: the editing
-# laptop of the shrippen demo world, no Framework hardware or framework-control needed).
+# laptop of the shrippen demo world, no Framework hardware or framewidged needed).
 #   demo/start.sh [de|en]
 set -euo pipefail
 source "$(dirname "$0")/common.sh"

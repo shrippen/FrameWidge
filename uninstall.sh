@@ -25,8 +25,16 @@ if [ -f "$ICON_FILE" ]; then
     ok "App icon removed."
 fi
 
-echo ""
-echo "  Note: The framework-control backend service was NOT removed."
-echo "  To remove it, run:"
-echo "    curl -fsSL https://raw.githubusercontent.com/ozturkkl/framework-control/main/uninstall-linux.sh | sudo bash"
-echo ""
+if systemctl cat framewidged >/dev/null 2>&1; then
+    read -rp "  Remove the FrameWidge service (framewidged) too? [y/N] " answer </dev/tty || answer=""
+    if [[ "${answer:-N}" =~ ^[Yy] ]]; then
+        # Stopping runs ExecStopPost, which hands the fans back to the EC.
+        sudo systemctl disable --now framewidged
+        sudo rm -f /etc/systemd/system/framewidged.service /usr/local/bin/framewidged
+        sudo rm -rf /var/lib/framewidged /usr/local/lib/framewidge
+        sudo systemctl daemon-reload
+        ok "Service removed."
+    else
+        warn "Service kept. Remove it later with: sudo systemctl disable --now framewidged"
+    fi
+fi
