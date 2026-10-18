@@ -44,6 +44,8 @@ enum Hwmon {
     EcDriver,
     /// Older kernel: temperatures only through framework_tool.
     None,
+    /// EC driver present, but every temperature sensor reports a fault.
+    AllFaulty,
 }
 
 struct Setup<'a> {
@@ -234,13 +236,17 @@ fn fake_sysfs(root: &Path, hwmon: Hwmon) {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, format!("{value}\n")).unwrap();
     };
-    if hwmon == Hwmon::EcDriver {
+    if hwmon != Hwmon::None {
         write("class/hwmon/hwmon11/name", "cros_ec");
         write("class/hwmon/hwmon11/temp1_label", "cpu_f75303@4d");
         write("class/hwmon/hwmon11/temp1_input", "38000");
         write("class/hwmon/hwmon11/temp2_label", "cpu@4c");
         write("class/hwmon/hwmon11/temp2_input", "71000");
         write("class/hwmon/hwmon11/fan1_input", "2200");
+    }
+    if hwmon == Hwmon::AllFaulty {
+        write("class/hwmon/hwmon11/temp1_fault", "1");
+        write("class/hwmon/hwmon11/temp2_fault", "1");
     }
     write("class/dmi/id/sys_vendor", "Framework");
     write(
@@ -504,6 +510,36 @@ fn fan_goes_back_to_auto_without_temperatures() {
     s.wait_until(|| s.called("--autofanctrl"));
     let before = s.calls().iter().filter(|c| *c == "--autofanctrl").count();
     s.set_config(json!({ "fan": { "mode": "curve", "curve": { "poll_ms": 200 } } }))
+        .unwrap();
+    s.wait_until(|| s.calls().iter().filter(|c| *c == "--autofanctrl").count() > before);
+}
+
+#[test]
+fn fan_goes_back_to_auto_when_every_sensor_faults() {
+    let s = Service::start(Setup {
+        name: "faulty",
+        hwmon: Hwmon::AllFaulty,
+        ..Setup::default()
+    });
+    s.wait_until(|| s.called("--autofanctrl"));
+    let before = s.calls().iter().filter(|c| *c == "--autofanctrl").count();
+    s.set_config(json!({ "fan": { "mode": "curve", "curve": { "poll_ms": 200 } } }))
+        .unwrap();
+    s.wait_until(|| s.calls().iter().filter(|c| *c == "--autofanctrl").count() > before);
+}
+
+#[test]
+fn manual_without_duty_hands_the_fan_back() {
+    let s = Service::start(Setup {
+        name: "manual-none",
+        ..Setup::default()
+    });
+    let curve = json!({ "fan": { "mode": "curve", "curve": { "points": [[40, 20], [80, 60]], "poll_ms": 200 } } });
+    s.set_config(curve).unwrap();
+    s.wait_until(|| s.called("--fansetduty 51"));
+    let before = s.calls().iter().filter(|c| *c == "--autofanctrl").count();
+
+    s.set_config(json!({ "fan": { "mode": "manual", "manual": null } }))
         .unwrap();
     s.wait_until(|| s.calls().iter().filter(|c| *c == "--autofanctrl").count() > before);
 }

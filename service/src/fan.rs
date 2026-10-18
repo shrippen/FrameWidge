@@ -30,8 +30,13 @@ pub struct Fans {
 impl Fans {
     /// One control step; returns when the next one is due.
     pub fn step(&mut self, tool: &Tool, fan: &FanConfig, thermal: &Thermal) -> Duration {
-        // A new mode or topology starts the curve from the current reading.
+        // A reading without a single temperature (every sensor faulty) is no reading.
+        if fan.mode == FanMode::Curve && thermal.temps.is_empty() {
+            return self.step_blind(tool, fan, "no sensor reports a temperature");
+        }
         self.blind_steps = 0;
+
+        // A new mode or topology starts the curve from the current reading.
         let topology = (fan.mode, !fan.overrides.is_empty());
         let changed = self.last != Some(topology);
         if changed {
@@ -45,7 +50,7 @@ impl Fans {
                     self.hand_to_ec(tool);
                 }
             }
-            FanMode::Manual => self.manual(tool, fan, thermal.fans.len()),
+            FanMode::Manual => self.manual(tool, fan, thermal.fans.len(), changed),
             FanMode::Curve => self.curve(tool, fan, thermal),
         }
         self.last = Some(topology);
@@ -88,14 +93,15 @@ impl Fans {
         log_err(result);
     }
 
-    fn manual(&mut self, tool: &Tool, fan: &FanConfig, fan_count: usize) {
+    fn manual(&mut self, tool: &Tool, fan: &FanConfig, fan_count: usize, changed: bool) {
         let global = fan.manual.as_ref().map(|m| m.duty_pct.min(PCT_MAX));
 
         if fan.overrides.is_empty() {
             match global {
                 Some(duty) => self.apply(tool, Fan::All, duty),
+                // No duty set: the EC's own curve, not the last duty of another mode.
                 None => {
-                    if self.last.is_none() || self.auto_pending {
+                    if changed || self.auto_pending {
                         self.hand_to_ec(tool);
                     }
                 }
