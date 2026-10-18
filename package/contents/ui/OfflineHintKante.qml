@@ -18,7 +18,7 @@ ColumnLayout {
         Layout.fillWidth: true
         title: !root.serviceOnline ? i18n("Service Not Reachable") : i18n("framework_tool Not Found")
         text: !root.serviceOnline
-            ? i18n("The framework-control backend service is not running or not installed.\n\nInstall it with the command below, or start it if already installed.")
+            ? i18n("The FrameWidge service (framewidged) is not running or not installed.\n\nInstall it with the command below, or start it if already installed.")
             : i18n("The service is running but cannot find framework_tool.\nCheck the service logs for details.")
     }
 
@@ -36,7 +36,7 @@ ColumnLayout {
 
         KanteCommandBox {
             Layout.fillWidth: true
-            text: "curl -fsSL https://raw.githubusercontent.com/ozturkkl/framework-control/main/install-linux.sh | sudo bash"
+            text: "curl -fsSL https://raw.githubusercontent.com/shrippen/FrameWidge/main/install.sh | bash"
             copyText: i18n("Copy")
             copiedText: i18n("Copied")
         }
@@ -49,15 +49,9 @@ ColumnLayout {
 
         KanteCommandBox {
             Layout.fillWidth: true
-            text: "sudo systemctl start framework-control && sudo systemctl enable framework-control"
+            text: "sudo systemctl enable --now framewidged"
             copyText: i18n("Copy")
             copiedText: i18n("Copied")
-        }
-
-        KanteHud {
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            text: i18n("Trying port %1. Change in widget settings if different.", plasmoid.configuration.servicePort)
         }
     }
 

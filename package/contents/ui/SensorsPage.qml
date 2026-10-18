@@ -74,7 +74,7 @@ ColumnLayout {
         // SensorsPage lives inside the popup's StackLayout, which Plasma may
         // keep instantiated in the background after the popup is closed for
         // faster reopening - without this it would keep polling
-        // /api/thermal/history forever, well past whatever's actually
+        // ThermalHistory forever, well past whatever's actually
         // visible, adding to how much the backend service logs.
         running: root.expanded
         repeat: true
@@ -96,7 +96,7 @@ ColumnLayout {
     }
 
     function fetchHistory() {
-        Api.get(root.baseUrl + "/api/thermal/history", function(ok, data) {
+        Api.get("ThermalHistory", function(ok, data) {
             if (!ok || !data) return;
             var cutoff = Date.now() - windowSeconds * 1000;
             var ser = {};

@@ -2,7 +2,6 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/shrippen/FrameWidge"
-BACKEND_INSTALL="https://raw.githubusercontent.com/ozturkkl/framework-control/main/install-linux.sh"
 PLASMOID_ID="org.kde.plasma.framewidge"
 
 info()  { echo -e "\033[1;34m[INFO]\033[0m  $*"; }
@@ -79,29 +78,7 @@ case "$channel_choice" in
         ;;
 esac
 
-# --- Step 1: Install backend (framework-control service) ---
-info "Checking framework-control backend service..."
-
-if systemctl is-active --quiet framework-control 2>/dev/null; then
-    ok "framework-control service is already running."
-else
-    info "framework-control service is not running."
-    echo ""
-    echo "  The backend service is required. It manages fans, power, battery"
-    echo "  and runs as a systemd service (requires root)."
-    echo ""
-    ask "  Install/update the framework-control backend? [Y/n] " answer
-    answer="${answer:-Y}"
-    if [[ "$answer" =~ ^[Yy] ]]; then
-        info "Installing framework-control backend..."
-        curl -fsSL "$BACKEND_INSTALL" | sudo bash
-        ok "Backend installed."
-    else
-        warn "Skipping backend install. The plasmoid needs the service to function."
-    fi
-fi
-
-# --- Step 2: Download plasmoid ---
+# --- Step 1: Download FrameWidge ---
 info "Downloading FrameWidge ($DOWNLOAD_REF)..."
 
 TMPDIR="$(mktemp -d)"
@@ -126,6 +103,61 @@ PACKAGE_DIR="$TMPDIR/repo/package"
 
 if [ ! -f "$PACKAGE_DIR/metadata.json" ]; then
     error "Package directory not found in downloaded archive."
+fi
+
+# --- Step 2: Install the service (framewidged) ---
+# The widget's backend: reads sensors, drives fans, power and battery as root.
+# Release channels download the binary from the GitHub release; main builds it.
+SERVICE_DIR="$TMPDIR/repo/service"
+SERVICE_ASSET="framewidged-$(uname -m)-linux"
+TOOL_DIR="/usr/local/lib/framewidge"
+TOOL_URL="https://github.com/FrameworkComputer/framework-system/releases/latest/download/framework_tool"
+
+echo ""
+echo "  The FrameWidge service (framewidged) reads the sensors and drives fans,"
+echo "  power and battery. It runs as a systemd service (requires root)."
+if systemctl cat framework-control >/dev/null 2>&1; then
+    echo ""
+    echo "  framework-control is installed. framewidged replaces it, since both"
+    echo "  would drive the fans: framework-control is stopped and disabled."
+    echo "  Your fan, power and battery settings are taken over on first start."
+fi
+echo ""
+ask "  Install/update the FrameWidge service? [Y/n] " answer
+answer="${answer:-Y}"
+if [[ "$answer" =~ ^[Yy] ]]; then
+    SERVICE_BIN="$TMPDIR/framewidged"
+    if [ "$DOWNLOAD_REF" != "main" ] && curl -fsSL -o "$SERVICE_BIN" "$REPO_URL/releases/download/$DOWNLOAD_REF/$SERVICE_ASSET"; then
+        ok "Downloaded framewidged ($DOWNLOAD_REF)."
+    elif command -v cargo >/dev/null 2>&1; then
+        info "Building framewidged from source..."
+        cargo build --release --locked --manifest-path "$SERVICE_DIR/Cargo.toml" --target-dir "$TMPDIR/target" \
+            || error "Building framewidged failed."
+        cp "$TMPDIR/target/release/framewidged" "$SERVICE_BIN"
+    else
+        error "No framewidged binary for $DOWNLOAD_REF ($SERVICE_ASSET) and no cargo to build it. Install Rust or choose the stable channel."
+    fi
+
+    if ! command -v framework_tool >/dev/null 2>&1 && [ ! -x "$TOOL_DIR/framework_tool" ]; then
+        info "Downloading framework_tool (FrameworkComputer/framework-system)..."
+        curl -fsSL -o "$TMPDIR/framework_tool" "$TOOL_URL" || error "framework_tool download failed."
+        sudo install -Dm755 "$TMPDIR/framework_tool" "$TOOL_DIR/framework_tool"
+    fi
+
+    sudo install -Dm755 "$SERVICE_BIN" /usr/local/bin/framewidged
+    sudo install -Dm644 "$SERVICE_DIR/data/framewidged.service" /etc/systemd/system/framewidged.service
+    # The service owns a name on the system bus; polkit decides who may change settings.
+    sudo install -Dm644 "$SERVICE_DIR/data/io.github.shrippen.FrameWidge.conf" /etc/dbus-1/system.d/io.github.shrippen.FrameWidge.conf
+    sudo install -Dm644 "$SERVICE_DIR/data/io.github.shrippen.FrameWidge.policy" /usr/share/polkit-1/actions/io.github.shrippen.FrameWidge.policy
+    sudo systemctl reload dbus 2>/dev/null || true
+    sudo systemctl disable framework-control >/dev/null 2>&1 || true
+    sudo systemctl daemon-reload
+    sudo systemctl enable framewidged
+    # Restart, not start: an update must load the new binary. Conflicts= stops framework-control.
+    sudo systemctl restart framewidged
+    ok "framewidged installed and running."
+else
+    warn "Skipping the service. The widget needs it to function."
 fi
 
 # --- Step 3: Install or update plasmoid ---
@@ -158,6 +190,4 @@ ok "FrameWidge installed! ($DOWNLOAD_REF)"
 echo ""
 echo "  Add 'FrameWidge' to your panel or system tray via"
 echo "  the Plasma widget picker."
-echo ""
-echo "  Service port: 30912 (default, configurable in widget settings)"
 echo ""

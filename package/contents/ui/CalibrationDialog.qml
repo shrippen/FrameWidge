@@ -92,7 +92,7 @@ QQC2.Dialog {
         info = i18n("Starting calibration...");
 
         // Save current mode
-        Api.get(root.baseUrl + "/api/config", function(ok, data) {
+        Api.get("Config", function(ok, data) {
             if (ok && data && data.fan && data.fan.mode) {
                 prevMode = data.fan.mode;
             }
@@ -143,7 +143,7 @@ QQC2.Dialog {
             if (!running) { stop(); return; }
             attempts++;
 
-            Api.get(root.baseUrl + "/api/thermal", function(ok, data) {
+            Api.get("Thermal", function(ok, data) {
                 if (!ok || !data || !data.fans || data.fans.length === 0) {
                     if (attempts > 20) {
                         stop();

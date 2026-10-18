@@ -12,13 +12,13 @@ Native KDE Plasma 6 system tray widget for Framework Laptops — fan curves, pow
 
 **FrameWidge** is a native KDE Plasma 6 widget for Framework Laptops (13 and 16, AMD and Intel). It lives in your system tray and gives you full control over fans, power profiles, and battery — no terminal required.
 
-This is **not** a fork of anything. FrameWidge is an independent Plasma frontend that talks to the REST API of [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk, a small systemd service that already does the hard work of talking to the embedded controller via `framework_tool`. FrameWidge is pure QML — no C++ compilation, no bundled daemon — it just polls and configures that existing service over `http://127.0.0.1:30912`.
+FrameWidge is pure QML. The privileged work is done by its own small systemd service, `framewidged`, which talks to the embedded controller through Framework's `framework_tool` and serves the widget over the system D-Bus; polkit lets the person at the laptop change settings without a password. Parts of the service are ported from [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk, FrameWidge's backend up to 1.2.
 
 ### Features
 
 - **Fan Control** — Auto mode, manual duty slider, and a custom curve editor with drag-and-drop points, hysteresis, rate limiting, and per-fan overrides on the Framework 16. Includes a calibration wizard for accurate RPM readouts.
 - **Sensors** — Live temperature graphs with history, per-sensor selection, and a configurable time window.
-- **Power** — Separate AC/Battery profiles, EPP, CPU governor, frequency limits, TDP, and thermal controls — all driven by what your hardware actually supports.
+- **Power** — The system power profile (Power Saver, Balanced, Performance) via power-profiles-daemon or tuned-ppd, the same switch as Plasma's battery applet.
 - **Battery** — Live charge/discharge wattage, health, cycle count, charge limit (25–100%), and rate limiting with an optional state-of-charge threshold.
 - **System Tray** — Compact icon with a configurable overlay (temperature, RPM, or battery %), a rich tooltip with live stats, and a dimmed icon when the backend is unreachable.
 - **Guided Setup** — If the backend service isn't installed or running yet, the widget shows a friendly setup screen with a copyable install command instead of failing silently.
@@ -26,21 +26,21 @@ This is **not** a fork of anything. FrameWidge is an independent Plasma frontend
 ### Requirements
 
 - A **Framework Laptop** (13 or 16, AMD or Intel)
-- **KDE Plasma 6** (Wayland or X11)
+- **KDE Plasma 6.1** or newer (Wayland or X11)
 - Linux with systemd (Arch, Fedora, NixOS, etc.)
-- The **framework-control** backend service — see below
+- The **framewidged** service — see below
 
-### Important: install the backend service too
+### Important: install the service too
 
-This widget is a *frontend only*. Installing it from the KDE Store gives you the plasmoid, but the backend service that actually reads sensors and controls fans (`framework-control`) is a separate systemd service and is **not** installed automatically through the Store. Without it, the widget starts up fine and shows a "Service Not Reachable" screen with the install command ready to copy — it will not do anything useful until that service is running.
+Installing the widget from the KDE Store gives you the plasmoid only. The service that actually reads sensors and controls fans (`framewidged`) is a systemd service and is **not** installed through the Store. Without it, the widget starts up fine and shows a "Service Not Reachable" screen with the install command ready to copy — it will not do anything useful until that service is running.
 
-Install the backend with:
+Install it (with the widget) with:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ozturkkl/framework-control/main/install-linux.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/shrippen/FrameWidge/main/install.sh | bash
 ```
 
-or via the [AUR](https://aur.archlinux.org/packages/framework-control) / [nixpkgs](https://github.com/NixOS/nixpkgs/tree/master/pkgs/by-name/fr/framework-control) package for your distribution.
+If framework-control is installed, the script stops and disables it and the service takes over its fan and battery settings (its power settings are left to power-profiles-daemon).
 
 *Optional:* the Store install doesn't copy FrameWidge's app icon into your icon theme, so the widget picker, the tray's "Customize" menu, and the Configure dialog's window icon fall back to a generic icon (the tray icon itself is unaffected). To fix that cosmetic detail, copy `contents/icons/hicolor/scalable/apps/framewidge.svg` from the installed package to `~/.local/share/icons/hicolor/scalable/apps/framewidge.svg`.
 
@@ -54,7 +54,7 @@ More on the [GitHub repository](https://github.com/shrippen/FrameWidge) and the 
 
 ### License
 
-MIT. Based on [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk (MIT License).
+MIT. The service ports parts of [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk (MIT License).
 
 ## Tags / categories
 

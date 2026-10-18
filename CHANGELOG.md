@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Changed
+
+- **Own service instead of framework-control.** framework-control 0.5.5 moved the fan settings into profiles; the Fan tab could no longer read or change them. FrameWidge now brings its own backend, `framewidged` (Rust, `service/`): fan curve and manual duty (also per fan), charge limit and charge rate, sensor history. It reads sensors and battery from the kernel (sysfs) and writes to the EC through Framework's `framework_tool`.
+- **D-Bus instead of HTTP.** The widget talks to the service over the system bus; changing settings is checked by polkit (free for the person at the laptop, an admin password for anyone else). The service port setting is gone. Needs Plasma 6.1 or newer.
+- **Power tab: the system power profile.** It switches power-profiles-daemon or tuned-ppd (Power Saver, Balanced, Performance), the same setting as Plasma's battery applet. The separate AC/battery settings for governor, EPP, frequency limits, TDP and thermal limit are gone: they fought with that daemon over the same files.
+- **Fan curve presets live in the service.** A preset can switch on by itself when the laptop is plugged in or unplugged, also with the widget closed. Presets saved with 1.2 are moved over once.
+- Sensors carry the names of the current `framework_tool` (0.6.6): temperatures as the EC names them (`cpu@4c` for the APU), fans by model (`APU Fan`). Fan curves with the names of `framework_tool` 0.6.5 and older (`APU`, `F75303_CPU`, ...) are renamed on load.
+- `install.sh` installs `framewidged`, its D-Bus policy and polkit action, and `framework_tool` if missing, and stops and disables framework-control. On its first start framewidged takes over `/etc/framework-control/config.json` (fan settings of the active profile, calibration of the first fan, battery, telemetry).
+- When the service stops or crashes, the fans go back to the firmware's own curve. So they do when a curve has no temperature to follow, until readings return.
+- System Info page: the web UI link is gone (framewidged has none).
+- `uninstall.sh` offers to remove the service too.
+
 ### Added
 
 - Style setting (System / Kante / Kante Light) for the popup. System is the default and unchanged. Kante 1.9 is vendored in `package/contents/ui/Kante` and `KantePlasma`.
@@ -18,6 +30,7 @@
 
 ### Fixed
 
+- Fan curve: switching the separate down rate off took no effect; the old rate stayed.
 - `CalibrationDialog` and the preset dialog in Kante: the title strip and buttons are Kante's now (`KanteDialogSkin` themes header and footer); before, the platform's light strip stayed on the dark card.
 - `PowerPage` visibility bindings are boolean (real Kirigami warned about `undefined`).
 - Fan page fits the 432 px popup: hysteresis, rate limits and poll interval stack one per row below 32 grid units (were two per row, clipping the curve editor and spin box arrows).

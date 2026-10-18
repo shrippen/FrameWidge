@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Demo stand-in for framework-control: tests/fixtures/mock_backend.py with the laptop of the
-shrippen demo world (Studio Weber's editing laptop rendering a rough cut, see demo/world.json).
+"""Demo stand-in for framewidged (the FrameWidge service): tests/fixtures/mock_backend.py with the
+laptop of the shrippen demo world (Studio Weber's editing laptop rendering a rough cut, see
+demo/world.json).
 
 Temperatures and fan follow a render job that ramps up and down, the history covers the last
-half hour, the fan runs on a curve and the battery stops at the charge limit.
+half hour, the fan runs on a curve, the battery stops at the charge limit and the power profile is
+the world's.
 
-  demo/backend.py [port]        prints "PORT <n>" like the mock
-  demo/backend.py [port] PLAN   also serves the screenshot plan (JSON file) at /__shots,
-                                which contents/ui/ScreenshotRunner.qml reads (see demo/shots.sh)
+  demo/backend.py          serves on the bus DBUS_SYSTEM_BUS_ADDRESS names (demo/common.sh starts
+                           a private one), prints "READY" like the mock
+  demo/backend.py PLAN     also serves the screenshot plan (JSON file) as Mock.Shots(), which
+                           contents/ui/ScreenshotRunner.qml reads (see demo/shots.sh)
 """
 import json
 import math
@@ -56,10 +59,6 @@ mock.INITIAL_CONFIG["fan"]["mode"] = "curve"
 mock.INITIAL_CONFIG["fan"]["curve"]["points"] = HW["fan_curve"]
 mock.INITIAL_CONFIG["fan"]["curve"]["sensors"] = [HW["fan"]["sensor"]]
 mock.INITIAL_CONFIG["battery"]["charge_limit_max_pct"] = {"enabled": True, "value": HW["charge_limit"]}
-for profile in ("ac", "battery"):
-    mock.INITIAL_CONFIG["power"][profile]["epp_preference"]["enabled"] = True
-mock.INITIAL_CONFIG["power"]["ac"]["tdp_watts"] = {"enabled": True, "value": HW["tdp_watts"]}
-mock.STATE.reset()
 
 mock.POWER["battery"].update({
     "percentage": HW["battery_percent"], "ac_present": True, "charging": True,
@@ -67,26 +66,15 @@ mock.POWER["battery"].update({
     "design_capacity_mah": round(HW["design_capacity_mwh"] / HW["nominal_voltage"]),
     "last_full_charge_capacity_mah": round(HW["full_capacity_mwh"] / HW["nominal_voltage"]),
     "charge_limit_max_pct": HW["charge_limit"]})
-mock.POWER["power_control"]["current_state"].update({"tdp_limit_watts": HW["tdp_watts"], "epp_preference": HW["epp"]})
+mock.POWER["profile"]["active"] = HW["power_profile"]
 mock.SYSTEM.update({"cpu": HW["cpu"], "hostname": WORLD["studio"]["laptop"], "model": HW["model"]})
 mock.LOGS_TEXT = "".join(line.replace("{charge_limit}", str(HW["charge_limit"])) + "\n" for line in HW["log"])
+mock.STATE.reset()
 
-PLAN = Path(sys.argv[2]).read_text(encoding="utf-8") if len(sys.argv) > 2 else None
-_get = mock.Handler.do_GET
-
-
-def do_GET(self):
-    if self.path == "/api/thermal":
-        return self._send_json(thermal())
-    if self.path == "/api/thermal/history":
-        return self._send_json(history())
-    if self.path == "/__shots" and PLAN:
-        return self._send_json(json.loads(PLAN))
-    return _get(self)
-
-
-mock.Handler.do_GET = do_GET
+mock.HANDLERS["Thermal"] = lambda: json.dumps(thermal())
+mock.HANDLERS["ThermalHistory"] = lambda: json.dumps(history())
+if len(sys.argv) > 1:
+    mock.SHOTS = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 
 if __name__ == "__main__":
-    sys.argv = sys.argv[:2]
     mock.main()

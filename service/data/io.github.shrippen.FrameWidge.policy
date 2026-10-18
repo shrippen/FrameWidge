@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>FrameWidge</vendor>
+  <vendor_url>https://github.com/shrippen/FrameWidge</vendor_url>
+  <!-- Fan curve, charge limit and power profile: free for the person at the
+       laptop, an admin password for anyone else (ssh, other seats). -->
+  <action id="io.github.shrippen.FrameWidge.configure">
+    <description>Change fan, battery and power settings</description>
+    <description xml:lang="de">Lüfter-, Akku- und Energieeinstellungen ändern</description>
+    <message>Authentication is required to change fan, battery and power settings</message>
+    <message xml:lang="de">Zum Ändern der Lüfter-, Akku- und Energieeinstellungen ist eine Authentifizierung nötig</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+  </action>
+</policyconfig>

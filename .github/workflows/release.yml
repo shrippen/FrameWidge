@@ -1,0 +1,49 @@
+# Builds the service binary (framewidged) and attaches it to the GitHub release,
+# where install.sh downloads it. Trigger: a version tag (1.3, 1.3-beta1, ...),
+# which arrives through the mirror from git.arianw.de.
+#
+# Static musl build: runs on any Linux, whatever its glibc.
+name: release
+
+on:
+  push:
+    tags: ["[0-9]*"]
+
+permissions:
+  contents: write
+
+jobs:
+  service:
+    # GitHub only: Gitea releases never get artifacts.
+    if: github.server_url == 'https://github.com'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          # dbus: the service tests run their own dbus-daemon.
+          sudo apt-get update && sudo apt-get install -y musl-tools dbus
+          rustup target add x86_64-unknown-linux-musl
+
+      - name: Tests
+        run: cargo test --locked --manifest-path service/Cargo.toml
+
+      - name: Build
+        run: |
+          cargo build --release --locked --manifest-path service/Cargo.toml --target x86_64-unknown-linux-musl
+          mkdir out
+          cp service/target/x86_64-unknown-linux-musl/release/framewidged out/framewidged-x86_64-linux
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" out/* --clobber
+          else
+            prerelease=""
+            [[ "$tag" =~ (alpha|beta|rc) ]] && prerelease="--prerelease"
+            gh release create "$tag" out/* --title "FrameWidge $tag" --notes "See CHANGELOG.md." $prerelease
+          fi

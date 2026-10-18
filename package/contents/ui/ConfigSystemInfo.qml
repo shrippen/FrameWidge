@@ -9,16 +9,14 @@ import "js/Api.js" as Api
 // Everything that used to be the popup's separate "Settings" tab, moved
 // here so configuration lives in one place (the right-click "Configure..."
 // dialog) instead of being split between it and an in-popup tab. This page
-// is self-contained: it fetches its own data straight from the backend
-// using plasmoid.configuration.servicePort, since the config dialog runs
+// is self-contained: it fetches its own data straight from the service
+// (js/Api.js), since the config dialog runs
 // outside main.qml's object tree and has no access to root's live state
 // (root.configData, root.thermalData, ...).
 KCM.SimpleKCM {
     id: page
 
     property alias cfg_debugBackgroundPolling: debugPollCheck.checked
-
-    readonly property string baseUrl: "http://127.0.0.1:" + plasmoid.configuration.servicePort
 
     property string serviceVersion: ""
     property var systemInfo: null
@@ -28,16 +26,16 @@ KCM.SimpleKCM {
     property bool logsLoaded: false
 
     Component.onCompleted: {
-        Api.get(baseUrl + "/api/health", function(ok, data) {
+        Api.get("Health", function(ok, data) {
             if (ok && data) page.serviceVersion = data.service_version || "";
         });
-        Api.get(baseUrl + "/api/system", function(ok, data) {
+        Api.get("System", function(ok, data) {
             if (ok && data) page.systemInfo = data;
         });
-        Api.get(baseUrl + "/api/versions", function(ok, data) {
+        Api.get("Versions", function(ok, data) {
             if (ok && data) page.versionsInfo = data;
         });
-        Api.get(baseUrl + "/api/config", function(ok, data) {
+        Api.get("Config", function(ok, data) {
             if (ok && data && data.telemetry) page.telemetryPollMs = data.telemetry.poll_ms || 2000;
         });
     }
@@ -87,34 +85,8 @@ KCM.SimpleKCM {
                 editable: true
                 onValueModified: {
                     page.telemetryPollMs = value;
-                    Api.post(baseUrl + "/api/config", { telemetry: { poll_ms: value, retain_seconds: 1800 } }, function() {});
+                    Api.setConfig({ telemetry: { poll_ms: value } });
                 }
-            }
-        }
-
-        Kirigami.Separator { Layout.fillWidth: true }
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Kirigami.Units.smallSpacing
-
-            QQC2.Label {
-                text: i18n("Web UI:")
-            }
-            QQC2.Label {
-                text: "http://127.0.0.1:" + plasmoid.configuration.servicePort
-                textFormat: Text.RichText
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Qt.openUrlExternally(page.baseUrl)
-                }
-            }
-            Item { Layout.fillWidth: true }
-            QQC2.Label {
-                text: '<a href="https://github.com/ozturkkl/framework-control">framework-control on GitHub</a>'
-                textFormat: Text.RichText
-                onLinkActivated: function(link) { Qt.openUrlExternally(link); }
             }
         }
 
@@ -154,15 +126,10 @@ KCM.SimpleKCM {
                 icon.name: "view-refresh"
                 onClicked: {
                     page.logs = i18n("Loading…");
-                    var xhr = new XMLHttpRequest();
-                    xhr.onreadystatechange = function() {
-                        if (xhr.readyState === XMLHttpRequest.DONE) {
-                            page.logs = xhr.status === 200 ? xhr.responseText : i18n("Failed to load logs");
-                            page.logsLoaded = true;
-                        }
-                    };
-                    xhr.open("GET", page.baseUrl + "/api/logs");
-                    xhr.send();
+                    Api.callText("Logs", [], function(ok, text) {
+                        page.logs = ok ? text : i18n("Failed to load logs");
+                        page.logsLoaded = true;
+                    });
                 }
             }
         }

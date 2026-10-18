@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Runs every tst_*.qml under tests/qml against a throwaway mock backend.
+# Runs every tst_*.qml under tests/qml against a throwaway mock backend on a private D-Bus:
+# DBUS_SYSTEM_BUS_ADDRESS points the widget and the mock at it, the real system bus stays
+# untouched.
 #
 # Usage: tests/run_unit_tests.sh [pattern]
 #   pattern: optional glob (relative to tests/qml) to run a subset, e.g.
@@ -9,7 +11,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 QML_DIR="$SCRIPT_DIR/qml"
 RUNTIME_DIR="$SCRIPT_DIR/.runtime"
-PORT_FILE="$RUNTIME_DIR/mock_port.txt"
 MOCK_LOG="$RUNTIME_DIR/mock_backend.log"
 
 # Qt 6 only: on distributions that ship both, a plain "qmltestrunner" on PATH can be the
@@ -28,39 +29,39 @@ fi
 mkdir -p "$RUNTIME_DIR"
 : > "$MOCK_LOG"
 
-python3 "$SCRIPT_DIR/fixtures/mock_backend.py" >"$MOCK_LOG" 2>&1 &
-MOCK_PID=$!
-
+BUS_PID=""
+MOCK_PID=""
 cleanup() {
-    kill "$MOCK_PID" 2>/dev/null || true
-    wait "$MOCK_PID" 2>/dev/null || true
-    rm -f "$PORT_FILE"
+    for pid in "$MOCK_PID" "$BUS_PID"; do
+        [[ -n "$pid" ]] && kill "$pid" 2>/dev/null || true
+    done
 }
 trap cleanup EXIT
 
-# Wait for the mock backend to announce its port (it binds to an ephemeral
-# port so parallel test runs on the same machine never collide).
+# A bus of our own, so parallel runs and a real framewidged never meet.
+exec {BUS_FD}< <(dbus-daemon --session --nofork --address="unix:tmpdir=$RUNTIME_DIR" --print-address=1 --print-pid=1)
+read -r -u "$BUS_FD" BUS_ADDRESS
+read -r -u "$BUS_FD" BUS_PID
+export DBUS_SYSTEM_BUS_ADDRESS="$BUS_ADDRESS"
+
+python3 "$SCRIPT_DIR/fixtures/mock_backend.py" >"$MOCK_LOG" 2>&1 &
+MOCK_PID=$!
 for _ in $(seq 1 50); do
-    if grep -q '^PORT ' "$MOCK_LOG" 2>/dev/null; then
-        break
-    fi
+    grep -q '^READY' "$MOCK_LOG" 2>/dev/null && break
     sleep 0.1
 done
-
-MOCK_PORT="$(grep -m1 '^PORT ' "$MOCK_LOG" | awk '{print $2}')"
-if [[ -z "$MOCK_PORT" ]]; then
+if ! grep -q '^READY' "$MOCK_LOG"; then
     echo "error: mock backend did not start (see $MOCK_LOG)" >&2
     exit 1
 fi
-printf '%s' "$MOCK_PORT" > "$PORT_FILE"
-echo "mock backend listening on 127.0.0.1:$MOCK_PORT"
+echo "mock backend on private bus $BUS_ADDRESS"
 
 PATTERN="${1:-tst_*.qml}"
 FAILED=0
 for test_file in "$QML_DIR"/$PATTERN; do
     [[ -e "$test_file" ]] || continue
     echo "== $(basename "$test_file") =="
-    if ! QML_XHR_ALLOW_FILE_READ=1 "$QMLTESTRUNNER" -input "$test_file"; then
+    if ! "$QMLTESTRUNNER" -input "$test_file"; then
         FAILED=1
     fi
 done

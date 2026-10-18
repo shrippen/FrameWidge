@@ -1,4 +1,5 @@
-# Checks on every push: tests/run_all.sh (QML unit tests against the mock
+# Checks on every push: the service (cargo test, clippy, rustfmt), then
+# tests/run_all.sh (QML unit tests against the mock
 # backend, package and lint checks, the widget loaded in plasmawindowed offscreen).
 #
 # Arch Linux container: current Qt 6, KF6 and Plasma from the packages, as on the development
@@ -50,13 +51,21 @@ jobs:
       - name: Tools
         run: |
           pacman -Syu --noconfirm --needed git nodejs python dbus qt6-declarative qt6-5compat \
-            kirigami libplasma plasma-workspace kpackage kcmutils plasma-activities
+            kirigami libplasma plasma-workspace kpackage kcmutils plasma-activities rust python-gobject
           # qmllint and qmltestrunner of Qt 6 live here; the smoke test looks them up on PATH.
           export PATH="/usr/lib/qt6/bin:$PATH" && echo /usr/lib/qt6/bin >> "$GITHUB_PATH"
           for t in qmltestrunner qmllint kpackagetool6 plasmawindowed; do
             command -v "$t" >/dev/null || { echo "::error::$t missing"; exit 1; }
           done
       - uses: actions/checkout@v4
+      # The service on a private D-Bus against a fake framework_tool and sysfs; real EC access
+      # needs a Framework laptop.
+      - name: Service
+        run: |
+          cd service
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
       # plasmawindowed needs a session bus (without one it exits with status 1). Services it
       # starts over D-Bus (kactivitymanagerd, the portal, ksecretd) outlive it and inherit its
       # output: into a file, so no open pipe keeps the step waiting.

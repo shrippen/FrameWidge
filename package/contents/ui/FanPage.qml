@@ -83,57 +83,52 @@ ColumnLayout {
     property bool applyGuard: false // suppress re-apply while seeding from server state
 
     // --- Curve presets ---
-    // Stored client-side in the widget's own KConfig (JSON-encoded), not
-    // round-tripped through the backend's /api/config - see main.xml.
+    // Stored by the service in fan.presets ({ name, curve, activity_id,
+    // power_source }): it applies a preset tagged with a power source by
+    // itself when the laptop is plugged in or unplugged. Activities are a
+    // session matter, so the widget switches those (below).
     property var presets: []
     property int selectedPresetIndex: -1
+    readonly property var powerSources: ["", "ac", "battery"]
 
-    function loadPresets() {
-        try {
-            var parsed = JSON.parse(plasmoid.configuration.fanCurvePresetsJson || "[]");
-            presets = Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-            presets = [];
-        }
+    function persistPresets(updated) {
+        presets = updated;
+        root.saveConfig({ fan: { presets: updated } });
     }
 
-    function persistPresets() {
-        plasmoid.configuration.fanCurvePresetsJson = JSON.stringify(presets);
-    }
-
-    // activityId: an id from availableActivities, or "" for no auto-activation.
-    function saveCurrentAsPreset(name, activityId) {
+    // activityId: an id from availableActivities or ""; powerSource: "ac", "battery" or "".
+    function saveCurrentAsPreset(name, activityId, powerSource) {
         var preset = {
             name: name,
-            points: curvePoints,
-            hysteresis_c: hysteresisC,
-            rate_limit_pct_per_step: rateLimitPctPerStep,
-            rate_limit_down_enabled: rateLimitDownEnabled,
-            rate_limit_down_pct_per_step: rateLimitDownPctPerStep,
-            poll_ms: pollMs,
-            sensors: selectedSensors,
-            activity_id: activityId || ""
+            curve: buildCurveConfig(),
+            activity_id: activityId || "",
+            power_source: powerSource || null
         };
-        var updated = presets.slice();
+        // One preset per power source: the new one takes the tag over.
+        var updated = presets.map(function(p) {
+            if (!powerSource || p.power_source !== powerSource) return p;
+            var untagged = Object.assign({}, p);
+            untagged.power_source = null;
+            return untagged;
+        });
         var existingIndex = updated.findIndex(function(p) { return p.name === name; });
         if (existingIndex >= 0) updated[existingIndex] = preset;
         else updated.push(preset);
-        presets = updated;
-        persistPresets();
+        persistPresets(updated);
         selectedPresetIndex = updated.findIndex(function(p) { return p.name === name; });
     }
 
     function applyPreset(index) {
         if (index < 0 || index >= presets.length) return;
-        var p = presets[index];
+        var c = presets[index].curve || {};
         fanMode = "curve"; // a curve preset only means something under curve mode
-        curvePoints = p.points || curvePoints;
-        hysteresisC = p.hysteresis_c !== undefined ? p.hysteresis_c : hysteresisC;
-        rateLimitPctPerStep = p.rate_limit_pct_per_step || rateLimitPctPerStep;
-        rateLimitDownEnabled = !!p.rate_limit_down_enabled;
-        rateLimitDownPctPerStep = p.rate_limit_down_pct_per_step || rateLimitPctPerStep;
-        pollMs = p.poll_ms || pollMs;
-        selectedSensors = p.sensors || selectedSensors;
+        curvePoints = c.points || curvePoints;
+        hysteresisC = c.hysteresis_c !== undefined ? c.hysteresis_c : hysteresisC;
+        rateLimitPctPerStep = c.rate_limit_pct_per_step || rateLimitPctPerStep;
+        rateLimitDownEnabled = c.rate_limit_down_pct_per_step !== undefined && c.rate_limit_down_pct_per_step !== null;
+        rateLimitDownPctPerStep = c.rate_limit_down_pct_per_step || rateLimitPctPerStep;
+        pollMs = c.poll_ms || pollMs;
+        selectedSensors = c.sensors || selectedSensors;
         applyMode();
     }
 
@@ -141,9 +136,44 @@ ColumnLayout {
         if (index < 0 || index >= presets.length) return;
         var updated = presets.slice();
         updated.splice(index, 1);
-        presets = updated;
-        persistPresets();
+        persistPresets(updated);
         selectedPresetIndex = -1;
+    }
+
+    // Presets of FrameWidge 1.2 and older lived in the widget's KConfig
+    // (fanCurvePresetsJson, flat curve fields). Moved into the service once;
+    // a name the service already has wins.
+    function migrateLocalPresets(servicePresets) {
+        var local = [];
+        try {
+            local = JSON.parse(plasmoid.configuration.fanCurvePresetsJson || "[]");
+        } catch (e) {
+            local = [];
+        }
+        if (!Array.isArray(local) || local.length === 0) return;
+
+        var merged = servicePresets.slice();
+        local.forEach(function(p) {
+            if (!p.name || merged.some(function(s) { return s.name === p.name; })) return;
+            var curve = {
+                points: p.points || [],
+                hysteresis_c: p.hysteresis_c !== undefined ? p.hysteresis_c : 2,
+                rate_limit_pct_per_step: Math.max(1, p.rate_limit_pct_per_step || 100),
+                poll_ms: p.poll_ms || 2000,
+                sensors: p.sensors || []
+            };
+            if (p.rate_limit_down_enabled) curve.rate_limit_down_pct_per_step = p.rate_limit_down_pct_per_step;
+            merged.push({ name: p.name, curve: curve, activity_id: p.activity_id || "", power_source: null });
+        });
+        root.saveConfig({ fan: { presets: merged } }, function(ok) {
+            if (ok) plasmoid.configuration.fanCurvePresetsJson = "";
+        });
+    }
+
+    function powerSourceLabel(source) {
+        if (source === "ac") return i18n("Plugged in");
+        if (source === "battery") return i18n("On battery");
+        return "";
     }
 
     function activityNameFor(activityId) {
@@ -199,7 +229,6 @@ ColumnLayout {
 
     Component.onCompleted: {
         if (root.configData) seedFromConfig(root.configData);
-        loadPresets();
     }
 
     // Coalesces rapid slider drags into a single request instead of one POST per pixel
@@ -226,12 +255,14 @@ ColumnLayout {
             curvePoints = c.points || curvePoints;
             hysteresisC = c.hysteresis_c !== undefined ? c.hysteresis_c : 2;
             rateLimitPctPerStep = Math.max(1, c.rate_limit_pct_per_step || 100);
-            rateLimitDownEnabled = c.rate_limit_down_pct_per_step !== undefined;
+            rateLimitDownEnabled = c.rate_limit_down_pct_per_step !== undefined && c.rate_limit_down_pct_per_step !== null;
             rateLimitDownPctPerStep = c.rate_limit_down_pct_per_step || rateLimitPctPerStep;
             pollMs = c.poll_ms || 2000;
             selectedSensors = c.sensors || [];
         }
         overrides = fan.overrides || [];
+        presets = fan.presets || [];
+        if (!configLoaded) migrateLocalPresets(presets);
         configLoaded = true;
         applyGuard = false;
     }
@@ -259,9 +290,8 @@ ColumnLayout {
             poll_ms: pollMs,
             sensors: selectedSensors
         };
-        if (rateLimitDownEnabled) {
-            cfg.rate_limit_down_pct_per_step = rateLimitDownPctPerStep;
-        }
+        // null, not left out: the service merges patches, a missing key keeps the old rate.
+        cfg.rate_limit_down_pct_per_step = rateLimitDownEnabled ? rateLimitDownPctPerStep : null;
         return cfg;
     }
 
@@ -561,7 +591,10 @@ ColumnLayout {
                 id: presetCombo
                 Layout.fillWidth: true
                 model: presets.map(function(p) {
-                    return p.activity_id ? p.name + "  (→ " + activityNameFor(p.activity_id) + ")" : p.name;
+                    var tags = [];
+                    if (p.activity_id) tags.push(activityNameFor(p.activity_id));
+                    if (p.power_source) tags.push(powerSourceLabel(p.power_source));
+                    return tags.length > 0 ? p.name + "  (→ " + tags.join(", ") + ")" : p.name;
                 })
                 currentIndex: selectedPresetIndex
                 enabled: presets.length > 0
@@ -621,12 +654,14 @@ ColumnLayout {
                 if (availableActivities[i].id === existingActivity) { idx = i + 1; break; }
             }
             activityCombo.currentIndex = idx;
+            var existingSource = selectedPresetIndex >= 0 ? presets[selectedPresetIndex].power_source : "";
+            powerSourceCombo.currentIndex = Math.max(0, powerSources.indexOf(existingSource || ""));
         }
 
         onAccepted: {
             if (presetNameField.text.length === 0) return;
             var activityId = activityCombo.currentIndex > 0 ? availableActivities[activityCombo.currentIndex - 1].id : "";
-            saveCurrentAsPreset(presetNameField.text, activityId);
+            saveCurrentAsPreset(presetNameField.text, activityId, powerSources[powerSourceCombo.currentIndex]);
         }
 
         ColumnLayout {
@@ -658,6 +693,26 @@ ColumnLayout {
                     id: activityCombo
                     Layout.fillWidth: true
                     model: [i18n("(none)")].concat(availableActivities.map(function(a) { return a.name || i18n("(unnamed activity)"); }))
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                PlasmaComponents.Label {
+                    text: i18n("Auto-apply on power source:")
+                    HoverHandler { id: powerSourceHover }
+                    QQC2.ToolTip.visible: powerSourceHover.hovered
+                    QQC2.ToolTip.delay: 500
+                    QQC2.ToolTip.text: i18n("The service switches to this preset when the laptop is plugged in or unplugged, also while the widget is closed.")
+                }
+
+                QQC2.ComboBox {
+                    KanteFieldSkin { control: parent }
+                    id: powerSourceCombo
+                    Layout.fillWidth: true
+                    model: [i18n("(none)"), i18n("Plugged in"), i18n("On battery")]
                 }
             }
         }

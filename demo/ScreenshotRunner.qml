@@ -1,12 +1,12 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
 
-import "js/Api.js" as Api  // resolved in the staged package copy
+import org.kde.plasma.workspace.dbus as DBus
 
 /**
  * Landing-page screenshots, only against the demo backend: once the service is online
- * the runner asks it for a plan at /__shots (only demo/backend.py serves one, the real
- * framework-control answers 404 and nothing happens). Plan:
+ * the runner asks it for a plan with Mock.Shots() (only demo/backend.py serves one; the real
+ * framewidged has no such interface and nothing happens). Plan:
  *   { "dir": "/out", "shots": [ { "name": "sensors", "tab": 0 } ] }
  * Each tab of the popup is grabbed into dir/name.png, then the viewer quits
  * ("FRAMEWIDGE_SCREENSHOT_DONE" in the log). Plasma draws the popup frame outside the grabbed
@@ -35,8 +35,18 @@ Item {
             return
         }
         asked = true
-        Api.get(plasmoidRoot.baseUrl + "/__shots", function(ok, data) {
-            if (ok && data && data.dir && data.shots) {
+        var reply = DBus.SystemBus.asyncCall({
+            service: "io.github.shrippen.FrameWidge", path: "/io/github/shrippen/FrameWidge",
+            iface: "io.github.shrippen.FrameWidge.Mock", member: "Shots", arguments: []
+        })
+        reply.finished.connect(function() {
+            var data = null
+            try {
+                data = reply.isError ? null : JSON.parse(String(reply.value.value))
+            } catch (e) {
+                data = null
+            }
+            if (data && data.dir && data.shots) {
                 runner.plan = data
                 trace("FRAMEWIDGE_SCREENSHOT_START " + data.dir)
                 var q = [{ act: "expand" }]

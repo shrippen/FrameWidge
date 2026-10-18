@@ -16,7 +16,6 @@ Item {
     property bool cliPresent: true
     property real cpuTemp: 42
     property int fanRpm: 2000
-    property string baseUrl: "http://127.0.0.1:1"
     property int visualStyle: 0
     property var savedPatches: []
 
@@ -284,7 +283,8 @@ Item {
             var hint = createTemporaryObject(hintComponent, root);
             var boxes = findAll(hint, isCommandBox, []);
             compare(boxes.length, 2);
-            verify(boxes[0].text.indexOf("install-linux.sh") >= 0);
+            verify(boxes[0].text.indexOf("shrippen/FrameWidge/main/install.sh") >= 0);
+            verify(boxes[1].text.indexOf("framewidged") >= 0);
             root.serviceOnline = true;
         }
     }
