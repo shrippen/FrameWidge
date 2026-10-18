@@ -1,8 +1,9 @@
 //! Driver for the kernel's view of the laptop: the EC's temperatures and
-//! fan speeds (hwmon `cros_ec`) and battery and charger (power_supply).
+//! fan speeds (hwmon `cros_ec`), battery and charger (power_supply) and the
+//! model (SMBIOS, for the fan names).
 //! Plain file reads, no root and no EC traffic.
 
-use crate::sensors::{self, Thermal};
+use crate::sensors::{self, Family, Thermal};
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -12,6 +13,7 @@ pub const SYSFS: &str = "/sys";
 /// hwmon name of the EC driver (cros_ec_hwmon, Linux 6.11+).
 const EC_HWMON: &str = "cros_ec";
 const MILLI: i64 = 1000;
+const VENDOR: &str = "Framework";
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq)]
 pub struct Battery {
@@ -33,6 +35,7 @@ pub struct Sysfs {
     /// `class/hwmon/hwmonN` of the EC, if the kernel has the driver.
     ec_hwmon: Option<PathBuf>,
     power_supply: PathBuf,
+    family: Option<Family>,
 }
 
 impl Sysfs {
@@ -42,9 +45,16 @@ impl Sysfs {
             .into_iter()
             .find(|d| text(&d.join("name")).as_deref() == Some(EC_HWMON));
 
+        let dmi = root.join("class/dmi/id");
+        let family = (text(&dmi.join("sys_vendor")).as_deref() == Some(VENDOR))
+            .then(|| text(&dmi.join("product_name")))
+            .flatten()
+            .and_then(|p| Family::from_product(&p));
+
         Sysfs {
             ec_hwmon,
             power_supply: root.join("class/power_supply"),
+            family,
         }
     }
 
@@ -79,7 +89,7 @@ impl Sysfs {
                 u32::try_from(rpm).unwrap_or(0)
             };
             out.fans.push(sensors::FanReading {
-                name: format!("Fan {n}"),
+                name: sensors::fan_name(self.family, n - 1),
                 rpm,
             });
         }
@@ -155,6 +165,11 @@ mod tests {
             fs::create_dir_all(path.parent().unwrap()).unwrap();
             fs::write(path, format!("{value}\n")).unwrap();
         };
+        write("class/dmi/id/sys_vendor", "Framework");
+        write(
+            "class/dmi/id/product_name",
+            "Laptop 13 (AMD Ryzen 7040Series)",
+        );
         write("class/hwmon/hwmon2/name", "acpitz");
         write("class/hwmon/hwmon2/temp1_input", "99000");
         write("class/hwmon/hwmon11/name", "cros_ec");
@@ -197,6 +212,7 @@ mod tests {
         assert_eq!(t.temps.get("local_f75303@4d"), Some(&36));
         assert!(!t.temps.contains_key("gpu@4d"));
         assert_eq!(t.fans[0].rpm, 2200);
+        assert_eq!(t.fans[0].name, "APU Fan");
     }
 
     #[test]

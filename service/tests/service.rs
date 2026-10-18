@@ -231,6 +231,11 @@ fn fake_sysfs(root: &Path, hwmon: Hwmon) {
         write("class/hwmon/hwmon11/temp2_input", "71000");
         write("class/hwmon/hwmon11/fan1_input", "2200");
     }
+    write("class/dmi/id/sys_vendor", "Framework");
+    write(
+        "class/dmi/id/product_name",
+        "Laptop 13 (AMD Ryzen 7040Series)",
+    );
     write("class/power_supply/ACAD/type", "Mains");
     write("class/power_supply/ACAD/online", "1");
     write("class/power_supply/BAT1/type", "Battery");
@@ -279,6 +284,10 @@ fn serves_what_the_widget_reads() {
     let thermal = s.get("Thermal");
     assert_eq!(thermal["temps"]["cpu@4c"], 71);
     assert_eq!(thermal["fans"][0]["rpm"], 2200);
+    assert_eq!(
+        thermal["fans"][0]["name"], "APU Fan",
+        "as framework_tool names it"
+    );
 
     let power = s.get("Power");
     assert_eq!(power["battery"]["ac_present"], true);
