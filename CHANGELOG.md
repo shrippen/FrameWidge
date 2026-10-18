@@ -10,7 +10,7 @@
 - **Fan curve presets live in the service.** A preset can switch on by itself when the laptop is plugged in or unplugged, also with the widget closed. Presets saved with 1.2 are moved over once.
 - Sensors carry the names of the current `framework_tool` (0.6.6): temperatures as the EC names them (`cpu@4c` for the APU), fans by model (`APU Fan`). Fan curves with the names of `framework_tool` 0.6.5 and older (`APU`, `F75303_CPU`, ...) are renamed on load.
 - `install.sh` installs `framewidged`, its D-Bus policy and polkit action, and `framework_tool` if missing, and stops and disables framework-control. On its first start framewidged takes over `/etc/framework-control/config.json` (fan settings of the active profile, calibration of the first fan, battery, telemetry).
-- When the service stops or crashes, the fans go back to the firmware's own curve.
+- When the service stops or crashes, the fans go back to the firmware's own curve. So they do when a curve has no temperature to follow, until readings return.
 - System Info page: the web UI link is gone (framewidged has none).
 - `uninstall.sh` offers to remove the service too.
 
@@ -30,6 +30,7 @@
 
 ### Fixed
 
+- Fan curve: switching the separate down rate off took no effect; the old rate stayed.
 - `CalibrationDialog` and the preset dialog in Kante: the title strip and buttons are Kante's now (`KanteDialogSkin` themes header and footer); before, the platform's light strip stayed on the dark card.
 - `PowerPage` visibility bindings are boolean (real Kirigami warned about `undefined`).
 - Fan page fits the 432 px popup: hysteresis, rate limits and poll interval stack one per row below 32 grid units (were two per row, clipping the curve editor and spin box arrows).

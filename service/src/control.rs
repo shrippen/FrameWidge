@@ -43,10 +43,7 @@ pub fn run(app: &App) {
         if now >= fan_due {
             let next = match &thermal {
                 Ok(t) => fans.step(&app.tool, &cfg.fan, t),
-                Err(e) => {
-                    eprintln!("<4>fan: {e}");
-                    crate::fan::IDLE_POLL
-                }
+                Err(e) => fans.step_blind(&app.tool, &cfg.fan, e),
             };
             fan_due = now + next;
         }

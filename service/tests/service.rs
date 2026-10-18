@@ -18,8 +18,13 @@ const BUS_NAME: &str = "io.github.shrippen.FrameWidge";
 const OBJECT_PATH: &str = "/io/github/shrippen/FrameWidge";
 const INTERFACE: &str = "io.github.shrippen.FrameWidge1";
 
+// A file named after a fault in the tool's folder makes the call fail:
+// fail-autofan-once (the next --autofanctrl, once), fail-thermal (every --thermal).
 const FAKE_TOOL: &str = r#"#!/bin/sh
-echo "$*" >> "$(dirname "$0")/calls.log"
+dir="$(dirname "$0")"
+echo "$*" >> "$dir/calls.log"
+if [ "$1" = --autofanctrl ] && [ -e "$dir/fail-autofan-once" ]; then rm "$dir/fail-autofan-once"; exit 1; fi
+if [ "$1" = --thermal ] && [ -e "$dir/fail-thermal" ]; then exit 1; fi
 case "$1" in
   --thermal) printf '  F75303_CPU:   38 C\n  APU:          64 C\n  Fan Speed:  1800 RPM\n' ;;
   --charge-limit) [ -z "$2" ] && printf 'Minimum 0%%, Maximum 80%%\n' ;;
@@ -46,6 +51,8 @@ struct Setup<'a> {
     legacy: Option<&'a str>,
     tool: Tool,
     hwmon: Hwmon,
+    /// Fault files for the fake tool (see FAKE_TOOL).
+    faults: &'a [&'a str],
 }
 
 impl Default for Setup<'_> {
@@ -55,6 +62,7 @@ impl Default for Setup<'_> {
             legacy: None,
             tool: Tool::Fake,
             hwmon: Hwmon::EcDriver,
+            faults: &[],
         }
     }
 }
@@ -91,6 +99,9 @@ impl Service {
             Tool::Fake => fake_tool(&dir),
             Tool::Missing => dir.join("missing"),
         };
+        for fault in setup.faults {
+            fs::write(dir.join(fault), "").unwrap();
+        }
         fake_sysfs(&dir.join("sys"), setup.hwmon);
         let legacy = dir.join("legacy.json");
         if let Some(text) = setup.legacy {
@@ -468,4 +479,31 @@ fn restore_fan_hands_control_back() {
     let log = fs::read_to_string(dir.join("calls.log")).unwrap();
     assert_eq!(log.trim(), "--autofanctrl");
     let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn auto_fan_is_retried_after_a_failure() {
+    // The first --autofanctrl fails; the fan must not stay at its last duty.
+    let s = Service::start(Setup {
+        name: "autofan-retry",
+        faults: &["fail-autofan-once"],
+        ..Setup::default()
+    });
+    s.wait_until(|| s.calls().iter().filter(|c| *c == "--autofanctrl").count() >= 2);
+}
+
+#[test]
+fn fan_goes_back_to_auto_without_temperatures() {
+    // No EC hwmon and framework_tool cannot read: a curve has nothing to follow.
+    let s = Service::start(Setup {
+        name: "blind",
+        hwmon: Hwmon::None,
+        faults: &["fail-thermal"],
+        ..Setup::default()
+    });
+    s.wait_until(|| s.called("--autofanctrl"));
+    let before = s.calls().iter().filter(|c| *c == "--autofanctrl").count();
+    s.set_config(json!({ "fan": { "mode": "curve", "curve": { "poll_ms": 200 } } }))
+        .unwrap();
+    s.wait_until(|| s.calls().iter().filter(|c| *c == "--autofanctrl").count() > before);
 }

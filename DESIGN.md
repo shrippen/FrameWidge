@@ -84,14 +84,14 @@ The widget handles three states:
 
 Tabs instead of the web UI's side-by-side panels — a popup can't render four columns.
 
-| Tab | API endpoints | Notes |
+| Tab | D-Bus methods | Notes |
 |-----|--------------|-------|
-| Sensors | `/thermal/history` | Canvas-based line chart, sensor checkboxes, time window slider |
-| Fan | `/config` (GET/POST), `/thermal` | Mode selector, manual duty slider, CurveEditor, curve presets (client-side, optionally auto-applied by Plasma Activity), calibration dialog, per-fan override tabs |
-| Power | `/power`, `/config` | AC/Battery radio, capability-driven controls (EPP, governor, freq, TDP, thermal) |
-| Battery | `/power`, `/config` | Info bar + charge limit slider + rate limit with SoC threshold |
+| Sensors | `ThermalHistory` | Canvas-based line chart, sensor checkboxes, time window slider |
+| Fan | `Config`, `SetConfig`, `Thermal` | Mode selector, manual duty slider, CurveEditor, curve presets (stored by the service, optionally applied by Plasma Activity or by the service on plug/unplug), calibration dialog, per-fan override tabs |
+| Power | `Power`, `SetPowerProfile` | AC state and the system power profile (power-profiles-daemon) |
+| Battery | `Power`, `Config`, `SetConfig` | Info bar + charge limit slider + rate limit with SoC threshold |
 
-There is no in-popup "Settings" tab: system info, telemetry poll config, the log viewer, and the web UI link all live in the right-click **Configure...** dialog's "System Info" page instead (`ConfigSystemInfo.qml`), alongside the existing "General" page (`ConfigGeneral.qml`) — see "Settings live in one place" below for why.
+There is no in-popup "Settings" tab: system info, telemetry poll config, and the log viewer all live in the right-click **Configure...** dialog's "System Info" page instead (`ConfigSystemInfo.qml`), alongside the existing "General" page (`ConfigGeneral.qml`) — see "Settings live in one place" below for why.
 
 ### Settings live in one place
 

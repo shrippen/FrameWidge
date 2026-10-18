@@ -144,11 +144,22 @@ PlasmoidItem {
         Api.get("Power", function(ok, data) {
             if (ok && data) powerData = data;
         });
+
+        // The service changes settings on its own too (a preset on plug or unplug).
+        loadConfig();
     }
+
+    // Last config handed to the pages, as JSON: they reseed only on a real
+    // change, so an edit waiting for its debounced save is not reset.
+    property string configJson: ""
 
     function loadConfig() {
         Api.get("Config", function(ok, data) {
-            if (ok && data) configData = data;
+            if (!ok || !data) return;
+            var json = JSON.stringify(data);
+            if (json === configJson) return;
+            configJson = json;
+            configData = data;
         });
     }
 

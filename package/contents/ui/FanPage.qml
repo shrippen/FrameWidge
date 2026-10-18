@@ -255,7 +255,7 @@ ColumnLayout {
             curvePoints = c.points || curvePoints;
             hysteresisC = c.hysteresis_c !== undefined ? c.hysteresis_c : 2;
             rateLimitPctPerStep = Math.max(1, c.rate_limit_pct_per_step || 100);
-            rateLimitDownEnabled = c.rate_limit_down_pct_per_step !== undefined;
+            rateLimitDownEnabled = c.rate_limit_down_pct_per_step !== undefined && c.rate_limit_down_pct_per_step !== null;
             rateLimitDownPctPerStep = c.rate_limit_down_pct_per_step || rateLimitPctPerStep;
             pollMs = c.poll_ms || 2000;
             selectedSensors = c.sensors || [];
@@ -290,9 +290,8 @@ ColumnLayout {
             poll_ms: pollMs,
             sensors: selectedSensors
         };
-        if (rateLimitDownEnabled) {
-            cfg.rate_limit_down_pct_per_step = rateLimitDownPctPerStep;
-        }
+        // null, not left out: the service merges patches, a missing key keeps the old rate.
+        cfg.rate_limit_down_pct_per_step = rateLimitDownEnabled ? rateLimitDownPctPerStep : null;
         return cfg;
     }
 

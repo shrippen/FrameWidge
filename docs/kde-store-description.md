@@ -40,7 +40,7 @@ Install it (with the widget) with:
 curl -fsSL https://raw.githubusercontent.com/shrippen/FrameWidge/main/install.sh | bash
 ```
 
-If framework-control is installed, the script stops and disables it and the service takes over its fan, power and battery settings.
+If framework-control is installed, the script stops and disables it and the service takes over its fan and battery settings (its power settings are left to power-profiles-daemon).
 
 *Optional:* the Store install doesn't copy FrameWidge's app icon into your icon theme, so the widget picker, the tray's "Customize" menu, and the Configure dialog's window icon fall back to a generic icon (the tray icon itself is unaffected). To fix that cosmetic detail, copy `contents/icons/hicolor/scalable/apps/framewidge.svg` from the installed package to `~/.local/share/icons/hicolor/scalable/apps/framewidge.svg`.
 

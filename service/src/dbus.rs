@@ -113,7 +113,11 @@ impl Service {
         self.authorize(conn, &header).await?;
         let patch: serde_json::Value =
             serde_json::from_str(&patch).map_err(|e| Error::InvalidArgs(e.to_string()))?;
-        let cfg = self.app.update_config(&patch).map_err(Error::InvalidArgs)?;
+        // Saving writes a file; keep it off the D-Bus executor.
+        let app = Arc::clone(&self.app);
+        let cfg = blocking::unblock(move || app.update_config(&patch))
+            .await
+            .map_err(Error::InvalidArgs)?;
         to_json(&cfg)
     }
 

@@ -24,7 +24,7 @@ KDE Plasma 6 tray widget for [Framework Laptops](https://frame.work): fan contro
 
 ## Install
 
-Installs the service and the widget. A running framework-control is stopped and disabled; its fan, power and battery settings are taken over:
+Installs the service and the widget. A running framework-control is stopped and disabled; its fan and battery settings are taken over (its power settings are left to power-profiles-daemon):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/shrippen/FrameWidge/main/install.sh | bash

@@ -118,12 +118,6 @@ Item {
             compare(root.savedPatches[0].fan.curve.points, [[40, 0], [60, 70]]);
         }
 
-        function test_buildCurveConfig_omitsDownRateWhenDisabled() {
-            fanPage.rateLimitDownEnabled = false;
-            var cfg = fanPage.buildCurveConfig();
-            verify(cfg.rate_limit_down_pct_per_step === undefined);
-        }
-
         function test_buildCurveConfig_includesDownRateWhenEnabled() {
             fanPage.rateLimitDownEnabled = true;
             fanPage.rateLimitDownPctPerStep = 33;
@@ -163,6 +157,24 @@ Item {
             var markers = fanPage.curveLiveMarkers;
             compare(markers.length, 1);
             compare(markers[0].temp, 47);
+        }
+
+        // --- Separate down rate ---
+        // Patches merge on the service, so switching it off must send null;
+        // leaving the key out kept the old rate.
+        function test_downRateOff_sendsNull() {
+            fanPage.rateLimitDownEnabled = true;
+            fanPage.rateLimitDownPctPerStep = 5;
+            compare(fanPage.buildCurveConfig().rate_limit_down_pct_per_step, 5);
+            fanPage.rateLimitDownEnabled = false;
+            var cfg = fanPage.buildCurveConfig();
+            verify(cfg.hasOwnProperty("rate_limit_down_pct_per_step"), "the key must be sent to clear it");
+            compare(cfg.rate_limit_down_pct_per_step, null);
+        }
+
+        function test_seed_nullDownRateIsOff() {
+            root.configData = { fan: { mode: "curve", curve: { points: [[40, 0]], rate_limit_down_pct_per_step: null } } };
+            compare(fanPage.rateLimitDownEnabled, false);
         }
 
         // --- Presets ---

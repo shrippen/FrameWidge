@@ -267,6 +267,14 @@ impl Config {
             }
         }
 
+        if self
+            .battery
+            .charge_rate_soc_threshold_pct
+            .is_some_and(|soc| u32::from(soc) > PCT_MAX)
+        {
+            return Err("charge rate SoC threshold must be within 0..100".into());
+        }
+
         Ok(())
     }
 }
@@ -466,6 +474,9 @@ mod tests {
             )
             .is_err());
         assert!(base.patched(&json!([1])).is_err());
+        let soc = json!({ "battery": { "charge_rate_soc_threshold_pct": 200,
+                                       "charge_rate_c": { "enabled": true, "value": 0.5 } } });
+        assert!(base.patched(&soc).is_err(), "SoC threshold beyond 100 %");
     }
 
     #[test]

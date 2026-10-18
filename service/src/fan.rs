@@ -13,17 +13,25 @@ use std::time::Duration;
 /// Step interval outside curve mode: picks up a changed setting quickly.
 pub const IDLE_POLL: Duration = Duration::from_millis(500);
 
+/// Steps without a temperature before a curve hands the fans to the EC.
+const BLIND_STEPS: u32 = 3;
+
 #[derive(Default)]
 pub struct Fans {
     last: Option<(FanMode, bool)>,
     applied: HashMap<Fan, u32>,
     steppers: HashMap<Fan, Stepper>,
+    /// Handing the fans to the EC failed; try again next step.
+    auto_pending: bool,
+    /// Steps in a row without a temperature reading.
+    blind_steps: u32,
 }
 
 impl Fans {
     /// One control step; returns when the next one is due.
     pub fn step(&mut self, tool: &Tool, fan: &FanConfig, thermal: &Thermal) -> Duration {
         // A new mode or topology starts the curve from the current reading.
+        self.blind_steps = 0;
         let topology = (fan.mode, !fan.overrides.is_empty());
         let changed = self.last != Some(topology);
         if changed {
@@ -33,8 +41,8 @@ impl Fans {
 
         match fan.mode {
             FanMode::Disabled => {
-                if changed {
-                    log_err(tool.auto_fan());
+                if changed || self.auto_pending {
+                    self.hand_to_ec(tool);
                 }
             }
             FanMode::Manual => self.manual(tool, fan, thermal.fans.len()),
@@ -48,6 +56,38 @@ impl Fans {
         }
     }
 
+    /// A step without a temperature (`error`: why). Manual and Auto need none.
+    /// A curve has nothing to follow: after BLIND_STEPS the EC's own curve
+    /// takes over, and the curve starts afresh once readings return.
+    pub fn step_blind(&mut self, tool: &Tool, fan: &FanConfig, error: &str) -> Duration {
+        if fan.mode != FanMode::Curve {
+            return self.step(tool, fan, &Thermal::default());
+        }
+
+        self.blind_steps = self.blind_steps.saturating_add(1);
+        if self.blind_steps == 1 {
+            eprintln!("<4>fan: no temperature: {error}");
+        }
+        let handover = self.blind_steps == BLIND_STEPS;
+        if handover || (self.blind_steps > BLIND_STEPS && self.auto_pending) {
+            if handover {
+                eprintln!("<4>fan: no temperature; the EC's own curve takes over");
+            }
+            self.applied.clear();
+            self.steppers.clear();
+            self.last = None;
+            self.hand_to_ec(tool);
+        }
+        IDLE_POLL
+    }
+
+    /// Hands the fans to the EC; a failure is retried on the next step.
+    fn hand_to_ec(&mut self, tool: &Tool) {
+        let result = tool.auto_fan();
+        self.auto_pending = result.is_err();
+        log_err(result);
+    }
+
     fn manual(&mut self, tool: &Tool, fan: &FanConfig, fan_count: usize) {
         let global = fan.manual.as_ref().map(|m| m.duty_pct.min(PCT_MAX));
 
@@ -55,8 +95,8 @@ impl Fans {
             match global {
                 Some(duty) => self.apply(tool, Fan::All, duty),
                 None => {
-                    if self.last.is_none() {
-                        log_err(tool.auto_fan());
+                    if self.last.is_none() || self.auto_pending {
+                        self.hand_to_ec(tool);
                     }
                 }
             }
