@@ -1,12 +1,14 @@
 [Unit]
-Description=FrameWidge service: fans, power and battery of Framework laptops
+Description=FrameWidge service: fans and battery of Framework laptops
 Documentation=https://github.com/shrippen/FrameWidge
 # Both drive the fans and the charge limit; starting this one stops the other.
 Conflicts=framework-control.service
 After=framework-control.service
 
 [Service]
-# Root: framework_tool needs it for the EC, and cpufreq is root-writable only.
+Type=dbus
+BusName=io.github.shrippen.FrameWidge
+# Root: framework_tool needs it for the EC.
 ExecStart=/usr/local/bin/framewidged
 # Fans back to the EC's own curve when the service stops or crashes.
 ExecStopPost=/usr/local/bin/framewidged --restore-fan

@@ -30,7 +30,9 @@ if systemctl cat framewidged >/dev/null 2>&1; then
     if [[ "${answer:-N}" =~ ^[Yy] ]]; then
         # Stopping runs ExecStopPost, which hands the fans back to the EC.
         sudo systemctl disable --now framewidged
-        sudo rm -f /etc/systemd/system/framewidged.service /usr/local/bin/framewidged
+        sudo rm -f /etc/systemd/system/framewidged.service /usr/local/bin/framewidged \
+            /etc/dbus-1/system.d/io.github.shrippen.FrameWidge.conf \
+            /usr/share/polkit-1/actions/io.github.shrippen.FrameWidge.policy
         sudo rm -rf /var/lib/framewidged /usr/local/lib/framewidge
         sudo systemctl daemon-reload
         ok "Service removed."

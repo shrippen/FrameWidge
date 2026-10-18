@@ -8,9 +8,9 @@ KDE Plasma 6 tray widget for [Framework Laptops](https://frame.work): fan contro
 
 ## Features
 
-- **Fan control:** auto, manual duty, drag-and-drop curve editor, hysteresis, rate limiting, per-fan overrides (Framework 16), calibration wizard
+- **Fan control:** auto, manual duty, drag-and-drop curve editor, hysteresis, rate limiting, per-fan overrides (Framework 16), calibration wizard, curve presets that switch by Plasma Activity or when you plug in or unplug
 - **Sensors:** live temperature graphs, sensor selection, configurable time window
-- **Power:** AC/battery profiles, EPP, governor, frequency limits, TDP and thermal controls (capability-driven)
+- **Power:** the system power profile (power-profiles-daemon or tuned-ppd, the same switch as Plasma's battery applet)
 - **Battery:** charge/discharge wattage, health, cycles, charge limit (25–100%), rate limit with SoC threshold
 - **Tray:** temperature/RPM/SoC overlay, tooltip with live stats
 - **Offline detection:** setup guide when the backend is missing or stopped
@@ -18,8 +18,8 @@ KDE Plasma 6 tray widget for [Framework Laptops](https://frame.work): fan contro
 ## Requirements
 
 - Framework Laptop 13 or 16 (AMD/Intel)
-- KDE Plasma 6 (Wayland or X11)
-- Linux with systemd
+- KDE Plasma 6.1 or newer (Wayland or X11)
+- Linux with systemd and polkit; power-profiles-daemon or tuned-ppd for the Power tab
 - The `framewidged` service (installed by `install.sh`, see below)
 
 ## Install
@@ -40,8 +40,10 @@ Then add **FrameWidge** via the Plasma widget picker.
    cd FrameWidge
    cargo build --release --locked --manifest-path service/Cargo.toml
    sudo install -Dm755 service/target/release/framewidged /usr/local/bin/framewidged
-   sudo install -Dm644 service/framewidged.service /etc/systemd/system/framewidged.service
-   sudo systemctl daemon-reload && sudo systemctl enable --now framewidged
+   sudo install -Dm644 service/data/framewidged.service /etc/systemd/system/framewidged.service
+   sudo install -Dm644 service/data/io.github.shrippen.FrameWidge.conf /etc/dbus-1/system.d/io.github.shrippen.FrameWidge.conf
+   sudo install -Dm644 service/data/io.github.shrippen.FrameWidge.policy /usr/share/polkit-1/actions/io.github.shrippen.FrameWidge.policy
+   sudo systemctl reload dbus && sudo systemctl daemon-reload && sudo systemctl enable --now framewidged
    ```
 
 2. Plasmoid:
@@ -70,7 +72,9 @@ kpackagetool6 -t Plasma/Applet -r org.kde.plasma.framewidge
 
 # Service (optional; stopping it hands the fans back to the firmware)
 sudo systemctl disable --now framewidged
-sudo rm -f /usr/local/bin/framewidged /etc/systemd/system/framewidged.service
+sudo rm -f /usr/local/bin/framewidged /etc/systemd/system/framewidged.service \
+    /etc/dbus-1/system.d/io.github.shrippen.FrameWidge.conf \
+    /usr/share/polkit-1/actions/io.github.shrippen.FrameWidge.policy
 sudo rm -rf /var/lib/framewidged /usr/local/lib/framewidge
 ```
 
@@ -80,7 +84,6 @@ Right-click the widget → Configure.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Service port | `30913` | Port of `framewidged` |
 | Poll interval | `2000` ms | Health check and data polling interval |
 | Tray display | `temp` | Compact icon content: `temp`, `rpm`, `soc`, `icon` |
 | Style | System | Popup look: System (Plasma theme), Kante, Kante Light |
@@ -97,14 +100,17 @@ with the package. Add a language by copying the template to `po/<lang>.po` and r
 ## Architecture
 
 ```
-┌──────────────────┐     HTTP (127.0.0.1:30913)    ┌─────────────────────────┐
-│  Plasma Widget   │ ──────────────────────────── │  framewidged            │
-│  (QML)           │    GET/POST /api/*            │  service (Rust/systemd) │
-│                  │                               │  → framework_tool → EC  │
-└──────────────────┘                               └─────────────────────────┘
+┌──────────────────┐   D-Bus (system bus)   ┌──────────────────────────┐
+│  Plasma Widget   │ ─────────────────────▶ │  framewidged             │
+│  (QML)           │ io.github.shrippen.    │  service (Rust/systemd)  │
+│                  │   FrameWidge1          │  reads: sysfs            │
+└──────────────────┘                        │  writes: framework_tool  │
+                                            │  → EC; power profile →   │
+                                            │  power-profiles-daemon   │
+                                            └──────────────────────────┘
 ```
 
-The widget is pure QML and talks to `http://127.0.0.1:<port>/api/` via `XMLHttpRequest`. The service (`service/`) runs as root, keeps the fan curve, charge limit and power profile applied without the widget, and stores its settings in `/var/lib/framewidged/config.json`. See [DESIGN.md](DESIGN.md).
+The widget is pure QML and calls the service over the system D-Bus. Reading is open to every local user; changing settings asks polkit, which allows it for the person at the laptop without a password. The service (`service/`) runs as root, keeps the fan curve and charge limit applied without the widget, switches curve presets with the power source, and stores its settings in `/var/lib/framewidged/config.json`. See [DESIGN.md](DESIGN.md).
 
 ## License
 

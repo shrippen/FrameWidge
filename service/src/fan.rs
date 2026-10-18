@@ -1,71 +1,54 @@
-//! Fan control loop: manual duty or a temperature curve with hysteresis
-//! and rate limits, globally or per fan.
+//! Fan control: manual duty or a temperature curve with hysteresis and
+//! rate limits, globally or per fan. The control loop calls `step`.
 //!
 //! The curve state machine follows framework-control's
 //! `service/src/tasks/fan_curve.rs` (MIT).
 
-use crate::config::{Curve, FanMode, PCT_MAX};
+use crate::config::{Curve, FanConfig, FanMode, PCT_MAX};
+use crate::sensors::{self, Thermal};
 use crate::tool::{Fan, Tool};
-use crate::App;
 use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
-use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-const IDLE_POLL: Duration = Duration::from_millis(500);
-
-pub fn run(app: Arc<App>) {
-    let mut ctl = Controller::default();
-
-    loop {
-        let started = Instant::now();
-        let fan = app.config().fan;
-
-        // A new mode or topology starts the curve from the current reading.
-        let topology = (fan.mode, !fan.overrides.is_empty());
-        if ctl.last != Some(topology) {
-            ctl.reset();
-        }
-
-        let poll = match fan.mode {
-            FanMode::Curve => fan
-                .curve
-                .as_ref()
-                .map_or(IDLE_POLL, |c| Duration::from_millis(c.poll_ms)),
-            _ => IDLE_POLL,
-        };
-
-        match fan.mode {
-            FanMode::Disabled => {
-                if ctl.last != Some(topology) {
-                    log_err(app.tool.auto_fan());
-                }
-            }
-            FanMode::Manual => ctl.manual(&app.tool, &fan),
-            FanMode::Curve => ctl.curve(&app.tool, &fan),
-        }
-        ctl.last = Some(topology);
-
-        thread::sleep(poll.saturating_sub(started.elapsed()));
-    }
-}
+/// Step interval outside curve mode: picks up a changed setting quickly.
+pub const IDLE_POLL: Duration = Duration::from_millis(500);
 
 #[derive(Default)]
-struct Controller {
+pub struct Fans {
     last: Option<(FanMode, bool)>,
     applied: HashMap<Fan, u32>,
     steppers: HashMap<Fan, Stepper>,
-    fan_count: Option<u32>,
 }
 
-impl Controller {
-    fn reset(&mut self) {
-        self.applied.clear();
-        self.steppers.clear();
-        self.fan_count = None;
+impl Fans {
+    /// One control step; returns when the next one is due.
+    pub fn step(&mut self, tool: &Tool, fan: &FanConfig, thermal: &Thermal) -> Duration {
+        // A new mode or topology starts the curve from the current reading.
+        let topology = (fan.mode, !fan.overrides.is_empty());
+        let changed = self.last != Some(topology);
+        if changed {
+            self.applied.clear();
+            self.steppers.clear();
+        }
+
+        match fan.mode {
+            FanMode::Disabled => {
+                if changed {
+                    log_err(tool.auto_fan());
+                }
+            }
+            FanMode::Manual => self.manual(tool, fan, thermal.fans.len()),
+            FanMode::Curve => self.curve(tool, fan, thermal),
+        }
+        self.last = Some(topology);
+
+        match (fan.mode, &fan.curve) {
+            (FanMode::Curve, Some(c)) => Duration::from_millis(c.poll_ms),
+            _ => IDLE_POLL,
+        }
     }
 
-    fn manual(&mut self, tool: &Tool, fan: &crate::config::FanConfig) {
+    fn manual(&mut self, tool: &Tool, fan: &FanConfig, fan_count: usize) {
         let global = fan.manual.as_ref().map(|m| m.duty_pct.min(PCT_MAX));
 
         if fan.overrides.is_empty() {
@@ -80,10 +63,7 @@ impl Controller {
             return;
         }
 
-        let Some(count) = self.count(tool) else {
-            return;
-        };
-        for i in 0..count {
+        for i in 0..fan_count as u32 {
             let own = fan
                 .overrides
                 .iter()
@@ -96,24 +76,16 @@ impl Controller {
         }
     }
 
-    fn curve(&mut self, tool: &Tool, fan: &crate::config::FanConfig) {
-        let temps = match tool.thermal() {
-            Ok(t) => t.temps,
-            Err(e) => return eprintln!("<4>fan: {e}"),
-        };
-
+    fn curve(&mut self, tool: &Tool, fan: &FanConfig, thermal: &Thermal) {
         if fan.overrides.is_empty() {
             let Some(curve) = &fan.curve else {
                 return;
             };
-            self.step(tool, Fan::All, curve, &temps);
+            self.follow(tool, Fan::All, curve, &thermal.temps);
             return;
         }
 
-        let Some(count) = self.count(tool) else {
-            return;
-        };
-        for i in 0..count {
+        for i in 0..thermal.fans.len() as u32 {
             let own = fan
                 .overrides
                 .iter()
@@ -122,12 +94,12 @@ impl Controller {
             let Some(curve) = own.or(fan.curve.as_ref()) else {
                 continue;
             };
-            self.step(tool, Fan::Index(i), curve, &temps);
+            self.follow(tool, Fan::Index(i), curve, &thermal.temps);
         }
     }
 
-    fn step(&mut self, tool: &Tool, fan: Fan, curve: &Curve, temps: &BTreeMap<String, i32>) {
-        let Some(temp) = hottest(temps, &curve.sensors) else {
+    fn follow(&mut self, tool: &Tool, fan: Fan, curve: &Curve, temps: &BTreeMap<String, i32>) {
+        let Some(temp) = sensors::hottest(temps, &curve.sensors) else {
             return;
         };
         let stepper = self.steppers.entry(fan).or_default();
@@ -152,15 +124,6 @@ impl Controller {
             }
             Err(e) => eprintln!("<4>fan {fan:?}: {e}"),
         }
-    }
-
-    fn count(&mut self, tool: &Tool) -> Option<u32> {
-        if self.fan_count.is_none() {
-            // Zero fans means the EC was not ready; ask again next tick.
-            let n = tool.thermal().ok()?.fans.len() as u32;
-            self.fan_count = (n > 0).then_some(n);
-        }
-        self.fan_count
     }
 }
 
@@ -251,26 +214,6 @@ fn step_toward(current: u32, target: u32, max_step: u32) -> u32 {
     }
 }
 
-/// Hottest of `sensors` (exact, then case-insensitive). If none of them
-/// exists, e.g. after an EC update renamed the sensors, the hottest of all,
-/// so the fan never stays on a stale reading.
-fn hottest(temps: &BTreeMap<String, i32>, sensors: &[String]) -> Option<i32> {
-    let picked = sensors
-        .iter()
-        .filter_map(|name| {
-            temps.get(name).or_else(|| {
-                temps
-                    .iter()
-                    .find(|(k, _)| k.eq_ignore_ascii_case(name))
-                    .map(|(_, v)| v)
-            })
-        })
-        .max()
-        .copied();
-
-    picked.or_else(|| temps.values().max().copied())
-}
-
 fn log_err(result: Result<(), String>) {
     if let Err(e) = result {
         eprintln!("<4>fan: {e}");
@@ -348,20 +291,5 @@ mod tests {
             ..Stepper::default()
         };
         assert_eq!(s.next(40, &c), Some(75));
-    }
-
-    #[test]
-    fn hottest_falls_back_only_without_any_match() {
-        let temps: BTreeMap<String, i32> = [
-            ("apu_f75303@4d".to_string(), 58),
-            ("cpu@4c".to_string(), 62),
-        ]
-        .into();
-        assert_eq!(hottest(&temps, &["APU".to_string()]), Some(62));
-        assert_eq!(
-            hottest(&temps, &["APU_F75303@4D".to_string(), "gpu".to_string()]),
-            Some(58)
-        );
-        assert_eq!(hottest(&BTreeMap::new(), &[]), None);
     }
 }

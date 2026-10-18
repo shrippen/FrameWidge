@@ -16,7 +16,6 @@ Item {
     property bool cliPresent: true
     property real cpuTemp: 42
     property int fanRpm: 2000
-    property string baseUrl: "http://127.0.0.1:1" // unused: FanPage no longer fetches directly
 
     property var savedPatches: []
 
@@ -33,10 +32,9 @@ Item {
         if (callback) callback(true);
     }
 
-    // FanPage's preset storage writes through the unqualified `plasmoid`
-    // identifier (a real context property in the actual widget); mocked the
-    // same way `root` is, since persistPresets() is imperative code where an
-    // unresolved reference throws instead of just failing a binding silently.
+    // FanPage reads presets of FrameWidge 1.2 through the unqualified
+    // `plasmoid` identifier (a real context property in the actual widget)
+    // to move them into the service; mocked the same way `root` is.
     QtObject {
         id: plasmoid
         property QtObject configuration: QtObject {
@@ -180,7 +178,39 @@ Item {
             fanPage.saveCurrentAsPreset("Gaming", "activity-123");
             compare(fanPage.presets.length, 1);
             compare(fanPage.presets[0].activity_id, "activity-123");
-            compare(fanPage.presets[0].points, [[30, 0], [70, 100]]);
+            compare(fanPage.presets[0].curve.points, [[30, 0], [70, 100]]);
+            compare(root.savedPatches[root.savedPatches.length - 1].fan.presets.length, 1, "stored by the service");
+        }
+
+        function test_saveCurrentAsPreset_powerSourceMovesFromOtherPreset() {
+            fanPage.saveCurrentAsPreset("Quiet", "", "battery");
+            fanPage.saveCurrentAsPreset("Silent", "", "battery");
+            compare(fanPage.presets[0].power_source, null, "the service allows one preset per power source");
+            compare(fanPage.presets[1].power_source, "battery");
+        }
+
+        function test_seed_readsPresetsFromServiceConfig() {
+            root.configData = { fan: { mode: "curve", presets: [{ name: "Quiet", curve: { points: [[50, 20]] }, activity_id: "", power_source: "ac" }] } };
+            compare(fanPage.presets.length, 1);
+            fanPage.applyPreset(0);
+            compare(fanPage.curvePoints, [[50, 20]]);
+        }
+
+        function test_migratesPresetsOfVersion12IntoService() {
+            plasmoid.configuration.fanCurvePresetsJson = JSON.stringify([
+                { name: "Old", points: [[40, 10]], hysteresis_c: 3, rate_limit_pct_per_step: 10,
+                  rate_limit_down_enabled: true, rate_limit_down_pct_per_step: 5, poll_ms: 1000, sensors: ["APU"], activity_id: "a1" }
+            ]);
+            root.savedPatches = [];
+            root.configData = { fan: { mode: "disabled", presets: [] } };
+
+            compare(root.savedPatches.length, 1);
+            var moved = root.savedPatches[0].fan.presets[0];
+            compare(moved.name, "Old");
+            compare(moved.curve.points, [[40, 10]]);
+            compare(moved.curve.rate_limit_down_pct_per_step, 5);
+            compare(moved.activity_id, "a1");
+            compare(plasmoid.configuration.fanCurvePresetsJson, "", "moved once");
         }
 
         function test_saveCurrentAsPreset_withoutActivityStoresEmptyString() {

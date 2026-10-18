@@ -1,10 +1,11 @@
-//! Persistent settings, in the schema the widget reads and writes via
-//! `/api/config`. A POST is a partial patch: objects merge key by key,
-//! everything else (arrays, numbers, null) replaces.
+//! Persistent settings, in the schema the widget reads and writes over
+//! D-Bus (`Config`, `SetConfig`). A write is a partial patch: objects merge
+//! key by key, everything else (arrays, numbers, null) replaces.
 //!
 //! On first start the settings of framework-control are taken over, so a
 //! switch from that service keeps the fan curve and limits.
 
+use crate::sensors;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
@@ -25,7 +26,6 @@ const POLL_MS_MIN: u64 = 100;
 #[serde(default)]
 pub struct Config {
     pub fan: FanConfig,
-    pub power: PowerConfig,
     pub battery: BatteryConfig,
     pub telemetry: TelemetryConfig,
 }
@@ -50,6 +50,8 @@ pub struct FanConfig {
     pub overrides: Vec<Override>,
     /// Duty -> RPM table measured by the widget's calibration dialog; only stored here.
     pub calibration: Option<Value>,
+    /// Named curves; one may switch on by itself when the power source changes.
+    pub presets: Vec<Preset>,
 }
 
 impl Default for FanConfig {
@@ -60,6 +62,7 @@ impl Default for FanConfig {
             curve: Some(Curve::default()),
             overrides: Vec::new(),
             calibration: None,
+            presets: Vec::new(),
         }
     }
 }
@@ -107,23 +110,23 @@ pub struct Override {
     pub curve: Option<Curve>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
-pub struct PowerConfig {
-    pub ac: Option<PowerProfile>,
-    pub battery: Option<PowerProfile>,
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Preset {
+    pub name: String,
+    pub curve: Curve,
+    /// Plasma Activity that applies it; the widget switches, this service only stores it.
+    #[serde(default)]
+    pub activity_id: String,
+    /// Applied by this service when the laptop switches to this power source.
+    #[serde(default)]
+    pub power_source: Option<PowerSource>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-#[serde(default)]
-pub struct PowerProfile {
-    pub epp_preference: Option<Setting<String>>,
-    pub governor: Option<Setting<String>>,
-    pub min_freq_mhz: Option<Setting<u32>>,
-    pub max_freq_mhz: Option<Setting<u32>>,
-    /// Kept for the widget; Linux has no TDP or thermal-limit control here.
-    pub tdp_watts: Option<Setting<u32>>,
-    pub thermal_limit_c: Option<Setting<u32>>,
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum PowerSource {
+    Ac,
+    Battery,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -171,9 +174,38 @@ impl Config {
 
         let mut merged = serde_json::to_value(self).map_err(|e| e.to_string())?;
         merge(&mut merged, patch);
-        let cfg: Config = serde_json::from_value(merged).map_err(|e| e.to_string())?;
+        let mut cfg: Config = serde_json::from_value(merged).map_err(|e| e.to_string())?;
+        cfg.normalize();
         cfg.validate()?;
         Ok(cfg)
+    }
+
+    /// The config with the preset for `source` as the active curve, if there is one.
+    pub fn with_preset_for(&self, source: PowerSource) -> Option<Config> {
+        let preset = self
+            .fan
+            .presets
+            .iter()
+            .find(|p| p.power_source == Some(source))?;
+        let mut cfg = self.clone();
+        cfg.fan.mode = FanMode::Curve;
+        cfg.fan.curve = Some(preset.curve.clone());
+        Some(cfg)
+    }
+
+    /// Sensor names as the sensors module reports them (see sensors::canonical).
+    fn normalize(&mut self) {
+        let fan = &mut self.fan;
+        let curves = fan
+            .curve
+            .iter_mut()
+            .chain(fan.overrides.iter_mut().filter_map(|o| o.curve.as_mut()))
+            .chain(fan.presets.iter_mut().map(|p| &mut p.curve));
+        for curve in curves {
+            for name in &mut curve.sensors {
+                *name = sensors::canonical(name);
+            }
+        }
     }
 
     fn validate(&self) -> Result<(), String> {
@@ -181,7 +213,8 @@ impl Config {
         let curves = fan
             .curve
             .iter()
-            .chain(fan.overrides.iter().filter_map(|o| o.curve.as_ref()));
+            .chain(fan.overrides.iter().filter_map(|o| o.curve.as_ref()))
+            .chain(fan.presets.iter().map(|p| &p.curve));
         for curve in curves {
             if curve
                 .points
@@ -204,6 +237,21 @@ impl Config {
             .chain(fan.overrides.iter().filter_map(|o| o.manual.as_ref()));
         if manuals.into_iter().any(|m| m.duty_pct > PCT_MAX) {
             return Err("duty must be within 0..100".into());
+        }
+
+        for (i, preset) in fan.presets.iter().enumerate() {
+            if preset.name.trim().is_empty() {
+                return Err("preset name must not be empty".into());
+            }
+            let later = &fan.presets[i + 1..];
+            if later.iter().any(|p| p.name == preset.name) {
+                return Err(format!("two presets named {}", preset.name));
+            }
+            if preset.power_source.is_some()
+                && later.iter().any(|p| p.power_source == preset.power_source)
+            {
+                return Err("one preset per power source".into());
+            }
         }
 
         if let Some(limit) = self
@@ -253,8 +301,11 @@ impl Store {
     /// Own file, else framework-control's (imported), else defaults.
     pub fn load(&self, legacy: &Path) -> Config {
         if let Ok(text) = fs::read_to_string(&self.path) {
-            return match serde_json::from_str(&text) {
-                Ok(cfg) => cfg,
+            return match serde_json::from_str::<Config>(&text) {
+                Ok(mut cfg) => {
+                    cfg.normalize();
+                    cfg
+                }
                 Err(e) => {
                     eprintln!("<4>{}: {e}; using defaults", self.path.display());
                     Config::default()
@@ -326,7 +377,7 @@ fn import(legacy: &Value) -> Config {
     // Fields this service does not know are dropped, invalid sections reset.
     let defaults = serde_json::to_value(Config::default()).unwrap_or_default();
     let mut cfg = Config::default();
-    for section in ["fan", "power", "battery", "telemetry"] {
+    for section in ["fan", "battery", "telemetry"] {
         let mut merged = defaults.clone();
         merge(
             &mut merged,
@@ -335,13 +386,13 @@ fn import(legacy: &Value) -> Config {
         match serde_json::from_value::<Config>(merged) {
             Ok(c) if c.validate().is_ok() => match section {
                 "fan" => cfg.fan = c.fan,
-                "power" => cfg.power = c.power,
                 "battery" => cfg.battery = c.battery,
                 _ => cfg.telemetry = c.telemetry,
             },
             _ => eprintln!("<4>framework-control {section} settings not imported"),
         }
     }
+    cfg.normalize();
     cfg
 }
 
@@ -362,13 +413,42 @@ mod tests {
     }
 
     #[test]
-    fn patch_into_null_profile() {
+    fn patch_renames_old_sensor_names() {
         let cfg = Config::default()
-            .patched(&json!({ "power": { "ac": { "max_freq_mhz": { "enabled": true, "value": 3000 } } } }))
+            .patched(&json!({ "fan": { "curve": { "sensors": ["APU", "F75303_CPU"] } } }))
             .unwrap();
-        let ac = cfg.power.ac.unwrap();
-        assert_eq!(ac.max_freq_mhz.unwrap().value, 3000);
-        assert!(ac.governor.is_none());
+        assert_eq!(
+            cfg.fan.curve.unwrap().sensors,
+            vec!["cpu@4c", "cpu_f75303@4d"]
+        );
+    }
+
+    fn preset(name: &str, source: Option<&str>) -> Value {
+        json!({ "name": name, "curve": { "points": [[50, 60]] }, "power_source": source })
+    }
+
+    #[test]
+    fn preset_for_power_source_becomes_the_curve() {
+        let cfg = Config::default()
+            .patched(&json!({ "fan": { "presets": [preset("Quiet", Some("battery")), preset("Fast", None)] } }))
+            .unwrap();
+        let on_battery = cfg.with_preset_for(PowerSource::Battery).unwrap();
+        assert_eq!(on_battery.fan.mode, FanMode::Curve);
+        assert_eq!(on_battery.fan.curve.unwrap().points, vec![[50, 60]]);
+        assert!(cfg.with_preset_for(PowerSource::Ac).is_none());
+    }
+
+    #[test]
+    fn presets_must_be_unique() {
+        let base = Config::default();
+        let same_name = json!({ "fan": { "presets": [preset("A", None), preset("A", None)] } });
+        let same_source =
+            json!({ "fan": { "presets": [preset("A", Some("ac")), preset("B", Some("ac"))] } });
+        assert!(base.patched(&same_name).is_err());
+        assert!(base.patched(&same_source).is_err());
+        assert!(base
+            .patched(&json!({ "fan": { "presets": [preset(" ", None)] } }))
+            .is_err());
     }
 
     #[test]
@@ -417,7 +497,7 @@ mod tests {
         });
         let cfg = import(&legacy);
         assert_eq!(cfg.fan.mode, FanMode::Curve);
-        assert_eq!(cfg.fan.curve.as_ref().unwrap().sensors, vec!["APU"]);
+        assert_eq!(cfg.fan.curve.as_ref().unwrap().sensors, vec!["cpu@4c"]);
         assert_eq!(
             cfg.fan.calibration.as_ref().unwrap()["points"],
             json!([[0, 0], [100, 8260]])
@@ -425,7 +505,6 @@ mod tests {
         assert_eq!(cfg.battery.charge_limit_max_pct.unwrap().value, 90);
         assert_eq!(cfg.telemetry.poll_ms, 1000);
         assert_eq!(cfg.telemetry.retain_seconds, 1800);
-        assert!(cfg.power.ac.is_none());
     }
 
     #[test]

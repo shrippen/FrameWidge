@@ -1,12 +1,14 @@
 //! Driver for `framework_tool` (FrameworkComputer/framework-system), the
-//! only way this service talks to the embedded controller (EC).
+//! way this service writes to the embedded controller (EC): fan duty,
+//! charge limit and rate. Reads come from sysfs; `framework_tool` reads
+//! only what sysfs lacks (charge limit, firmware versions, and thermal on
+//! kernels without the EC hwmon driver).
 //!
-//! One call at a time: the EC serves one host command at a time, and two
-//! loops (fan, battery) plus HTTP requests would otherwise interleave.
-//! Reads are cached briefly, since every widget poll and every fan step
-//! needs the same thermal reading.
+//! One call at a time: the EC serves one host command at a time, and the
+//! control loop and D-Bus calls would otherwise interleave.
 
-use crate::parse::{self, Battery, ChargeLimit, Thermal, Versions};
+use crate::parse::{self, ChargeLimit, Versions};
+use crate::sensors::Thermal;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -21,7 +23,7 @@ const INSTALL_DIR: &str = "/usr/local/lib/framewidge";
 
 const CALL_TIMEOUT: Duration = Duration::from_secs(30);
 const THERMAL_TTL: Duration = Duration::from_secs(1);
-const BATTERY_TTL: Duration = Duration::from_secs(5);
+const LIMIT_TTL: Duration = Duration::from_secs(5);
 const VERSIONS_TTL: Duration = Duration::from_secs(3600);
 
 /// Which fan a duty applies to.
@@ -39,7 +41,6 @@ struct Cached<T> {
 #[derive(Default)]
 struct Cache {
     thermal: Option<Cached<Thermal>>,
-    battery: Option<Cached<Battery>>,
     limit: Option<Cached<ChargeLimit>>,
     versions: Option<Cached<Versions>>,
 }
@@ -80,22 +81,9 @@ impl Tool {
         Ok(value)
     }
 
-    pub fn battery(&self) -> Result<Battery, String> {
-        let mut cache = self.lock();
-        if let Some(v) = fresh(&cache.battery, BATTERY_TTL) {
-            return Ok(v);
-        }
-        let value = parse::battery(&self.run(&["--power", "-vv"])?);
-        cache.battery = Some(Cached {
-            at: Instant::now(),
-            value: value.clone(),
-        });
-        Ok(value)
-    }
-
     pub fn charge_limit(&self) -> Result<ChargeLimit, String> {
         let mut cache = self.lock();
-        if let Some(v) = fresh(&cache.limit, BATTERY_TTL) {
+        if let Some(v) = fresh(&cache.limit, LIMIT_TTL) {
             return Ok(v);
         }
         let value = parse::charge_limit(&self.run(&["--charge-limit"])?);

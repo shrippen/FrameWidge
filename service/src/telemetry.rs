@@ -1,14 +1,11 @@
-//! Telemetry loop: keeps the recent temperatures and fan speeds for the
-//! widget's sensor graph (`/api/thermal/history`).
+//! Recent temperatures and fan speeds for the widget's sensor graph
+//! (`ThermalHistory`). The control loop records; D-Bus calls read.
 
-use crate::App;
+use crate::sensors::Thermal;
 use serde::Serialize;
 use std::collections::{BTreeMap, VecDeque};
-use std::sync::Arc;
-use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-const POLL_MIN_MS: u64 = 1000;
 const MS_PER_S: i64 = 1000;
 
 #[derive(Debug, Clone, Serialize)]
@@ -18,37 +15,36 @@ pub struct Sample {
     pub rpms: Vec<u32>,
 }
 
-pub fn run(app: Arc<App>) {
-    loop {
-        let cfg = app.config().telemetry;
+#[derive(Default)]
+pub struct History {
+    samples: VecDeque<Sample>,
+}
 
-        match app.tool.thermal() {
-            Ok(t) => {
-                let sample = Sample {
-                    ts_ms: now_ms(),
-                    temps: t.temps,
-                    rpms: t.fans.iter().map(|f| f.rpm).collect(),
-                };
-                let mut history = app.history.lock().unwrap_or_else(|e| e.into_inner());
-                push(&mut history, sample, cfg.retain_seconds);
-            }
-            Err(e) => eprintln!("<4>telemetry: {e}"),
+impl History {
+    /// Appends a reading and drops what is older than `retain_seconds`.
+    pub fn record(&mut self, thermal: &Thermal, retain_seconds: u64) {
+        let sample = Sample {
+            ts_ms: now_ms(),
+            temps: thermal.temps.clone(),
+            rpms: thermal.fans.iter().map(|f| f.rpm).collect(),
+        };
+        self.push(sample, retain_seconds);
+    }
+
+    pub fn samples(&self) -> Vec<Sample> {
+        self.samples.iter().cloned().collect()
+    }
+
+    fn push(&mut self, sample: Sample, retain_seconds: u64) {
+        let cutoff = sample.ts_ms - retain_seconds as i64 * MS_PER_S;
+        self.samples.push_back(sample);
+        while self.samples.front().is_some_and(|s| s.ts_ms < cutoff) {
+            self.samples.pop_front();
         }
-
-        thread::sleep(Duration::from_millis(cfg.poll_ms.max(POLL_MIN_MS)));
     }
 }
 
-/// Appends `sample` and drops what is older than `retain_seconds`.
-fn push(history: &mut VecDeque<Sample>, sample: Sample, retain_seconds: u64) {
-    let cutoff = sample.ts_ms - retain_seconds as i64 * MS_PER_S;
-    history.push_back(sample);
-    while history.front().is_some_and(|s| s.ts_ms < cutoff) {
-        history.pop_front();
-    }
-}
-
-pub fn now_ms() -> i64 {
+fn now_ms() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as i64)
@@ -69,11 +65,11 @@ mod tests {
 
     #[test]
     fn drops_samples_past_retention() {
-        let mut h = VecDeque::new();
-        push(&mut h, at(0), 10);
-        push(&mut h, at(5_000), 10);
-        push(&mut h, at(12_000), 10);
-        let kept: Vec<i64> = h.iter().map(|s| s.ts_ms).collect();
+        let mut h = History::default();
+        h.push(at(0), 10);
+        h.push(at(5_000), 10);
+        h.push(at(12_000), 10);
+        let kept: Vec<i64> = h.samples().iter().map(|s| s.ts_ms).collect();
         assert_eq!(kept, vec![5_000, 12_000]);
     }
 }

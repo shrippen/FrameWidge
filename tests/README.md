@@ -17,12 +17,14 @@ The pages (`FanPage`, `PowerPage`, `BatteryPage`, `SensorsPage`) use an unqualif
 
 `i18n()` is injected by Plasma and undefined in `qmltestrunner`. The resulting `ReferenceError: i18n is not defined` warnings are harmless. A real failure is a `FAIL!` line.
 
-`tst_Api.qml` and `tst_SensorsPageLogic.qml` make real HTTP calls. `run_unit_tests.sh` starts `tests/fixtures/mock_backend.py` (stdlib-only, emulates the used subset of the framewidged API) and writes its port to `tests/.runtime/mock_port.txt` (gitignored). QML has no `Qt.getenv()`, hence the file. Without it, network tests `skip()`.
+`tst_Api.qml` and `tst_SensorsPageLogic.qml` make real D-Bus calls. `run_unit_tests.sh` starts a private `dbus-daemon` (socket in `tests/.runtime/`, gitignored), points `DBUS_SYSTEM_BUS_ADDRESS` at it and runs `tests/fixtures/mock_backend.py` there (PyGObject, emulates the framewidged interface). The widget only knows the system bus, so the real system bus and a running framewidged are never touched. Run outside the script, these tests `skip()`.
 
-Test-only routes of the mock:
+Test-only interface of the mock (`io.github.shrippen.FrameWidge.Mock`, called through `tests/qml/MockBus.js`):
 
-- `GET /__requests`: log of received requests. Asserts a debounced slider drag sends one call, not one per pixel.
-- `POST /__reset`: clears the log, resets `/api/config` to defaults.
+- `Requests()`: log of received calls. Asserts a debounced slider drag sends one call, not one per pixel.
+- `Reset()`: clears the log, resets the config to defaults.
+
+The service has its own tests: `cargo test` in `service/` (unit tests, and the real binary on a private bus with a fake `framework_tool`, sysfs and power-profiles-daemon).
 
 `tst_KanteStyle.qml` checks that the `visualStyle` setting maps to `KanteStyle.kind`, `tst_KanteWidget.qml` that the Kante-styled parts load and survive switching the style. `tst_KanteAdoption.qml` checks that the pages use the Kante elements (curve editor, line chart, chips, band editor, command boxes) in the Kante styles and the platform ones in System, and that edits reach the config. `tst_SensorSeries.qml` covers the chart data shaping.
 

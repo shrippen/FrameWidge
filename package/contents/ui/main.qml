@@ -37,8 +37,11 @@ PlasmoidItem {
     property real cpuTemp: {
         if (!thermalData || !thermalData.temps) return -1;
         var temps = thermalData.temps;
-        if (temps["APU"] !== undefined) return temps["APU"];
-        if (temps["CPU"] !== undefined) return temps["CPU"];
+        // cpu@4c: the APU as the EC hwmon driver names it; APU/CPU: older framework_tool and the demo.
+        var preferred = ["cpu@4c", "APU", "CPU"];
+        for (var i = 0; i < preferred.length; i++) {
+            if (temps[preferred[i]] !== undefined) return temps[preferred[i]];
+        }
         var keys = Object.keys(temps);
         if (keys.length > 0) return temps[keys[0]];
         return -1;
@@ -73,10 +76,7 @@ PlasmoidItem {
     compactRepresentation: CompactRepresentation {}
     fullRepresentation: FullRepresentation {}
 
-    property string baseUrl: "http://127.0.0.1:" + plasmoid.configuration.servicePort
-
-    // Every poll is a request the backend service logs to the journal, so
-    // by default polling only runs while the popup is open. Background
+    // By default polling only runs while the popup is open. Background
     // polling (to keep the tray overlay live with the popup closed) is
     // opt-in via the debug setting on the System Info KCM page; the idle
     // multiplier still applies there, since sub-2s precision isn't needed
@@ -116,7 +116,7 @@ PlasmoidItem {
     }
 
     function pollHealth() {
-        Api.get(baseUrl + "/api/health", function(ok, data) {
+        Api.get("Health", function(ok, data) {
             var wasOnline = serviceOnline;
             if (ok && data) {
                 serviceOnline = true;
@@ -137,30 +137,38 @@ PlasmoidItem {
     function pollData() {
         if (!serviceOnline || !cliPresent) return;
 
-        Api.get(baseUrl + "/api/thermal", function(ok, data) {
+        Api.get("Thermal", function(ok, data) {
             if (ok && data) thermalData = data;
         });
 
-        Api.get(baseUrl + "/api/power", function(ok, data) {
+        Api.get("Power", function(ok, data) {
             if (ok && data) powerData = data;
         });
     }
 
     function loadConfig() {
-        Api.get(baseUrl + "/api/config", function(ok, data) {
+        Api.get("Config", function(ok, data) {
             if (ok && data) configData = data;
         });
     }
 
     function saveConfig(patch, callback) {
-        Api.post(baseUrl + "/api/config", patch, function(ok, data) {
+        Api.setConfig(patch, function(ok, data) {
             if (ok) loadConfig();
             if (callback) callback(ok);
         });
     }
 
+    // name: one of powerData.profile.available
+    function setPowerProfile(name, callback) {
+        Api.setPowerProfile(name, function(ok) {
+            if (ok) pollData();
+            if (callback) callback(ok);
+        });
+    }
+
     function loadThermalHistory() {
-        Api.get(baseUrl + "/api/thermal/history", function(ok, data) {
+        Api.get("ThermalHistory", function(ok, data) {
             if (ok && data) thermalHistory = data;
         });
     }

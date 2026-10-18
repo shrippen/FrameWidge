@@ -12,13 +12,13 @@ Native KDE Plasma 6 system tray widget for Framework Laptops — fan curves, pow
 
 **FrameWidge** is a native KDE Plasma 6 widget for Framework Laptops (13 and 16, AMD and Intel). It lives in your system tray and gives you full control over fans, power profiles, and battery — no terminal required.
 
-FrameWidge is pure QML. The privileged work is done by its own small systemd service, `framewidged`, which talks to the embedded controller through Framework's `framework_tool` and serves the widget over `http://127.0.0.1:30913`. Parts of the service are ported from [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk, FrameWidge's backend up to 1.2.
+FrameWidge is pure QML. The privileged work is done by its own small systemd service, `framewidged`, which talks to the embedded controller through Framework's `framework_tool` and serves the widget over the system D-Bus; polkit lets the person at the laptop change settings without a password. Parts of the service are ported from [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk, FrameWidge's backend up to 1.2.
 
 ### Features
 
 - **Fan Control** — Auto mode, manual duty slider, and a custom curve editor with drag-and-drop points, hysteresis, rate limiting, and per-fan overrides on the Framework 16. Includes a calibration wizard for accurate RPM readouts.
 - **Sensors** — Live temperature graphs with history, per-sensor selection, and a configurable time window.
-- **Power** — Separate AC/Battery profiles, EPP, CPU governor, frequency limits, TDP, and thermal controls — all driven by what your hardware actually supports.
+- **Power** — The system power profile (Power Saver, Balanced, Performance) via power-profiles-daemon or tuned-ppd, the same switch as Plasma's battery applet.
 - **Battery** — Live charge/discharge wattage, health, cycle count, charge limit (25–100%), and rate limiting with an optional state-of-charge threshold.
 - **System Tray** — Compact icon with a configurable overlay (temperature, RPM, or battery %), a rich tooltip with live stats, and a dimmed icon when the backend is unreachable.
 - **Guided Setup** — If the backend service isn't installed or running yet, the widget shows a friendly setup screen with a copyable install command instead of failing silently.
@@ -26,7 +26,7 @@ FrameWidge is pure QML. The privileged work is done by its own small systemd ser
 ### Requirements
 
 - A **Framework Laptop** (13 or 16, AMD or Intel)
-- **KDE Plasma 6** (Wayland or X11)
+- **KDE Plasma 6.1** or newer (Wayland or X11)
 - Linux with systemd (Arch, Fedora, NixOS, etc.)
 - The **framewidged** service — see below
 

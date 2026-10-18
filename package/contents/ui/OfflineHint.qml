@@ -117,17 +117,5 @@ ColumnLayout {
         }
     }
 
-    // Port info
-    PlasmaComponents.Label {
-        Layout.fillWidth: true
-        Layout.leftMargin: Kirigami.Units.largeSpacing
-        Layout.rightMargin: Kirigami.Units.largeSpacing
-        visible: !root.serviceOnline
-        wrapMode: Text.WordWrap
-        opacity: 0.5
-        font.pointSize: Kirigami.Theme.smallFont.pointSize
-        text: i18n("Trying port %1. Change in widget settings if different.", plasmoid.configuration.servicePort)
-    }
-
     Item { Layout.fillHeight: true }
 }

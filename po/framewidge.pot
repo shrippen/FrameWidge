@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FrameWidge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 11:56+0200\n"
+"POT-Creation-Date: 2026-10-18 13:15+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -135,9 +135,6 @@ msgid "Kante"
 msgstr ""
 
 msgid "Kante Light"
-msgstr ""
-
-msgid "Service port:"
 msgstr ""
 
 msgid "Poll interval (ms):"
@@ -354,6 +351,14 @@ msgstr ""
 msgid "(none)"
 msgstr ""
 
+msgid "Auto-apply on power source:"
+msgstr ""
+
+msgid ""
+"The service switches to this preset when the laptop is plugged in or "
+"unplugged, also while the widget is closed."
+msgstr ""
+
 msgid "CPU temperature: %1 °C"
 msgstr ""
 
@@ -413,66 +418,28 @@ msgstr ""
 msgid "Already installed? Start the service:"
 msgstr ""
 
-msgid "Trying port %1. Change in widget settings if different."
+msgid "Power Saver"
+msgstr ""
+
+msgid "Balanced"
+msgstr ""
+
+msgid "Performance"
+msgstr ""
+
+msgid "Loading power profiles…"
 msgstr ""
 
 msgid ""
-"Whether the laptop is running on AC power or battery. Power profiles below "
-"can be configured separately for each."
+"No power profile service is running (power-profiles-daemon or tuned-ppd)."
 msgstr ""
 
-msgid "TDP:"
-msgstr ""
-
-msgid ""
-"Thermal Design Power: the sustained power budget the CPU is allowed to draw. "
-"Lower means cooler and quieter but less performance; higher means the "
-"opposite."
-msgstr ""
-
-msgid "Thermal:"
-msgstr ""
-
-msgid "EPP:"
+msgid "Power profile:"
 msgstr ""
 
 msgid ""
-"Energy Performance Preference: biases the CPU scheduler toward power savings "
-"or performance within the current frequency/TDP limits, without changing "
-"them."
-msgstr ""
-
-msgid "Governor:"
-msgstr ""
-
-msgid ""
-"The kernel's CPU frequency governor - the policy deciding how quickly clock "
-"speed ramps up and down in response to load (e.g. schedutil, performance, "
-"powersave)."
-msgstr ""
-
-msgid "Frequency:"
-msgstr ""
-
-msgid "Loading power configuration…"
-msgstr ""
-
-msgid "No supported power management interface detected."
-msgstr ""
-
-msgid "AC"
-msgstr ""
-
-msgid "TDP (W):"
-msgstr ""
-
-msgid "Thermal (°C):"
-msgstr ""
-
-msgid "Min freq (MHz):"
-msgstr ""
-
-msgid "Max freq (MHz):"
+"The system's power profile, the same setting as in Plasma's battery applet. "
+"It sets the CPU's energy preference and the firmware's platform profile."
 msgstr ""
 
 msgid "Sensor temperature chart, no data yet"

@@ -12,9 +12,8 @@ Item {
 
     property bool serviceOnline: false
     property bool cliPresent: true
-    property string baseUrl: "http://127.0.0.1:1"
     property int visualStyle: 0
-    readonly property var plasmoid: ({ configuration: { servicePort: 30913 } })
+    readonly property var plasmoid: ({ configuration: {} })
 
     Binding {
         target: KanteStyle

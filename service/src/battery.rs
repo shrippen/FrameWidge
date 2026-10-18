@@ -1,52 +1,46 @@
-//! Battery loop: keeps the EC's charge limit and charge rate at the
+//! Charge control: keeps the EC's charge limit and charge rate at the
 //! configured values. The EC forgets them on some events (firmware
 //! update, battery disconnect), so they are written again every few minutes.
 //!
 //! A limit switched off is left as it is, like framework-control does.
 
-use crate::config::{CHARGE_LIMIT_MAX, CHARGE_LIMIT_MIN};
-use crate::App;
-use std::sync::Arc;
-use std::thread;
+use crate::config::{BatteryConfig, CHARGE_LIMIT_MAX, CHARGE_LIMIT_MIN};
+use crate::tool::Tool;
 use std::time::{Duration, Instant};
 
-const TICK: Duration = Duration::from_secs(1);
 const REAPPLY: Duration = Duration::from_secs(10 * 60);
 
 /// Charge rate in C, in the 0.05 steps of the widget's slider.
 const RATE_STEP: f32 = 0.05;
 const RATE_MAX: f32 = 1.0;
 
-pub fn run(app: Arc<App>) {
-    let mut limit = Applied::<u8>::default();
-    let mut rate = Applied::<(u32, Option<u8>)>::default();
+#[derive(Default)]
+pub struct Charge {
+    limit: Applied<u8>,
+    /// Rate in RATE_STEPs (integers compare exactly) and the SoC it starts at.
+    rate: Applied<(u32, Option<u8>)>,
+}
 
-    loop {
-        let battery = app.config().battery;
-
+impl Charge {
+    pub fn step(&mut self, tool: &Tool, battery: &BatteryConfig) {
         let wanted_limit = battery
             .charge_limit_max_pct
             .as_ref()
             .and_then(|s| s.active())
             .map(|v| (*v).clamp(CHARGE_LIMIT_MIN, CHARGE_LIMIT_MAX));
-        limit.keep(wanted_limit, |v| app.tool.set_charge_limit(*v));
+        self.limit.keep(wanted_limit, |v| tool.set_charge_limit(*v));
 
-        // Steps as integers, so equal rates compare equal.
         let wanted_rate = battery
             .charge_rate_c
             .as_ref()
             .and_then(|s| s.active())
             .map(|c| {
-                (
-                    (c.clamp(RATE_STEP, RATE_MAX) / RATE_STEP).round() as u32,
-                    battery.charge_rate_soc_threshold_pct,
-                )
+                let steps = (c.clamp(RATE_STEP, RATE_MAX) / RATE_STEP).round() as u32;
+                (steps, battery.charge_rate_soc_threshold_pct)
             });
-        rate.keep(wanted_rate, |(steps, soc)| {
-            app.tool.set_charge_rate(*steps as f32 * RATE_STEP, *soc)
+        self.rate.keep(wanted_rate, |(steps, soc)| {
+            tool.set_charge_rate(*steps as f32 * RATE_STEP, *soc)
         });
-
-        thread::sleep(TICK);
     }
 }
 

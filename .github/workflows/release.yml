@@ -22,7 +22,8 @@ jobs:
 
       - name: Toolchain
         run: |
-          sudo apt-get update && sudo apt-get install -y musl-tools
+          # dbus: the service tests run their own dbus-daemon.
+          sudo apt-get update && sudo apt-get install -y musl-tools dbus
           rustup target add x86_64-unknown-linux-musl
 
       - name: Tests

@@ -11,34 +11,41 @@ This document records the architectural, visual, and UX decisions made for Frame
 ### QML widget plus own service (framewidged)
 
 ```
-┌──────────────┐  HTTP 127.0.0.1:30913  ┌──────────────────────────────┐
-│ Plasma widget│ ─────────────────────▶ │ framewidged (Rust, root)     │
-│ (pure QML)   │   GET/POST /api/*      │  loops: fan, battery, power, │
-└──────────────┘                        │         telemetry            │
-                                        │  drivers: framework_tool→EC, │
-                                        │           cpufreq sysfs      │
-                                        └──────────────────────────────┘
+┌──────────────┐  system D-Bus          ┌───────────────────────────────────┐
+│ Plasma widget│ ─────────────────────▶ │ framewidged (Rust, root)          │
+│ (pure QML)   │  io.github.shrippen.   │  one control loop: fans, charge,  │
+└──────────────┘    FrameWidge1         │    history, preset switch         │
+                                        │  reads:  sysfs (hwmon cros_ec,    │
+                                        │          power_supply)            │
+                                        │  writes: framework_tool → EC      │
+                                        │  profile: power-profiles-daemon   │
+                                        └───────────────────────────────────┘
 ```
 
-The plasmoid is a pure QML frontend. Everything privileged runs in `framewidged` (`service/`), a small Rust systemd service: EC access via `framework_tool`, fan curve enforcement, charge limits, cpufreq power profiles, telemetry history.
+The plasmoid is a pure QML frontend. Everything privileged runs in `framewidged` (`service/`), a small Rust systemd service. It does only what nothing else on the system does: fan curve enforcement, charge limit and rate, and the history for the sensor graph.
+
+- **Reads come from sysfs**, not from `framework_tool`: temperatures and fan speeds from the EC hwmon driver (`cros_ec`, Linux 6.11+), battery and charger from `power_supply`. No process per poll, no EC traffic, no root needed for reading. The sensors get the kernel's names (`cpu@4c`); `sensors::canonical` maps the names older `framework_tool` versions printed (`APU`, `F75303_CPU`, ...), so saved curves keep working. Without the hwmon driver (older kernels) `framework_tool --thermal` reads, under the same names.
+- **Writes go through `framework_tool`**: fan duty, auto fan, charge limit and rate. It also reads the charge limit and the firmware versions, which sysfs lacks.
+- **Power profiles belong to power-profiles-daemon** (or tuned-ppd): it owns governor, EPP and platform profile, and Plasma's battery applet switches it. The service only reads and sets the profile, so two programs never fight over cpufreq. Until this change the service wrote cpufreq itself and needed a reconciler that waited a minute before overwriting a foreign value.
+- **One control loop** instead of a thread per task: each tick reads once, then steps the fans (at the curve's poll interval), the charge settings (every second, written only on change or every ten minutes) and the history (telemetry poll interval).
 
 **Until 1.2** the widget used the REST API of [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk. framework-control 0.5.5 (October 2026) moved the fan settings into profiles and the widget's fan writes were silently dropped. Upstream takes no PRs, its API changes with its web UI, and the part FrameWidge needs is small and stable: the `framework_tool` calls and output parsers, the cpufreq sysfs files and the curve state machine (all untouched upstream since July 2026). So the service carries that part itself, ported from framework-control (MIT, credited in LICENSE and the source files), and keeps the API schema the widget already spoke.
 
 The EC stays behind `framework_tool` (FrameworkComputer/framework-system, BSD-3): Framework's own tool knows the per-model EC commands; talking to `/dev/cros_ec` directly would make this project responsible for that.
 
-What framewidged leaves out compared to framework-control: web UI, self-update, battery history, fan profiles (the widget has its own presets), TDP/thermal limits via ryzenadj (Windows-only upstream).
+What framewidged leaves out compared to framework-control: web UI, self-update, battery history, its own cpufreq control (see above), TDP/thermal limits via ryzenadj (Windows-only upstream).
 
 ### No C++ / CMake build step for the widget
 
 The plasmoid is a pure QML package installed via `kpackagetool6`. The service is a separate binary: release builds download it from the GitHub release (static musl build), the `main` channel builds it with cargo.
 
-### HTTP via XMLHttpRequest, not DataEngine
+### D-Bus with polkit, not HTTP
 
-Plasma 5's `executable` DataEngine is deprecated in Plasma 6. The service exposes a REST API on loopback, so `XMLHttpRequest` in QML is the natural choice. CORS is not a blocker because QML is not a browser origin.
+The service owns `io.github.shrippen.FrameWidge` on the system bus; the widget calls it through Plasma's QML D-Bus module (`org.kde.plasma.workspace.dbus`, Plasma 6.1+) in `js/Api.js`. Replies are JSON strings in the schema below: one stable D-Bus signature while the schema grows.
 
-### Loopback API safety
-
-Every local process can reach the port, web pages in a browser too. framewidged answers a POST only with `Content-Type: application/json` (a page cannot send that cross-site without a CORS preflight, which is never answered) and only when the Host header names the loopback address (blocks DNS rebinding).
+- **Who may change settings:** polkit action `io.github.shrippen.FrameWidge.configure`, allowed for the active local session without a password, otherwise an admin password. Reading is open to every local user (`service/data/io.github.shrippen.FrameWidge.conf`). With the earlier loopback HTTP API every local process and every web page in a browser could reach the port; the API needed Content-Type and Host checks against pages.
+- **No port:** nothing to configure, no clash with framework-control's port.
+- **Tests and demo:** the widget only uses the system bus. Tests and the demo start a private `dbus-daemon` and set `DBUS_SYSTEM_BUS_ADDRESS` to it, for the widget and for the stand-in (`tests/fixtures/mock_backend.py`); the service tests run the real binary with `--session` on a private bus. No test or demo switch in the shipped widget.
 
 ### Fan safety
 
@@ -46,16 +53,9 @@ Every local process can reach the port, web pages in a browser too. framewidged 
 
 ---
 
-## Port Discovery
+## Polling
 
-| Priority | Port | Source |
-|----------|-------|--------|
-| 1 | User-configured (`plasmoid.configuration.servicePort`) | Widget settings dialog |
-| 2 | `30913` | framewidged default (`--port`) |
-
-The health poll tries the configured port. The default is `30913`, one above framework-control's `30912`, so a widget never reads a leftover framework-control by accident. Widgets on the old default move to the new one by themselves (KConfig stores only changed values).
-
-Polling only runs while the popup is open; the service logs every request to the journal, so background polling (live tray overlay with the popup closed) is opt-in via the `debugBackgroundPolling` setting on the System Info KCM page.
+Polling only runs while the popup is open; background polling (live tray overlay with the popup closed) is opt-in via the `debugBackgroundPolling` setting on the System Info KCM page. framework-control logged every HTTP request to the journal, which was the reason for the opt-in; framewidged logs no calls, so this default can be revisited.
 
 ---
 
@@ -97,22 +97,21 @@ There is no in-popup "Settings" tab: system info, telemetry poll config, the log
 
 Configuration used to be split across two places: the widget's own KConfig settings (service port, poll interval, tray display) lived in the right-click "Configure..." dialog, while server-side settings and read-only info (system/version info, telemetry poll rate, logs, web UI link) lived in a "Settings" tab inside the popup. This was confusing — two different places both called "settings" for the same widget. Everything now lives in the Configure dialog, as two KCM pages: **General** (the widget's own KConfig entries) and **System Info** (everything that used to be the popup tab).
 
-The System Info KCM page is fully self-contained: it fetches its own data directly from the backend via `Api.js` using `plasmoid.configuration.servicePort`, rather than reading `root.configData`/`root.thermalData` the way popup tabs do. This is a hard architectural constraint, not a style choice — a KCM page (`ConfigCategory.source`) is loaded into the System Settings/"Configure..." dialog's own QML context, which is a separate object tree from `main.qml`'s `PlasmoidItem` (`root`); it has no access to `root`'s custom properties or functions, only to `plasmoid.configuration` (the KConfigXT-backed settings) which both contexts share.
+The System Info KCM page is fully self-contained: it fetches its own data directly from the service via `Api.js`, rather than reading `root.configData`/`root.thermalData` the way popup tabs do. This is a hard architectural constraint, not a style choice — a KCM page (`ConfigCategory.source`) is loaded into the System Settings/"Configure..." dialog's own QML context, which is a separate object tree from `main.qml`'s `PlasmoidItem` (`root`); it has no access to `root`'s custom properties or functions, only to `plasmoid.configuration` (the KConfigXT-backed settings) which both contexts share.
 
 ### Fan curve presets and Activity auto-activation
 
-Saved fan curve presets (name, curve points, hysteresis, rate limit, sensor selection) are stored in the widget's own KConfig (`fanCurvePresetsJson`, a JSON-encoded string — kcfg has no native list-of-objects type) rather than sent to the backend's `/api/config`. That schema belongs to `framework-control`, a project we don't fork or extend (see "Client-only plasmoid" above); an unrecognized `presets` field added to its `fan.curve` object would likely be silently dropped or rejected on the next read.
+Saved fan curve presets (`fan.presets`: name, curve, Activity id, power source) are stored by the service. A preset tagged with a power source (`ac` or `battery`) is applied by the service itself when the laptop is plugged in or unplugged, also with the widget closed; it reacts to the change only, so a curve chosen by hand stays until the next plug event. One preset per power source. Up to 1.2 the presets lived in the widget's KConfig (`fanCurvePresetsJson`); `FanPage` moves them into the service once.
 
-A preset can optionally be tagged with a Plasma Activity id, in which case `FanPage` switches to it automatically when that Activity becomes current. This uses `org.kde.activities`' `ActivityModel`, tracked via an `Instantiator` (`id`/`name`/`current` roles) rather than any polling — verified empirically against `org.kde.ActivityManager`'s D-Bus API (`busctl --user call org.kde.ActivityManager /ActivityManager/Activities org.kde.ActivityManager.Activities CurrentActivity`) before shipping, since no documentation for this specific QML API surface was found. Auto-activation by *running program* was considered and explicitly rejected: a pure-QML plasmoid has no sanctioned way to enumerate processes without either a native helper (which "No C++ / CMake build step" above rules out) or a new backend endpoint (which the upstream project doesn't accept PRs for).
+A preset can optionally be tagged with a Plasma Activity id, in which case `FanPage` switches to it automatically when that Activity becomes current. This uses `org.kde.activities`' `ActivityModel`, tracked via an `Instantiator` (`id`/`name`/`current` roles) rather than any polling — verified empirically against `org.kde.ActivityManager`'s D-Bus API (`busctl --user call org.kde.ActivityManager /ActivityManager/Activities org.kde.ActivityManager.Activities CurrentActivity`) before shipping, since no documentation for this specific QML API surface was found. Auto-activation by *running program* was considered and explicitly rejected: a pure-QML plasmoid has no sanctioned way to enumerate processes without a native helper (which "No C++ / CMake build step" above rules out); the service could do it, but this was not requested.
 
 ### Offline hint
 
 When the service is unreachable, the full representation shows:
 
 - Disconnect icon + heading
-- Copyable install command (`curl ... | sudo bash`)
+- Copyable install command (`curl ... | bash`)
 - Copyable systemctl start command
-- Port info with link to widget settings
 
 ---
 
@@ -168,7 +167,7 @@ Wrapper script that installs both service and plasmoid:
 
 1. Check prerequisites (`kpackagetool6`, `curl`)
 2. Download this repo at the chosen channel's tag or `main`
-3. Service: the release asset `framewidged-x86_64-linux` (or a cargo build on `main`) to `/usr/local/bin`, `service/framewidged.service` to `/etc/systemd/system`, `framework_tool` from FrameworkComputer/framework-system to `/usr/local/lib/framewidge` unless one is on PATH. A framework-control unit is disabled; `Conflicts=` stops it. framewidged imports `/etc/framework-control/config.json` on its first start (fan settings of the active profile, battery, power, telemetry).
+3. Service: the release asset `framewidged-x86_64-linux` (or a cargo build on `main`) to `/usr/local/bin`, `service/data/framewidged.service` to `/etc/systemd/system`, the D-Bus policy to `/etc/dbus-1/system.d`, the polkit action to `/usr/share/polkit-1/actions`, `framework_tool` from FrameworkComputer/framework-system to `/usr/local/lib/framewidge` unless one is on PATH. A framework-control unit is disabled; `Conflicts=` stops it. framewidged imports `/etc/framework-control/config.json` on its first start (fan settings of the active profile, battery, telemetry; its cpufreq settings are left to power-profiles-daemon).
 4. Install plasmoid via `kpackagetool6 -t Plasma/Applet -i package/`
 
 Service install requires `sudo`; plasmoid install does not.
@@ -214,7 +213,7 @@ These features from the web UI are intentionally excluded:
 ## Licensing
 
 - **This project**: MIT
-- **Service** (`service/`): MIT. The `framework_tool` parsers, the cpufreq driver and the fan curve state machine are ported from [ozturkkl/framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk (MIT); each such file names its source.
+- **Service** (`service/`): MIT. The `framework_tool` parsers and the fan curve state machine are ported from [ozturkkl/framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk (MIT); each such file names its source.
 - **framework_tool**: BSD-3-Clause ([FrameworkComputer/framework-system](https://github.com/FrameworkComputer/framework-system)), downloaded by install.sh, not bundled
 - **No code copied** from the Svelte frontend — the QML is written from scratch
 - **Credit** to the original author in LICENSE and README
@@ -222,17 +221,21 @@ These features from the web UI are intentionally excluded:
 
 ---
 
-## API Reference (consumed endpoints)
+## API Reference (D-Bus)
 
-| Method | Path | Used by |
-|--------|------|---------|
-| GET | `/api/health` | Health polling (all states) |
-| GET | `/api/thermal` | Live temps/RPMs, sensor discovery |
-| GET | `/api/thermal/history` | SensorsPage graph |
-| GET | `/api/power` | PowerPage + BatteryPage (capabilities, state, battery info) |
-| GET | `/api/config` | All pages (seed UI from persisted config) |
-| POST | `/api/config` | All pages (partial merge to update settings) |
-| GET | `/api/system` | ConfigSystemInfo KCM page (CPU, memory, OS) |
-| GET | `/api/versions` | ConfigSystemInfo KCM page (BIOS, mainboard, tool version) |
-| GET | `/api/logs` | ConfigSystemInfo KCM page (plain text, last 500 lines) |
-The schema of `/api/config` is `Config` in `service/src/config.rs`; a POST is a partial patch (objects merge, everything else replaces), validated before it is saved. Settings live in `/var/lib/framewidged/config.json`.
+Bus name `io.github.shrippen.FrameWidge`, object `/io/github/shrippen/FrameWidge`, interface `io.github.shrippen.FrameWidge1`. Every method returns a JSON string unless noted.
+
+| Method | Returns | Used by |
+|--------|---------|---------|
+| `Health()` | `cli_present`, `service_version` | Health polling (all states) |
+| `Thermal()` | `temps` (name → °C), `fans` (name, rpm) | Live temps/RPMs, sensor discovery |
+| `ThermalHistory()` | samples `ts_ms`, `temps`, `rpms` | SensorsPage graph |
+| `Power()` | `battery` (sysfs plus EC charge limit), `profile` (`active`, `available`) or null | PowerPage, BatteryPage, tray |
+| `SetPowerProfile(s)` | nothing; polkit | PowerPage |
+| `Config()` | the settings | All pages (seed UI) |
+| `SetConfig(s patch)` | the new settings; polkit | All pages |
+| `System()` | `cpu`, `memory_total_mb`, `os` | System Info page |
+| `Versions()` | BIOS, mainboard, EC and tool versions | System Info page |
+| `Logs()` | plain text, last 500 journal lines | System Info page |
+
+The schema of `Config` is in `service/src/config.rs`; `SetConfig` takes a partial patch (objects merge, everything else replaces), validated before it is saved. Settings live in `/var/lib/framewidged/config.json`.

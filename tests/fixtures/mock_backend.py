@@ -1,28 +1,52 @@
 #!/usr/bin/env python3
-"""Minimal stand-in for the framewidged REST API (service/), used by the
-plasmoid's tests instead of a real Framework laptop + backend service.
+"""Stand-in for framewidged (service/) on D-Bus, for the widget's tests and the demo.
 
-Stdlib only (no dependencies). Serves the subset of /api/* endpoints the
-QML widget actually consumes (see DESIGN.md's API reference table) and
-adds two test-only introspection routes:
+Serves io.github.shrippen.FrameWidge1 with the replies the widget reads (JSON strings, see
+DESIGN.md) on the bus that DBUS_SYSTEM_BUS_ADDRESS names: tests/run_unit_tests.sh and the demo
+start a private dbus-daemon and point the "system bus" of the mock and the widget at it, so the
+real system bus and a running framewidged are never touched. Needs PyGObject (Gio) only.
 
-  GET  /__requests  -> JSON array of every request received so far,
-                       each as {"method", "path", "body"} in order.
-                       Used by tests to assert how many POSTs a
-                       debounced UI interaction actually produced.
-  POST /__reset      -> clears the request log and resets /api/config
-                       back to its initial defaults.
+A second, test-only interface io.github.shrippen.FrameWidge.Mock has:
+  Requests() -> JSON array of every call so far, each {"member", "args"}, in order.
+               Used by tests to assert how many calls a debounced UI interaction produced.
+  Reset()    -> clears the request log and resets the config to its initial defaults.
 
-Usage: mock_backend.py [port]  (default: 0, i.e. pick a free port and
-print it as a single line "PORT <n>" on stdout so callers can capture
-it without racing on a fixed port.)
+Prints "READY" once the name is owned.
 """
 
+import copy
 import json
 import sys
-import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+from gi.repository import Gio, GLib
+
+BUS_NAME = "io.github.shrippen.FrameWidge"
+OBJECT_PATH = "/io/github/shrippen/FrameWidge"
+INTERFACE = "io.github.shrippen.FrameWidge1"
+MOCK_INTERFACE = "io.github.shrippen.FrameWidge.Mock"
+
+INTROSPECTION = f"""
+<node>
+  <interface name="{INTERFACE}">
+    <method name="Health"><arg type="s" direction="out"/></method>
+    <method name="Thermal"><arg type="s" direction="out"/></method>
+    <method name="ThermalHistory"><arg type="s" direction="out"/></method>
+    <method name="Power"><arg type="s" direction="out"/></method>
+    <method name="SetPowerProfile"><arg name="profile" type="s" direction="in"/></method>
+    <method name="Versions"><arg type="s" direction="out"/></method>
+    <method name="System"><arg type="s" direction="out"/></method>
+    <method name="Config"><arg type="s" direction="out"/></method>
+    <method name="SetConfig"><arg name="patch" type="s" direction="in"/><arg type="s" direction="out"/></method>
+    <method name="Logs"><arg type="s" direction="out"/></method>
+  </interface>
+  <interface name="{MOCK_INTERFACE}">
+    <method name="Requests"><arg type="s" direction="out"/></method>
+    <method name="Reset"/>
+    <method name="Shots"><arg type="s" direction="out"/></method>
+  </interface>
+</node>
+"""
 
 INITIAL_CONFIG = {
     "fan": {
@@ -35,25 +59,9 @@ INITIAL_CONFIG = {
             "poll_ms": 2000,
             "sensors": []
         },
-        "overrides": []
-    },
-    "power": {
-        "ac": {
-            "epp_preference": {"enabled": False, "value": "balance_performance"},
-            "governor": {"enabled": False, "value": "schedutil"},
-            "min_freq_mhz": {"enabled": False, "value": 1000},
-            "max_freq_mhz": {"enabled": False, "value": 4000},
-            "tdp_watts": {"enabled": False, "value": 75},
-            "thermal_limit_c": {"enabled": False, "value": 90}
-        },
-        "battery": {
-            "epp_preference": {"enabled": False, "value": "power"},
-            "governor": {"enabled": False, "value": "powersave"},
-            "min_freq_mhz": {"enabled": False, "value": 1000},
-            "max_freq_mhz": {"enabled": False, "value": 3000},
-            "tdp_watts": {"enabled": False, "value": 60},
-            "thermal_limit_c": {"enabled": False, "value": 90}
-        }
+        "overrides": [],
+        "calibration": None,
+        "presets": []
     },
     "battery": {
         "charge_limit_max_pct": {"enabled": False, "value": 100},
@@ -64,50 +72,36 @@ INITIAL_CONFIG = {
 }
 
 THERMAL = {
-    "temps": {"CPU": 55.0, "GPU": 48.0},
+    "temps": {"CPU": 55, "GPU": 48},
     "fans": [{"name": "Fan 1", "rpm": 2200}]
 }
 
-def _recent_thermal_history():
-    # SensorsPage.qml filters history samples by `Date.now() - windowSeconds*1000`,
-    # so timestamps need to be close to "now" for tests to see any data at all.
-    now_ms = int(time.time() * 1000)
-    return [
-        {"ts_ms": now_ms - 20000, "temps": {"CPU": 50.0, "GPU": 45.0}},
-        {"ts_ms": now_ms - 10000, "temps": {"CPU": 55.0, "GPU": 47.0}},
-        {"ts_ms": now_ms, "temps": {"CPU": 60.0, "GPU": 49.0}},
-    ]
-
 POWER = {
-    "power_control": {
-        "capabilities": {
-            "supports_epp": True,
-            "supports_governor": True,
-            "supports_frequency_limits": True,
-            "supports_tdp": True,
-            "supports_thermal": True,
-            "available_epp_preferences": ["power", "balance_power", "balance_performance", "performance"],
-            "available_governors": ["powersave", "performance", "schedutil"],
-            "tdp_min_watts": 5, "tdp_max_watts": 120,
-            "frequency_min_mhz": 400, "frequency_max_mhz": 6000
-        },
-        "current_state": {
-            "tdp_limit_watts": 75, "thermal_limit_c": 90,
-            "epp_preference": "balance_performance", "governor": "schedutil",
-            "min_freq_mhz": 1000, "max_freq_mhz": 4000
-        }
-    },
     "battery": {
         "percentage": 78, "ac_present": True, "charging": True,
         "present_rate_ma": 1500, "present_voltage_mv": 12000,
         "design_capacity_mah": 4000, "last_full_charge_capacity_mah": 3600,
         "cycle_count": 42, "charge_limit_max_pct": 100
-    }
+    },
+    "profile": {"active": "balanced", "available": ["power-saver", "balanced", "performance"]}
 }
 
-SYSTEM = {"cpu": "AMD Ryzen 7 7840U", "memory_total_mb": 32768, "os": "Fedora Linux 44"}
+SYSTEM = {"cpu": "AMD Ryzen 7 7840U", "memory_total_mb": 32768, "os": "Fedora Linux 44", "dgpu": None}
 VERSIONS = {"uefi_version": "03.05", "mainboard_type": "FRANBMCP07", "tool_version": "0.5.0"}
 LOGS_TEXT = "mock backend started\nno warnings\n"
+# Screenshot plan for the demo (demo/backend.py sets it).
+SHOTS = None
+
+
+def thermal_history():
+    # SensorsPage.qml filters history samples by `Date.now() - windowSeconds*1000`,
+    # so timestamps need to be close to "now" for tests to see any data at all.
+    now_ms = int(time.time() * 1000)
+    return [
+        {"ts_ms": now_ms - 20000, "temps": {"CPU": 50, "GPU": 45}},
+        {"ts_ms": now_ms - 10000, "temps": {"CPU": 55, "GPU": 47}},
+        {"ts_ms": now_ms, "temps": {"CPU": 60, "GPU": 49}},
+    ]
 
 
 def merge(dst, src):
@@ -121,95 +115,76 @@ def merge(dst, src):
 
 class State:
     def __init__(self):
-        self.lock = threading.Lock()
-        self.config = json.loads(json.dumps(INITIAL_CONFIG))
-        self.requests = []
+        self.reset()
 
     def reset(self):
-        with self.lock:
-            self.config = json.loads(json.dumps(INITIAL_CONFIG))
-            self.requests = []
+        self.config = copy.deepcopy(INITIAL_CONFIG)
+        self.power = copy.deepcopy(POWER)
+        self.requests = []
 
 
 STATE = State()
 
 
-class Handler(BaseHTTPRequestHandler):
-    def log_message(self, fmt, *args):
-        pass  # keep test output quiet; use /__requests to inspect traffic
+def set_config(patch):
+    merge(STATE.config, json.loads(patch))
+    return json.dumps(STATE.config)
 
-    def _send_json(self, payload, status=200):
-        body = json.dumps(payload).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
 
-    def _send_text(self, text, status=200):
-        body = text.encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "text/plain")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+def set_power_profile(profile):
+    if profile not in STATE.power["profile"]["available"]:
+        raise ValueError("unknown profile " + profile)
+    STATE.power["profile"]["active"] = profile
 
-    def _read_json_body(self):
-        length = int(self.headers.get("Content-Length", 0))
-        if length == 0:
-            return {}
-        raw = self.rfile.read(length)
-        return json.loads(raw.decode("utf-8")) if raw else {}
 
-    def _record(self, body):
-        with STATE.lock:
-            STATE.requests.append({"method": self.command, "path": self.path, "body": body})
+# member -> function(*string args) -> reply string, or None for no reply value.
+# demo/backend.py replaces entries.
+HANDLERS = {
+    "Health": lambda: json.dumps({"cli_present": True, "service_version": "mock-1.0"}),
+    "Thermal": lambda: json.dumps(THERMAL),
+    "ThermalHistory": lambda: json.dumps(thermal_history()),
+    "Power": lambda: json.dumps(STATE.power),
+    "SetPowerProfile": set_power_profile,
+    "Versions": lambda: json.dumps(VERSIONS),
+    "System": lambda: json.dumps(SYSTEM),
+    "Config": lambda: json.dumps(STATE.config),
+    "SetConfig": set_config,
+    "Logs": lambda: LOGS_TEXT,
+}
 
-    def do_GET(self):
-        self._record(None)
-        if self.path == "/api/health":
-            return self._send_json({"cli_present": True, "service_version": "mock-1.0"})
-        if self.path == "/api/thermal":
-            return self._send_json(THERMAL)
-        if self.path == "/api/thermal/history":
-            return self._send_json(_recent_thermal_history())
-        if self.path == "/api/power":
-            return self._send_json(POWER)
-        if self.path == "/api/config":
-            with STATE.lock:
-                return self._send_json(STATE.config)
-        if self.path == "/api/system":
-            return self._send_json(SYSTEM)
-        if self.path == "/api/versions":
-            return self._send_json(VERSIONS)
-        if self.path == "/api/logs":
-            return self._send_text(LOGS_TEXT)
-        if self.path == "/__requests":
-            with STATE.lock:
-                return self._send_json(STATE.requests)
-        self.send_response(404)
-        self.end_headers()
+MOCK_HANDLERS = {
+    "Requests": lambda: json.dumps(STATE.requests),
+    "Reset": lambda: STATE.reset(),
+    "Shots": lambda: json.dumps(SHOTS),
+}
 
-    def do_POST(self):
-        body = self._read_json_body()
-        self._record(body)
-        if self.path == "/api/config":
-            with STATE.lock:
-                merge(STATE.config, body)
-                return self._send_json(STATE.config)
-        if self.path == "/__reset":
-            STATE.reset()
-            return self._send_json({"ok": True})
-        self.send_response(404)
-        self.end_headers()
+
+def on_call(_conn, _sender, _path, interface, member, params, invocation):
+    args = list(params.unpack())
+    handlers = HANDLERS if interface == INTERFACE else MOCK_HANDLERS
+    if interface == INTERFACE:
+        STATE.requests.append({"member": member, "args": args})
+    try:
+        reply = handlers[member](*args)
+    except (KeyError, ValueError) as error:
+        invocation.return_dbus_error("org.freedesktop.DBus.Error.InvalidArgs", str(error))
+        return
+    invocation.return_value(None if reply is None else GLib.Variant("(s)", (reply,)))
 
 
 def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 0
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print("PORT %d" % server.server_address[1], flush=True)
+    # Gio's system bus honours DBUS_SYSTEM_BUS_ADDRESS.
+    bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    node = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION)
+    for iface in node.interfaces:
+        bus.register_object(OBJECT_PATH, iface, on_call, None, None)
+
+    loop = GLib.MainLoop()
+    Gio.bus_own_name_on_connection(bus, BUS_NAME, Gio.BusNameOwnerFlags.NONE,
+                                   lambda *_: print("READY", flush=True),
+                                   lambda *_: (print("name lost", file=sys.stderr), loop.quit()))
     try:
-        server.serve_forever()
+        loop.run()
     except KeyboardInterrupt:
         pass
 

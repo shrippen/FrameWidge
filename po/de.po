@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FrameWidge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 11:56+0200\n"
+"POT-Creation-Date: 2026-10-18 13:15+0200\n"
 "Language-Team: German\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
@@ -139,9 +139,6 @@ msgstr "Kante"
 
 msgid "Kante Light"
 msgstr "Kante Light"
-
-msgid "Service port:"
-msgstr "Port des Dienstes:"
 
 msgid "Poll interval (ms):"
 msgstr "Abfrageintervall (ms):"
@@ -368,6 +365,14 @@ msgstr "Automatisch anwenden bei Aktivität:"
 msgid "(none)"
 msgstr "(keine)"
 
+msgid "Auto-apply on power source:"
+msgstr "Automatisch anwenden bei Stromquelle:"
+
+msgid ""
+"The service switches to this preset when the laptop is plugged in or "
+"unplugged, also while the widget is closed."
+msgstr "Der Dienst wechselt zu diesem Preset, wenn der Laptop ans Netz geht oder vom Netz getrennt wird, auch bei geschlossenem Widget."
+
 msgid "CPU temperature: %1 °C"
 msgstr "CPU-Temperatur: %1 °C"
 
@@ -409,8 +414,7 @@ msgid ""
 "\n"
 "Install it with the command below, or start it if already installed."
 msgstr ""
-"Der FrameWidge-Dienst (framewidged) läuft nicht oder ist nicht "
-"installiert.\n"
+"Der FrameWidge-Dienst (framewidged) läuft nicht oder ist nicht installiert.\n"
 "\n"
 "Installiere ihn mit dem Befehl unten oder starte ihn, falls er schon "
 "installiert ist."
@@ -434,77 +438,29 @@ msgstr "Kopiert"
 msgid "Already installed? Start the service:"
 msgstr "Schon installiert? Dienst starten:"
 
-msgid "Trying port %1. Change in widget settings if different."
-msgstr ""
-"Versuche Port %1. Falls er anders ist, in den Widget-Einstellungen ändern."
+msgid "Power Saver"
+msgstr "Energie sparen"
+
+msgid "Balanced"
+msgstr "Ausgeglichen"
+
+msgid "Performance"
+msgstr "Leistung"
+
+msgid "Loading power profiles…"
+msgstr "Energieprofile werden geladen …"
 
 msgid ""
-"Whether the laptop is running on AC power or battery. Power profiles below "
-"can be configured separately for each."
-msgstr ""
-"Ob der Laptop am Netzteil oder am Akku läuft. Die Energieprofile unten "
-"lassen sich für beides getrennt einstellen."
+"No power profile service is running (power-profiles-daemon or tuned-ppd)."
+msgstr "Kein Dienst für Energieprofile läuft (power-profiles-daemon oder tuned-ppd)."
 
-msgid "TDP:"
-msgstr "TDP:"
+msgid "Power profile:"
+msgstr "Energieprofil:"
 
 msgid ""
-"Thermal Design Power: the sustained power budget the CPU is allowed to draw. "
-"Lower means cooler and quieter but less performance; higher means the "
-"opposite."
-msgstr ""
-"Thermal Design Power: die Leistung, die die CPU dauerhaft aufnehmen darf. "
-"Weniger heißt kühler und leiser, aber langsamer; mehr heißt das Gegenteil."
-
-msgid "Thermal:"
-msgstr "Temperaturgrenze:"
-
-msgid "EPP:"
-msgstr "EPP:"
-
-msgid ""
-"Energy Performance Preference: biases the CPU scheduler toward power savings "
-"or performance within the current frequency/TDP limits, without changing "
-"them."
-msgstr ""
-"Energy Performance Preference: gewichtet die CPU-Steuerung innerhalb der "
-"aktuellen Frequenz- und TDP-Grenzen in Richtung Energiesparen oder Leistung, "
-"ohne diese Grenzen zu ändern."
-
-msgid "Governor:"
-msgstr "Governor:"
-
-msgid ""
-"The kernel's CPU frequency governor - the policy deciding how quickly clock "
-"speed ramps up and down in response to load (e.g. schedutil, performance, "
-"powersave)."
-msgstr ""
-"Der CPU-Frequenz-Governor des Kernels: die Regel, wie schnell der Takt bei "
-"Last steigt und wieder fällt (z. B. schedutil, performance, powersave)."
-
-msgid "Frequency:"
-msgstr "Frequenz:"
-
-msgid "Loading power configuration…"
-msgstr "Energieeinstellungen werden geladen …"
-
-msgid "No supported power management interface detected."
-msgstr "Keine unterstützte Energieverwaltung gefunden."
-
-msgid "AC"
-msgstr "Netzteil"
-
-msgid "TDP (W):"
-msgstr "TDP (W):"
-
-msgid "Thermal (°C):"
-msgstr "Temperaturgrenze (°C):"
-
-msgid "Min freq (MHz):"
-msgstr "Min. Frequenz (MHz):"
-
-msgid "Max freq (MHz):"
-msgstr "Max. Frequenz (MHz):"
+"The system's power profile, the same setting as in Plasma's battery applet. "
+"It sets the CPU's energy preference and the firmware's platform profile."
+msgstr "Das Energieprofil des Systems, dieselbe Einstellung wie in Plasmas Akku-Applet. Es setzt die Energievorgabe der CPU und das Plattformprofil der Firmware."
 
 msgid "Sensor temperature chart, no data yet"
 msgstr "Temperaturverlauf der Sensoren, noch keine Daten"
@@ -517,6 +473,79 @@ msgstr "Warte auf Sensordaten …"
 
 msgid "Window:"
 msgstr "Zeitraum:"
+
+#~ msgid "Service port:"
+#~ msgstr "Port des Dienstes:"
+
+#~ msgid "Trying port %1. Change in widget settings if different."
+#~ msgstr ""
+#~ "Versuche Port %1. Falls er anders ist, in den Widget-Einstellungen ändern."
+
+#~ msgid ""
+#~ "Whether the laptop is running on AC power or battery. Power profiles "
+#~ "below can be configured separately for each."
+#~ msgstr ""
+#~ "Ob der Laptop am Netzteil oder am Akku läuft. Die Energieprofile unten "
+#~ "lassen sich für beides getrennt einstellen."
+
+#~ msgid "TDP:"
+#~ msgstr "TDP:"
+
+#~ msgid ""
+#~ "Thermal Design Power: the sustained power budget the CPU is allowed to "
+#~ "draw. Lower means cooler and quieter but less performance; higher means "
+#~ "the opposite."
+#~ msgstr ""
+#~ "Thermal Design Power: die Leistung, die die CPU dauerhaft aufnehmen darf. "
+#~ "Weniger heißt kühler und leiser, aber langsamer; mehr heißt das Gegenteil."
+
+#~ msgid "Thermal:"
+#~ msgstr "Temperaturgrenze:"
+
+#~ msgid "EPP:"
+#~ msgstr "EPP:"
+
+#~ msgid ""
+#~ "Energy Performance Preference: biases the CPU scheduler toward power "
+#~ "savings or performance within the current frequency/TDP limits, without "
+#~ "changing them."
+#~ msgstr ""
+#~ "Energy Performance Preference: gewichtet die CPU-Steuerung innerhalb der "
+#~ "aktuellen Frequenz- und TDP-Grenzen in Richtung Energiesparen oder "
+#~ "Leistung, ohne diese Grenzen zu ändern."
+
+#~ msgid "Governor:"
+#~ msgstr "Governor:"
+
+#~ msgid ""
+#~ "The kernel's CPU frequency governor - the policy deciding how quickly "
+#~ "clock speed ramps up and down in response to load (e.g. schedutil, "
+#~ "performance, powersave)."
+#~ msgstr ""
+#~ "Der CPU-Frequenz-Governor des Kernels: die Regel, wie schnell der Takt "
+#~ "bei Last steigt und wieder fällt (z. B. schedutil, performance, "
+#~ "powersave)."
+
+#~ msgid "Frequency:"
+#~ msgstr "Frequenz:"
+
+#~ msgid "No supported power management interface detected."
+#~ msgstr "Keine unterstützte Energieverwaltung gefunden."
+
+#~ msgid "AC"
+#~ msgstr "Netzteil"
+
+#~ msgid "TDP (W):"
+#~ msgstr "TDP (W):"
+
+#~ msgid "Thermal (°C):"
+#~ msgstr "Temperaturgrenze (°C):"
+
+#~ msgid "Min freq (MHz):"
+#~ msgstr "Min. Frequenz (MHz):"
+
+#~ msgid "Max freq (MHz):"
+#~ msgstr "Max. Frequenz (MHz):"
 
 #~ msgid "Web UI:"
 #~ msgstr "Weboberfläche:"

@@ -145,7 +145,11 @@ if [[ "$answer" =~ ^[Yy] ]]; then
     fi
 
     sudo install -Dm755 "$SERVICE_BIN" /usr/local/bin/framewidged
-    sudo install -Dm644 "$SERVICE_DIR/framewidged.service" /etc/systemd/system/framewidged.service
+    sudo install -Dm644 "$SERVICE_DIR/data/framewidged.service" /etc/systemd/system/framewidged.service
+    # The service owns a name on the system bus; polkit decides who may change settings.
+    sudo install -Dm644 "$SERVICE_DIR/data/io.github.shrippen.FrameWidge.conf" /etc/dbus-1/system.d/io.github.shrippen.FrameWidge.conf
+    sudo install -Dm644 "$SERVICE_DIR/data/io.github.shrippen.FrameWidge.policy" /usr/share/polkit-1/actions/io.github.shrippen.FrameWidge.policy
+    sudo systemctl reload dbus 2>/dev/null || true
     sudo systemctl disable framework-control >/dev/null 2>&1 || true
     sudo systemctl daemon-reload
     sudo systemctl enable framewidged
@@ -186,6 +190,4 @@ ok "FrameWidge installed! ($DOWNLOAD_REF)"
 echo ""
 echo "  Add 'FrameWidge' to your panel or system tray via"
 echo "  the Plasma widget picker."
-echo ""
-echo "  Service port: 30913 (default, configurable in widget settings)"
 echo ""

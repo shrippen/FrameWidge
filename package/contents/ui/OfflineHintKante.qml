@@ -53,12 +53,6 @@ ColumnLayout {
             copyText: i18n("Copy")
             copiedText: i18n("Copied")
         }
-
-        KanteHud {
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            text: i18n("Trying port %1. Change in widget settings if different.", plasmoid.configuration.servicePort)
-        }
     }
 
     Item { Layout.fillHeight: true }

@@ -5,6 +5,6 @@
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
 start_backend
-echo "demo backend on port ${PORT}"
+echo "demo backend on private bus ${BUS_ADDRESS}"
 XDG_CONFIG_HOME="${CONFIG}" LANGUAGE="${LANG_}" LANG="${LOCALE}" \
     plasmoidviewer -a "${PACKAGE}" -f horizontal -l bottomedge -s 900x60

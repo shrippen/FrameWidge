@@ -51,14 +51,15 @@ jobs:
       - name: Tools
         run: |
           pacman -Syu --noconfirm --needed git nodejs python dbus qt6-declarative qt6-5compat \
-            kirigami libplasma plasma-workspace kpackage kcmutils plasma-activities rust
+            kirigami libplasma plasma-workspace kpackage kcmutils plasma-activities rust python-gobject
           # qmllint and qmltestrunner of Qt 6 live here; the smoke test looks them up on PATH.
           export PATH="/usr/lib/qt6/bin:$PATH" && echo /usr/lib/qt6/bin >> "$GITHUB_PATH"
           for t in qmltestrunner qmllint kpackagetool6 plasmawindowed; do
             command -v "$t" >/dev/null || { echo "::error::$t missing"; exit 1; }
           done
       - uses: actions/checkout@v4
-      # The service against a fake framework_tool; real EC access needs a Framework laptop.
+      # The service on a private D-Bus against a fake framework_tool and sysfs; real EC access
+      # needs a Framework laptop.
       - name: Service
         run: |
           cd service
