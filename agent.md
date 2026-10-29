@@ -38,12 +38,22 @@ Rule 7: Use the body to explain what and why vs. how. Assume the code explains t
 
 - If the prompt indicates that a bug is being fixed, don't write the fix right away. First write the test. Observe it failing. Then write the fix. And observe the test passing.
 
-## Release rule
+## Release steps
 
-- Tags carry no `v` (`1.3`, `1.4-beta1`). Every release gets a detailed release log, written before the tag, as a section `## [X.Y] — YYYY-MM-DD` in `CHANGELOG.md` (newest first, `## [Unreleased]` on top if used): `### English` and `### Deutsch`, each with a lead (what the release is about, one or two sentences), then the changes grouped as New, Improved, Fixed and Note (Neu, Verbessert, Behoben, Hinweis; breaking changes, steps the user must take). Empty groups are left out. Each point says what changed for the user and why, not which code moved. The English part ends with `All changes: https://github.com/shrippen/FrameWidge/compare/A...B`.
-- The same text goes into the release notes on Gitea and as a new entry at the top of `#changes` on the landing page (`docs/index.html`, Kante `.changelog`, same wording in both languages, compare link); from the fourth entry on, the oldest move into `details.changelog-more`. Bump the version in the footer.
-- The release workflow takes the GitHub release notes from that section and fails without it. A release is done when the landing page shows it.
-- The notes come from `scripts/release-notes.sh X.Y` (release workflow, with the base version for a pre-release tag; Gitea: `scripts/release-notes.sh X.Y > notes.md`, then `tea`). CI checks the headings on every push (`scripts/release-notes.sh --check`). The script is a copy of Kante's `tools/release-notes.sh`: change it only there, sync with `../Kante/tools/sync-release-notes.sh`.
+Tags carry no `v` (`1.3`, `1.4-beta1`). In this order, from the version bump to done:
+
+1. Version `X.Y` (on a branch `release-X.Y`) in `package/metadata.json` (`KPlugin.Version`, `X.Y`) and `service/Cargo.toml` (`X.Y.0`, then `cargo update -p framewidged --manifest-path service/Cargo.toml` for `Cargo.lock`). `scripts/package.sh` stops the release build if either differs from the tag's base version.
+2. Release log in `CHANGELOG.md`, before the tag: a section `## [X.Y] — YYYY-MM-DD` (newest first, `## [Unreleased]` on top if used), with `### English` and `### Deutsch`, each a lead (what the release is about, one or two sentences), then the groups New, Improved, Fixed and Note (Neu, Verbessert, Behoben, Hinweis; breaking changes, steps the user must take) as `####`. Empty groups are left out. Each point says what changed for the user and why, not which code moved. The English part ends with `All changes: https://github.com/shrippen/FrameWidge/compare/A...B`. A pre-release `X.Y-betaN` uses the section of `X.Y`. Check with `scripts/release-notes.sh --check` (CI runs it on every push) and read the notes with `scripts/release-notes.sh X.Y`.
+3. Landing page `docs/index.html`: the same text as a new entry at the top of `#changes` (Kante `.changelog`, both languages, compare link); from the fourth entry on, the oldest move into `details.changelog-more`. Bump the version in the footer. Graphics: a screenshot from the demo world per visible change (`demo/shots.json`, `../shrippen.github.io/demo/tools/.venv/bin/python ../shrippen.github.io/demo/tools/screenshots.py framewidge`, saved as `docs/shots/release-X.Y-<name>-<lang>.webp`), a diagram for changes inside. Screenshots are taken only now, for a tagged release.
+4. PR with steps 1–3, review as the review rule says; the owner confirms the release in words (it publishes); CI green; merge on Gitea.
+5. Tag the merge commit and push the tag to Gitea only (the mirror carries it to GitHub): `git tag -a X.Y -m "FrameWidge X.Y" <merge commit> && git push origin X.Y`.
+6. Gitea release, notes only, no files: `scripts/release-notes.sh X.Y > notes.md && tea releases create --login git.arianw.de --repo shrippen/framewidge --tag X.Y --title "FrameWidge X.Y" --note-file notes.md` (add `--prerelease` for a beta).
+7. GitHub: the tag starts `.github/workflows/release.yml`, which runs the service tests, creates the release with the same notes (it fails without the section; alpha/beta/rc tags become pre-releases) and attaches `framewidge-X.Y.plasmoid` and `framewidged-x86_64-linux` (`install.sh` downloads them from the latest release). Check the run (`gh run list -R shrippen/FrameWidge -w release.yml`) and the two files; a failed job: `gh run rerun <run id> --failed -R shrippen/FrameWidge` (builds the tag as it is; a fix in the code needs a new version).
+8. `python3 ../shrippen.github.io/overview/tools/build-versions.py`, then commit `docs/versions.json` in `shrippen.github.io` via a PR there.
+9. KDE Store: upload `framewidge-X.Y.plasmoid` from the GitHub release to the FrameWidge listing on store.kde.org by hand and set the version (text in `docs/kde-store-description.md`).
+10. Done when https://shrippen.github.io/FrameWidge/ shows the release in `#changes` and the footer, and https://shrippen.github.io/versions.json has it.
+
+The release-notes script is a copy of Kante's `tools/release-notes.sh`: change it only there, then sync with `../Kante/tools/sync-release-notes.sh "$PWD"`.
 
 ## GUI rule
 
