@@ -71,24 +71,13 @@ jobs:
           path: out
           merge-multiple: true
 
-      # Section "## [1.3]", "## 1.3" or "## v1.3" (then a space or the end of the line, normally
-      # "## [1.3] — YYYY-MM-DD"). No section, or an empty one: fail.
+      # Section "## [1.3] — YYYY-MM-DD" of the tag's base version (1.4-beta1: 1.4). No section, or
+      # an empty one: fail.
       - name: Notes from CHANGELOG.md
         run: |
           tag="$GITHUB_REF_NAME"
           version="${tag%%-*}"
-          awk -v v="$version" '
-            /^## / {
-              if (on) exit
-              h = substr($0, 4); sub(/^\[/, "", h); sub(/^v/, "", h)
-              if (substr(h, 1, length(v)) == v) {
-                rest = substr(h, length(v) + 1)
-                if (rest == "" || rest ~ /^[] ]/) { on = 1; next }
-              }
-            }
-            on
-          ' CHANGELOG.md > notes.md
-          grep -q '[^[:space:]]' notes.md || { echo "::error::CHANGELOG.md has no notes for $version (## [$version] — YYYY-MM-DD)"; exit 1; }
+          scripts/release-notes.sh "$version" > notes.md
 
       - name: Attach to the release
         env:
