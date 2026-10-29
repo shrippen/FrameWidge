@@ -3,7 +3,7 @@
 # Trigger: a version tag (1.3, 1.3-beta1, ...), which arrives through the mirror from
 # git.arianw.de. The release notes are the tag's section of CHANGELOG.md.
 # A pre-release tag (1.4-beta1) uses the section and version of its base: CHANGELOG.md needs
-# "## 1.4" and package/metadata.json version 1.4 before the tag, not "## Unreleased".
+# "## [1.4] — date" and package/metadata.json version 1.4 before the tag, not "## Unreleased".
 #
 # Static musl build of the service: runs on any Linux, whatever its glibc.
 name: release
@@ -71,11 +71,24 @@ jobs:
           path: out
           merge-multiple: true
 
+      # Section "## [1.3]", "## 1.3" or "## v1.3" (then a space or the end of the line, normally
+      # "## [1.3] — YYYY-MM-DD"). No section, or an empty one: fail.
       - name: Notes from CHANGELOG.md
         run: |
           tag="$GITHUB_REF_NAME"
-          awk -v head="## ${tag%%-*}" '$0 == head {on=1; next} on && /^## / {exit} on' CHANGELOG.md > notes.md
-          [ -s notes.md ] || { echo "::error::no section '## ${tag%%-*}' in CHANGELOG.md"; exit 1; }
+          version="${tag%%-*}"
+          awk -v v="$version" '
+            /^## / {
+              if (on) exit
+              h = substr($0, 4); sub(/^\[/, "", h); sub(/^v/, "", h)
+              if (substr(h, 1, length(v)) == v) {
+                rest = substr(h, length(v) + 1)
+                if (rest == "" || rest ~ /^[] ]/) { on = 1; next }
+              }
+            }
+            on
+          ' CHANGELOG.md > notes.md
+          grep -q '[^[:space:]]' notes.md || { echo "::error::CHANGELOG.md has no notes for $version (## [$version] — YYYY-MM-DD)"; exit 1; }
 
       - name: Attach to the release
         env:
