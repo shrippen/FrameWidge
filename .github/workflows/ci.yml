@@ -58,6 +58,9 @@ jobs:
             command -v "$t" >/dev/null || { echo "::error::$t missing"; exit 1; }
           done
       - uses: actions/checkout@v4
+      # Release headings "## [X.Y] — YYYY-MM-DD": a wrong one shows up here, not at the tag.
+      - name: CHANGELOG.md headings
+        run: scripts/release-notes.sh --check
       # The service on a private D-Bus against a fake framework_tool and sysfs; real EC access
       # needs a Framework laptop.
       - name: Service
