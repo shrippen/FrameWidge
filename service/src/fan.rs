@@ -25,13 +25,15 @@ pub struct Fans {
     auto_pending: bool,
     /// Steps in a row without a temperature reading.
     blind_steps: u32,
-    /// Fans in the last reading that showed any; the count does not change.
+    /// The fan count, once two readings in a row agreed on it; it does not change.
     fan_count: Option<usize>,
+    /// Fans in the last reading that showed any, not yet confirmed.
+    fans_seen: Option<usize>,
 }
 
 impl Fans {
     /// Whether the next step uses a reading: a curve its temperatures,
-    /// per-fan manual duties the fan count until one reading told it.
+    /// per-fan manual duties the fan count until two readings agreed on it.
     pub fn needs_reading(&self, fan: &FanConfig) -> bool {
         match fan.mode {
             FanMode::Curve => true,
@@ -47,9 +49,7 @@ impl Fans {
             return self.step_blind(tool, fan, "no sensor reports a temperature");
         }
         self.blind_steps = 0;
-        if !thermal.fans.is_empty() {
-            self.fan_count = Some(thermal.fans.len());
-        }
+        self.note_fans(thermal.fans.len());
 
         // A new mode or topology starts the curve from the current reading.
         let topology = (fan.mode, !fan.overrides.is_empty());
@@ -99,6 +99,19 @@ impl Fans {
             self.hand_to_ec(tool);
         }
         IDLE_POLL
+    }
+
+    /// Learns the fan count from a reading (0: none taken). A fan that failed
+    /// to read hides the ones after it, so a count needs two readings in a
+    /// row to agree, and a lower one later does not replace it.
+    fn note_fans(&mut self, count: usize) {
+        if count == 0 {
+            return;
+        }
+        if self.fans_seen == Some(count) || self.fan_count.is_some_and(|known| count > known) {
+            self.fan_count = Some(self.fan_count.map_or(count, |known| known.max(count)));
+        }
+        self.fans_seen = Some(count);
     }
 
     /// Hands the fans to the EC; a failure is retried on the next step.
@@ -292,6 +305,26 @@ mod tests {
             rate_limit_pct_per_step: rate,
             ..Curve::default()
         }
+    }
+
+    #[test]
+    fn fan_count_needs_two_matching_readings() {
+        // A read error on fan2 makes one reading show a single fan; taken
+        // for good, the second fan's duty would never be set.
+        let mut fans = Fans::default();
+        fans.note_fans(1);
+        assert_eq!(fans.fan_count, None);
+        fans.note_fans(2);
+        assert_eq!(fans.fan_count, None);
+        fans.note_fans(0);
+        fans.note_fans(2);
+        assert_eq!(fans.fan_count, Some(2));
+        fans.note_fans(1);
+        assert_eq!(
+            fans.fan_count,
+            Some(2),
+            "a later short reading does not lower it"
+        );
     }
 
     #[test]
