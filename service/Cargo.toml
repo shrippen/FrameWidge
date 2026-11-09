@@ -1,6 +1,6 @@
 [package]
 name = "framewidged"
-version = "1.4.0"
+version = "1.4.1"
 edition = "2021"
 description = "FrameWidge backend: fans and battery of Framework laptops over D-Bus"
 license = "MIT"
