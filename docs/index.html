@@ -117,6 +117,24 @@ kpackagetool6 -t Plasma/Applet -r org.kde.plasma.framewidge</div></section>
   <h2 lang="en">Changes</h2><h2 lang="de">Änderungen</h2>
   <p lang="en">What each release brought, newest first. Every release adds an entry here and the same notes on the release page.</p><p lang="de">Was jede Version gebracht hat, die neueste zuerst. Jede Version bekommt hier einen Eintrag und dieselben Notizen auf der Release-Seite.</p>
   <ol class="changelog">
+    <li class="release" id="v1.4">
+      <div class="release-head"><b class="release-version">1.4</b><time datetime="2026-11-09"><span lang="en">9 Nov 2026</span><span lang="de">9. Nov. 2026</span></time></div>
+      <div class="release-body">
+        <p class="release-lead"><span lang="en">The popup asks the service for less and the service asks the embedded controller less often.</span><span lang="de">Das Popup fragt den Dienst seltener, und der Dienst fragt den Embedded Controller seltener.</span></p>
+        <div class="release-group" data-kind="improved"><h3><span lang="en">Improved</span><span lang="de">Verbessert</span></h3><ul>
+          <li><span lang="en">The Sensors tab loads only the shown time range, then only new readings, instead of the whole 30-minute history every 2 seconds; other tabs load none.</span><span lang="de">Der Sensoren-Tab lädt nur den gezeigten Zeitraum, danach nur neue Messwerte, statt alle 2 Sekunden den ganzen 30-Minuten-Verlauf; die anderen Tabs laden keinen.</span></li>
+          <li><span lang="en">Without the kernel's EC driver (Linux before 6.11) the service reads temperatures through <code>framework_tool</code> only when the fan curve or the history needs them; the charge limit is read once a minute instead of every 5 seconds while the popup is open.</span><span lang="de">Ohne den EC-Treiber des Kernels (Linux vor 6.11) liest der Dienst die Temperaturen über <code>framework_tool</code> nur, wenn Lüfterkurve oder Verlauf sie brauchen; das Ladelimit liest er bei offenem Popup einmal pro Minute statt alle 5 Sekunden.</span></li>
+        </ul></div>
+        <div class="release-group" data-kind="note"><h3><span lang="en">Note</span><span lang="de">Hinweis</span></h3><ul>
+          <li><span lang="en">Update the service together with the widget (the install one-liner does both). A widget newer than its service shows "Service Out of Date" with the update command instead of its pages.</span><span lang="de">Dienst und Widget zusammen aktualisieren (der Install-Einzeiler macht beides). Ein Widget, das neuer ist als sein Dienst, zeigt „Dienst veraltet“ mit dem Update-Befehl statt seiner Seiten.</span></li>
+        </ul></div>
+        <div class="flow"><div class="flow-node hl"><b lang="en">Sensors tab</b><b lang="de">Sensoren-Tab</b><span><span lang="en">only while shown; keeps its readings</span><span lang="de">nur sichtbar; behält seine Messwerte</span></span></div><span class="flow-arrow" aria-hidden="true"></span><div class="flow-node"><b>ThermalHistorySince</b><span><span lang="en">asks from its newest reading on</span><span lang="de">fragt ab seinem neuesten Messwert</span></span></div><span class="flow-arrow" aria-hidden="true"></span><div class="flow-node"><b>framewidged</b><span><span lang="en">every 2 s ~200 bytes instead of 174 KB (7 sensors, 30-minute history)</span><span lang="de">alle 2 s ~200 Byte statt 174 KB (7 Sensoren, 30 Minuten Verlauf)</span></span></div></div>
+        <div class="release-shots">
+          <figure><img lang="en" src="shots/release-1.4-outdated-en.webp" alt="FrameWidge popup: Service Out of Date, with the update command" loading="lazy"><img lang="de" src="shots/release-1.4-outdated-de.webp" alt="FrameWidge-Popup: Dienst veraltet, mit dem Update-Befehl" loading="lazy"><figcaption><span lang="en">A service older than the widget: the popup asks for the update (demo data).</span><span lang="de">Ein Dienst, der älter ist als das Widget: Das Popup bittet um das Update (Demodaten).</span></figcaption></figure>
+        </div>
+        <a class="release-notes" href="https://github.com/shrippen/FrameWidge/compare/1.3...1.4"><span lang="en">All changes since 1.3 →</span><span lang="de">Alle Änderungen seit 1.3 →</span></a>
+      </div>
+    </li>
     <li class="release" id="v1.3">
       <div class="release-head"><b class="release-version">1.3</b><time datetime="2026-10-18"><span lang="en">18 Oct 2026</span><span lang="de">18. Okt. 2026</span></time></div>
       <div class="release-body">
@@ -160,22 +178,22 @@ kpackagetool6 -t Plasma/Applet -r org.kde.plasma.framewidge</div></section>
         <a class="release-notes" href="https://github.com/shrippen/FrameWidge/compare/1.1...1.2"><span lang="en">All changes since 1.1 →</span><span lang="de">Alle Änderungen seit 1.1 →</span></a>
       </div>
     </li>
-    <li class="release" id="v1.1">
-      <div class="release-head"><b class="release-version">1.1</b><time datetime="2026-09-20"><span lang="en">20 Sep 2026</span><span lang="de">20. Sep. 2026</span></time></div>
-      <div class="release-body">
-        <p class="release-lead"><span lang="en">The tray shows its values from the start, and FrameWidge is in the KDE Store.</span><span lang="de">Das Tray-Symbol zeigt seine Werte von Anfang an, und FrameWidge ist im KDE Store.</span></p>
-        <div class="release-group" data-kind="fixed"><h3><span lang="en">Fixed</span><span lang="de">Behoben</span></h3><ul>
-          <li><span lang="en">The tray overlay (temperature, RPM or charge) loads its data at startup instead of staying empty until the popup is opened for the first time.</span><span lang="de">Die Anzeige auf dem Tray-Symbol (Temperatur, Drehzahl oder Ladestand) lädt ihre Daten beim Start, statt leer zu bleiben, bis das Fenster zum ersten Mal geöffnet wird.</span></li>
-        </ul></div>
-        <div class="release-group" data-kind="note"><h3><span lang="en">Note</span><span lang="de">Hinweis</span></h3><ul>
-          <li><span lang="en">The widget is available in the KDE Store; its description points to the install script, which also sets up the backend.</span><span lang="de">Das Widget gibt es im KDE Store; seine Beschreibung verweist auf das Installationsskript, das auch das Backend einrichtet.</span></li>
-        </ul></div>
-        <a class="release-notes" href="https://github.com/shrippen/FrameWidge/compare/1.0...1.1"><span lang="en">All changes since 1.0 →</span><span lang="de">Alle Änderungen seit 1.0 →</span></a>
-      </div>
-    </li>
   </ol>
   <details class="changelog-more"><summary><span lang="en">Older releases</span><span lang="de">Ältere Versionen</span></summary>
     <ol class="changelog">
+      <li class="release" id="v1.1">
+        <div class="release-head"><b class="release-version">1.1</b><time datetime="2026-09-20"><span lang="en">20 Sep 2026</span><span lang="de">20. Sep. 2026</span></time></div>
+        <div class="release-body">
+          <p class="release-lead"><span lang="en">The tray shows its values from the start, and FrameWidge is in the KDE Store.</span><span lang="de">Das Tray-Symbol zeigt seine Werte von Anfang an, und FrameWidge ist im KDE Store.</span></p>
+          <div class="release-group" data-kind="fixed"><h3><span lang="en">Fixed</span><span lang="de">Behoben</span></h3><ul>
+            <li><span lang="en">The tray overlay (temperature, RPM or charge) loads its data at startup instead of staying empty until the popup is opened for the first time.</span><span lang="de">Die Anzeige auf dem Tray-Symbol (Temperatur, Drehzahl oder Ladestand) lädt ihre Daten beim Start, statt leer zu bleiben, bis das Fenster zum ersten Mal geöffnet wird.</span></li>
+          </ul></div>
+          <div class="release-group" data-kind="note"><h3><span lang="en">Note</span><span lang="de">Hinweis</span></h3><ul>
+            <li><span lang="en">The widget is available in the KDE Store; its description points to the install script, which also sets up the backend.</span><span lang="de">Das Widget gibt es im KDE Store; seine Beschreibung verweist auf das Installationsskript, das auch das Backend einrichtet.</span></li>
+          </ul></div>
+          <a class="release-notes" href="https://github.com/shrippen/FrameWidge/compare/1.0...1.1"><span lang="en">All changes since 1.0 →</span><span lang="de">Alle Änderungen seit 1.0 →</span></a>
+        </div>
+      </li>
       <li class="release" id="v1.0">
         <div class="release-head"><b class="release-version">1.0</b><time datetime="2026-09-19"><span lang="en">19 Sep 2026</span><span lang="de">19. Sep. 2026</span></time></div>
         <div class="release-body">
@@ -206,7 +224,7 @@ kpackagetool6 -t Plasma/Applet -r org.kde.plasma.framewidge</div></section>
       <div><h4><span lang="en">Source</span><span lang="de">Quelltext</span></h4><a href="https://github.com/shrippen/FrameWidge">GitHub</a><a href="https://github.com/shrippen/FrameWidge/issues">Issues</a><a href="https://github.com/shrippen/FrameWidge/releases">Releases</a><a href="https://github.com/ozturkkl/framework-control"><span lang="en">Original project</span><span lang="de">Originalprojekt</span></a></div>
     </nav>
   </div>
-  <div class="foot-meta"><p>MIT · shrippen · <a href="#changes">v1.3</a> · <span lang="en">based on <a href="https://github.com/ozturkkl/framework-control">framework-control</a></span><span lang="de">basiert auf <a href="https://github.com/ozturkkl/framework-control">framework-control</a></span></p></div>
+  <div class="foot-meta"><p>MIT · shrippen · <a href="#changes">v1.4</a> · <span lang="en">based on <a href="https://github.com/ozturkkl/framework-control">framework-control</a></span><span lang="de">basiert auf <a href="https://github.com/ozturkkl/framework-control">framework-control</a></span></p></div>
 </footer>
 
 </body>

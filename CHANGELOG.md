@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [1.4] — 2026-11-09
 
 ### English
 
@@ -12,6 +12,8 @@ The popup asks the service for less and the service asks the embedded controller
 
 #### Note
 - Update the service together with the widget (the install one-liner does both). A widget newer than its service shows "Service Out of Date" with the update command instead of its pages.
+
+All changes: https://github.com/shrippen/FrameWidge/compare/1.3...1.4
 
 ### Deutsch
 

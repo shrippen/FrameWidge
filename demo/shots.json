@@ -18,6 +18,10 @@
     {
       "name": "battery",
       "tab": 3
+    },
+    {
+      "name": "release-1.4-outdated",
+      "api": 1
     }
   ],
   "page": {
