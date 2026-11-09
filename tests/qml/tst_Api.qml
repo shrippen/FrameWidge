@@ -97,4 +97,31 @@ TestCase {
         tryVerify(function() { return text !== null; }, 2000);
         verify(text.indexOf("mock backend started") >= 0);
     }
+
+    // The widget needs ThermalHistorySince; a service without it gets an
+    // update hint instead of a half-working popup.
+    function test_serviceCurrent_needsApiLevel() {
+        compare(Api.serviceCurrent({ cli_present: true, service_version: "1.3.0" }), false, "1.3 sends no api");
+        compare(Api.serviceCurrent({ api: Api.REQUIRED_API - 1 }), false);
+        compare(Api.serviceCurrent({ api: Api.REQUIRED_API }), true);
+        compare(Api.serviceCurrent(null), false);
+    }
+
+    function test_serviceCurrent_mockIsCurrent() {
+        requireMock();
+        var health = null;
+        Api.get("Health", function(ok, data) { health = data; });
+        tryVerify(function() { return health !== null; }, 2000);
+        verify(Api.serviceCurrent(health));
+    }
+
+    function test_thermalHistorySince_sendsOnlyNewerSamples() {
+        requireMock();
+        // The mock's samples are 20 s, 10 s and 0 s old.
+        var result = null;
+        Api.thermalHistorySince(Date.now() - 15000, function(ok, data) { result = { ok: ok, data: data }; });
+        tryVerify(function() { return result !== null; }, 2000);
+        verify(result.ok);
+        compare(result.data.length, 2);
+    }
 }

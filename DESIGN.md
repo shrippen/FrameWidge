@@ -27,7 +27,7 @@ The plasmoid is a pure QML frontend. Everything privileged runs in `framewidged`
 - **Reads come from sysfs**, not from `framework_tool`: temperatures and fan speeds from the EC hwmon driver (`cros_ec`, Linux 6.11+), battery and charger from `power_supply`. No process per poll, no EC traffic, no root needed for reading. The sensors carry the names of the current `framework_tool` (0.6.6): temperatures as the EC names them (`cpu@4c`; `framework_tool` 0.6.6 and the kernel's hwmon labels ask the EC with the same command, verified on a Framework 13 AMD), fans by model from the SMBIOS product name (`APU Fan`; `Left Fan`/`Right Fan` on a 16). `sensors::canonical` maps the names `framework_tool` 0.6.5 and older printed (`APU`, `F75303_CPU`, ...), so saved curves keep working. Without the hwmon driver (older kernels) `framework_tool --thermal` reads, under the same names.
 - **Writes go through `framework_tool`**: fan duty, auto fan, charge limit and rate. It also reads the charge limit and the firmware versions, which sysfs lacks.
 - **Power profiles belong to power-profiles-daemon** (or tuned-ppd): it owns governor, EPP and platform profile, and Plasma's battery applet switches it. The service only reads and sets the profile, so two programs never fight over cpufreq. Until this change the service wrote cpufreq itself and needed a reconciler that waited a minute before overwriting a foreign value.
-- **One control loop** instead of a thread per task: each tick reads once, then steps the fans (at the curve's poll interval), the charge settings (every second, written only on change or every ten minutes) and the history (telemetry poll interval).
+- **One control loop** instead of a thread per task: each tick reads once if a due step needs it (the history, a curve, per-fan manual duties; without the EC hwmon driver a reading is a `framework_tool` call), then steps the fans (at the curve's poll interval), the charge settings (every second, written only on change or every ten minutes) and the history (telemetry poll interval).
 
 **Until 1.2** the widget used the REST API of [framework-control](https://github.com/ozturkkl/framework-control) by Kemal Ozturk. framework-control 0.5.5 (October 2026) moved the fan settings into profiles and the widget's fan writes were silently dropped. Upstream takes no PRs, its API changes with its web UI, and the part FrameWidge needs is small and stable: the `framework_tool` calls and output parsers, the cpufreq sysfs files and the curve state machine (all untouched upstream since July 2026). So the service carries that part itself, ported from framework-control (MIT, credited in LICENSE and the source files), and keeps the API schema the widget already spoke.
 
@@ -86,7 +86,7 @@ Tabs instead of the web UI's side-by-side panels — a popup can't render four c
 
 | Tab | D-Bus methods | Notes |
 |-----|--------------|-------|
-| Sensors | `ThermalHistory` | Canvas-based line chart, sensor checkboxes, time window slider |
+| Sensors | `ThermalHistorySince` | Canvas-based line chart, sensor checkboxes, time window slider |
 | Fan | `Config`, `SetConfig`, `Thermal` | Mode selector, manual duty slider, CurveEditor, curve presets (stored by the service, optionally applied by Plasma Activity or by the service on plug/unplug), calibration dialog, per-fan override tabs |
 | Power | `Power`, `SetPowerProfile` | AC state and the system power profile (power-profiles-daemon) |
 | Battery | `Power`, `Config`, `SetConfig` | Info bar + charge limit slider + rate limit with SoC threshold |
@@ -227,9 +227,10 @@ Bus name `io.github.shrippen.FrameWidge`, object `/io/github/shrippen/FrameWidge
 
 | Method | Returns | Used by |
 |--------|---------|---------|
-| `Health()` | `cli_present`, `service_version` | Health polling (all states) |
+| `Health()` | `cli_present`, `service_version`, `api` | Health polling (all states); below the widget's `Api.REQUIRED_API` the popup asks for a service update |
 | `Thermal()` | `temps` (name → °C), `fans` (name, rpm) | Live temps/RPMs, sensor discovery |
-| `ThermalHistory()` | samples `ts_ms`, `temps`, `rpms` | SensorsPage graph |
+| `ThermalHistory()` | samples `ts_ms`, `temps`, `rpms` | widgets up to 1.3 |
+| `ThermalHistorySince(x since_ms)` | the samples newer than `since_ms` | SensorsPage graph: first the window, then only new samples |
 | `Power()` | `battery` (sysfs plus EC charge limit), `profile` (`active`, `available`) or null | PowerPage, BatteryPage, tray |
 | `SetPowerProfile(s)` | nothing; polkit | PowerPage |
 | `Config()` | the settings | All pages (seed UI) |

@@ -112,6 +112,13 @@ impl App {
             .unwrap_or_else(|e| e.into_inner())
             .samples()
     }
+
+    pub fn history_since(&self, since_ms: i64) -> Vec<telemetry::Sample> {
+        self.history
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .since(since_ms)
+    }
 }
 
 struct Args {

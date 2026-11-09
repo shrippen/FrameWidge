@@ -59,8 +59,13 @@ Then add **FrameWidge** via the Plasma widget picker.
 
 ### Update
 
+Running the install one-liner again updates both. By hand, update the service with the widget; a widget newer than its service asks for the update instead of showing its pages:
+
 ```bash
 cd FrameWidge && git pull
+cargo build --release --locked --manifest-path service/Cargo.toml
+sudo install -Dm755 service/target/release/framewidged /usr/local/bin/framewidged
+sudo systemctl restart framewidged
 kpackagetool6 -t Plasma/Applet -u package/
 ```
 

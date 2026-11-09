@@ -40,11 +40,11 @@ ColumnLayout {
     // Kante colors for every control below (nothing in the System style).
     KanteScope { target: fullRoot }
 
-    // Offline / CLI missing state
+    // Offline / outdated / CLI missing state
     Loader {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        active: !root.serviceOnline || !root.cliPresent
+        active: !root.serviceReady
         visible: active
         opacity: active ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Kirigami.Units.longDuration } }
@@ -58,7 +58,7 @@ ColumnLayout {
     ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        visible: root.serviceOnline && root.cliPresent
+        visible: root.serviceReady
         opacity: visible ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Kirigami.Units.longDuration } }
         spacing: 0

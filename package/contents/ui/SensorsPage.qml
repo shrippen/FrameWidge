@@ -19,6 +19,14 @@ ColumnLayout {
     property var availableSensors: []
     property var selectedSensors: []
     property var series: ({})
+    // The window's samples as the service sent them, oldest first. A fetch
+    // asks only for newer ones: the whole history is ~170 KB at 30 min.
+    property var samples: []
+    // Bumped when `samples` starts over; a reply for an older one is dropped.
+    property int samplesGeneration: 0
+    // A sample further ahead than this is from before the clock was set back
+    // (dual boot with the RTC in local time, then NTP).
+    readonly property int clockSlackMs: 5000
     property int windowSeconds: 300
     property int telemetryPollMs: 2000
 
@@ -54,11 +62,13 @@ ColumnLayout {
     }
 
     onDarkThemeChanged: sensorChart.requestPaint()
+    // Back on this tab: the chart missed the fetches while hidden.
+    onVisibleChanged: if (visible && root.expanded) fetchHistory()
 
     Connections {
         target: root
         function onConfigDataChanged() { seedTelemetryConfig(root.configData); }
-        function onExpandedChanged() { if (root.expanded) fetchHistory(); }
+        function onExpandedChanged() { if (root.expanded && sensorsPage.visible) fetchHistory(); }
         function onThermalDataChanged() {
             if (!root.thermalData || !root.thermalData.temps) return;
             availableSensors = Object.keys(root.thermalData.temps);
@@ -76,7 +86,8 @@ ColumnLayout {
         // faster reopening - without this it would keep polling
         // ThermalHistory forever, well past whatever's actually
         // visible, adding to how much the backend service logs.
-        running: root.expanded
+        // Another tab hides the page: it fetches when shown again.
+        running: root.expanded && sensorsPage.visible
         repeat: true
         onTriggered: fetchHistory()
     }
@@ -85,7 +96,12 @@ ColumnLayout {
     Timer {
         id: fetchDebounce
         interval: 250
-        onTriggered: fetchHistory()
+        // A wider window needs older samples: start over from its beginning.
+        onTriggered: {
+            samples = [];
+            samplesGeneration++;
+            fetchHistory();
+        }
     }
     function scheduleFetch() { fetchDebounce.restart(); }
 
@@ -96,25 +112,53 @@ ColumnLayout {
     }
 
     function fetchHistory() {
-        Api.get("ThermalHistory", function(ok, data) {
-            if (!ok || !data) return;
+        // Asking from a sample in the future would get nothing until the
+        // clock passes it: start over from the window.
+        if (samples.length > 0 && samples[samples.length - 1].ts_ms > Date.now() + clockSlackMs) {
+            samples = [];
+            samplesGeneration++;
+        }
+        var generation = samplesGeneration;
+        var since = samples.length > 0
+            ? samples[samples.length - 1].ts_ms
+            : Date.now() - windowSeconds * 1000;
+
+        Api.thermalHistorySince(since, function(ok, data) {
+            if (!ok || !data || generation !== samplesGeneration) return;
+
+            // Drop what left the window, append what is new (two fetches
+            // in flight may both bring the same sample) and not ahead of
+            // the clock.
             var cutoff = Date.now() - windowSeconds * 1000;
-            var ser = {};
+            var ahead = Date.now() + clockSlackMs;
+            var kept = samples.filter(function(s) { return s.ts_ms >= cutoff; });
+            var newest = kept.length > 0 ? kept[kept.length - 1].ts_ms : -Infinity;
             for (var i = 0; i < data.length; i++) {
-                var s = data[i];
-                if (s.ts_ms < cutoff) continue;
-                var temps = s.temps || {};
-                var keys = Object.keys(temps);
-                for (var j = 0; j < keys.length; j++) {
-                    var name = keys[j];
-                    if (selectedSensors.length > 0 && selectedSensors.indexOf(name) < 0) continue;
-                    if (!ser[name]) ser[name] = [];
-                    ser[name].push([s.ts_ms, temps[name]]);
-                }
+                if (data[i].ts_ms <= newest || data[i].ts_ms < cutoff || data[i].ts_ms > ahead) continue;
+                kept.push(data[i]);
+                newest = data[i].ts_ms;
             }
-            series = ser;
-            sensorChart.requestPaint();
+            samples = kept;
+            buildSeries();
         });
+    }
+
+    // `series` from `samples`: one line per selected sensor.
+    function buildSeries() {
+        var ser = {};
+        for (var i = 0; i < samples.length; i++) {
+            var s = samples[i];
+            var temps = s.temps || {};
+            var keys = Object.keys(temps);
+            for (var j = 0; j < keys.length; j++) {
+                var name = keys[j];
+                if (selectedSensors.length > 0 && selectedSensors.indexOf(name) < 0) continue;
+                if (!ser[name]) ser[name] = [];
+                ser[name].push([s.ts_ms, temps[name]]);
+            }
+        }
+        series = ser;
+        sensorChart.requestPaint();
     }
 
     // --- Legend ---
@@ -396,7 +440,7 @@ ColumnLayout {
                     if (checked && idx < 0) s.push(modelData);
                     else if (!checked && idx >= 0) s.splice(idx, 1);
                     selectedSensors = s;
-                    fetchHistory();
+                    buildSeries();
                 }
             }
         }

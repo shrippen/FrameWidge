@@ -1,13 +1,15 @@
-//! The one control loop: reads the sensors, then steps the fans, the
-//! charge settings and the history, each at its own interval, and applies
-//! a preset when the power source changes.
+//! The one control loop: steps the fans, the charge settings and the
+//! history, each at its own interval, and applies a preset when the power
+//! source changes. A tick reads the sensors once if a due step needs them
+//! (the history, a curve, per-fan manual duties), before any step acts.
 //!
-//! One loop instead of a thread per task: every task needs the same
-//! reading, and the order (read, then act) stays fixed.
+//! One loop instead of a thread per task: the steps share one reading,
+//! and the order (read, then act) stays fixed.
 
 use crate::battery::Charge;
 use crate::config::PowerSource;
-use crate::fan::Fans;
+use crate::fan::{self, Fans};
+use crate::sensors::Thermal;
 use crate::App;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -38,9 +40,19 @@ pub fn run(app: &App) {
         }
 
         let cfg = app.config();
-        let thermal = app.thermal();
+        let fan_step = now >= fan_due;
+        let telemetry_step = now >= telemetry_due;
 
-        if now >= fan_due {
+        // Without the EC hwmon driver a reading is a framework_tool call:
+        // read only when a due step uses it, not on every tick.
+        let needed = telemetry_step || (fan_step && fan::needs_reading(&cfg.fan));
+        let thermal = if needed {
+            app.thermal()
+        } else {
+            Ok(Thermal::default())
+        };
+
+        if fan_step {
             let next = match &thermal {
                 Ok(t) => fans.step(&app.tool, &cfg.fan, t),
                 Err(e) => fans.step_blind(&app.tool, &cfg.fan, e),
@@ -53,7 +65,7 @@ pub fn run(app: &App) {
             charge_due = now + CHARGE_EVERY;
         }
 
-        if now >= telemetry_due {
+        if telemetry_step {
             if let Ok(t) = &thermal {
                 app.record(t, cfg.telemetry.retain_seconds);
             }

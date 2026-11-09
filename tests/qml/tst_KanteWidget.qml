@@ -12,6 +12,8 @@ Item {
 
     property bool serviceOnline: false
     property bool cliPresent: true
+    property bool serviceCurrent: true
+    property string serviceVersion: "1.3.0"
     property int visualStyle: 0
     readonly property var plasmoid: ({ configuration: {} })
 

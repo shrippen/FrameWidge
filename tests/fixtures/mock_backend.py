@@ -10,6 +10,8 @@ A second, test-only interface io.github.shrippen.FrameWidge.Mock has:
   Requests() -> JSON array of every call so far, each {"member", "args"}, in order.
                Used by tests to assert how many calls a debounced UI interaction produced.
   Reset()    -> clears the request log and resets the config to its initial defaults.
+  AddFutureSample() -> ThermalHistory starts with a sample an hour ahead, as after the clock
+               was set back (dual boot, RTC in local time), until Reset().
 
 Prints "READY" once the name is owned.
 """
@@ -32,6 +34,7 @@ INTROSPECTION = f"""
     <method name="Health"><arg type="s" direction="out"/></method>
     <method name="Thermal"><arg type="s" direction="out"/></method>
     <method name="ThermalHistory"><arg type="s" direction="out"/></method>
+    <method name="ThermalHistorySince"><arg name="since_ms" type="x" direction="in"/><arg type="s" direction="out"/></method>
     <method name="Power"><arg type="s" direction="out"/></method>
     <method name="SetPowerProfile"><arg name="profile" type="s" direction="in"/></method>
     <method name="Versions"><arg type="s" direction="out"/></method>
@@ -43,6 +46,7 @@ INTROSPECTION = f"""
   <interface name="{MOCK_INTERFACE}">
     <method name="Requests"><arg type="s" direction="out"/></method>
     <method name="Reset"/>
+    <method name="AddFutureSample"/>
     <method name="Shots"><arg type="s" direction="out"/></method>
   </interface>
 </node>
@@ -89,6 +93,8 @@ POWER = {
 SYSTEM = {"cpu": "AMD Ryzen 7 7840U", "memory_total_mb": 32768, "os": "Fedora Linux 44", "dgpu": None}
 VERSIONS = {"uefi_version": "03.05", "mainboard_type": "FRANBMCP07", "tool_version": "0.5.0"}
 LOGS_TEXT = "mock backend started\nno warnings\n"
+# As service/src/dbus.rs; a test lowers it to play an outdated service.
+API_LEVEL = 2
 # Screenshot plan for the demo (demo/backend.py sets it).
 SHOTS = None
 
@@ -97,7 +103,8 @@ def thermal_history():
     # SensorsPage.qml filters history samples by `Date.now() - windowSeconds*1000`,
     # so timestamps need to be close to "now" for tests to see any data at all.
     now_ms = int(time.time() * 1000)
-    return [
+    future = [{"ts_ms": now_ms + 3600000, "temps": {"CPU": 99, "GPU": 99}}] if STATE.future else []
+    return future + [
         {"ts_ms": now_ms - 20000, "temps": {"CPU": 50, "GPU": 45}},
         {"ts_ms": now_ms - 10000, "temps": {"CPU": 55, "GPU": 47}},
         {"ts_ms": now_ms, "temps": {"CPU": 60, "GPU": 49}},
@@ -121,6 +128,7 @@ class State:
         self.config = copy.deepcopy(INITIAL_CONFIG)
         self.power = copy.deepcopy(POWER)
         self.requests = []
+        self.future = False
 
 
 STATE = State()
@@ -140,9 +148,12 @@ def set_power_profile(profile):
 # member -> function(*string args) -> reply string, or None for no reply value.
 # demo/backend.py replaces entries.
 HANDLERS = {
-    "Health": lambda: json.dumps({"cli_present": True, "service_version": "mock-1.0"}),
+    "Health": lambda: json.dumps({"cli_present": True, "service_version": "mock-1.0", "api": API_LEVEL}),
     "Thermal": lambda: json.dumps(THERMAL),
     "ThermalHistory": lambda: json.dumps(thermal_history()),
+    # Filters whatever ThermalHistory serves, so demo/backend.py's history serves both.
+    "ThermalHistorySince": lambda since_ms: json.dumps(
+        [s for s in json.loads(HANDLERS["ThermalHistory"]()) if s["ts_ms"] > since_ms]),
     "Power": lambda: json.dumps(STATE.power),
     "SetPowerProfile": set_power_profile,
     "Versions": lambda: json.dumps(VERSIONS),
@@ -155,6 +166,7 @@ HANDLERS = {
 MOCK_HANDLERS = {
     "Requests": lambda: json.dumps(STATE.requests),
     "Reset": lambda: STATE.reset(),
+    "AddFutureSample": lambda: setattr(STATE, "future", True),
     "Shots": lambda: json.dumps(SHOTS),
 }
 

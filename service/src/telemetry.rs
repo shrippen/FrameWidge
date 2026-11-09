@@ -35,6 +35,16 @@ impl History {
         self.samples.iter().cloned().collect()
     }
 
+    /// Samples newer than `since_ms`, oldest first. A filter, not a binary
+    /// search: a clock set back leaves the samples out of order.
+    pub fn since(&self, since_ms: i64) -> Vec<Sample> {
+        self.samples
+            .iter()
+            .filter(|s| s.ts_ms > since_ms)
+            .cloned()
+            .collect()
+    }
+
     fn push(&mut self, sample: Sample, retain_seconds: u64) {
         let cutoff = sample.ts_ms - retain_seconds as i64 * MS_PER_S;
         self.samples.push_back(sample);
@@ -71,5 +81,17 @@ mod tests {
         h.push(at(12_000), 10);
         let kept: Vec<i64> = h.samples().iter().map(|s| s.ts_ms).collect();
         assert_eq!(kept, vec![5_000, 12_000]);
+    }
+
+    #[test]
+    fn since_returns_only_newer_samples() {
+        let mut h = History::default();
+        for ts in [1_000, 2_000, 3_000] {
+            h.push(at(ts), 3600);
+        }
+        let ts = |v: Vec<Sample>| v.iter().map(|s| s.ts_ms).collect::<Vec<_>>();
+        assert_eq!(ts(h.since(2_000)), vec![3_000]);
+        assert_eq!(ts(h.since(0)), vec![1_000, 2_000, 3_000]);
+        assert!(h.since(3_000).is_empty());
     }
 }

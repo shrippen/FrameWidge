@@ -29,6 +29,8 @@ ColumnLayout {
         text: {
             if (!root.serviceOnline)
                 return i18n("Service Not Reachable");
+            if (!root.serviceCurrent)
+                return i18n("Service Out of Date");
             if (!root.cliPresent)
                 return i18n("framework_tool Not Found");
             return "";
@@ -45,24 +47,26 @@ ColumnLayout {
         text: {
             if (!root.serviceOnline)
                 return i18n("The FrameWidge service (framewidged) is not running or not installed.\n\nInstall it with the command below, or start it if already installed.");
+            if (!root.serviceCurrent)
+                return i18n("The installed service (framewidged %1) is older than this widget.\n\nUpdate it with the command below.", root.serviceVersion);
             if (!root.cliPresent)
                 return i18n("The service is running but cannot find framework_tool.\nCheck the service logs for details.");
             return "";
         }
     }
 
-    // Install command
+    // Install (or update) command
     ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: Kirigami.Units.largeSpacing
         Layout.rightMargin: Kirigami.Units.largeSpacing
-        visible: !root.serviceOnline
+        visible: !root.serviceOnline || !root.serviceCurrent
         spacing: Kirigami.Units.smallSpacing
 
         PlasmaComponents.Label {
             Layout.fillWidth: true
             font.bold: true
-            text: i18n("Install:")
+            text: root.serviceOnline ? i18n("Update:") : i18n("Install:")
         }
 
         QQC2.TextArea {

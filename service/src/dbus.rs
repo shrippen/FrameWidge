@@ -18,6 +18,9 @@ use zbus::{interface, Connection};
 
 pub const BUS_NAME: &str = "io.github.shrippen.FrameWidge";
 pub const OBJECT_PATH: &str = "/io/github/shrippen/FrameWidge";
+/// Raised when the widget needs a method an older service lacks; the widget
+/// asks for an update below its level. 2: ThermalHistorySince.
+const API_LEVEL: u32 = 2;
 const CONFIGURE_ACTION: &str = "io.github.shrippen.FrameWidge.configure";
 /// polkit CheckAuthorization flag: may show a password dialog.
 const ALLOW_USER_INTERACTION: u32 = 1;
@@ -40,6 +43,7 @@ impl Service {
         json!({
             "cli_present": self.app.tool.present(),
             "service_version": env!("CARGO_PKG_VERSION"),
+            "api": API_LEVEL,
         })
         .to_string()
     }
@@ -53,8 +57,14 @@ impl Service {
         )
     }
 
+    /// The whole history; widgets up to 1.3 read it.
     fn thermal_history(&self) -> Result<String> {
         to_json(&self.app.history())
+    }
+
+    /// Samples newer than `since_ms`: the widget keeps what it has.
+    fn thermal_history_since(&self, since_ms: i64) -> Result<String> {
+        to_json(&self.app.history_since(since_ms))
     }
 
     /// Battery and charger, the EC's charge limit, and the power profile.

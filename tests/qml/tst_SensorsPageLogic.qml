@@ -40,6 +40,15 @@ Item {
         }
 
         // Calls of `member` in the mock backend's request log.
+        function requests(member) {
+            var list = null;
+            MockBus.call("Requests", function(ok, text) {
+                list = JSON.parse(text).filter(function(r) { return r.member === member; });
+            });
+            tryVerify(function() { return list !== null; }, 2000);
+            return list;
+        }
+
         function requestCount(member) {
             var count = -1;
             MockBus.call("Requests", function(ok, text) {
@@ -80,15 +89,114 @@ Item {
         function test_windowSlider_debouncesRapidMovesIntoOneFetch() {
             if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
             wait(50); // let the Component.onCompleted fetch land before we start counting
-            var before = requestCount("ThermalHistory");
+            var before = requestCount("ThermalHistorySince");
 
             sensorsPage.windowSeconds = 60; sensorsPage.scheduleFetch();
             sensorsPage.windowSeconds = 120; sensorsPage.scheduleFetch();
             sensorsPage.windowSeconds = 300; sensorsPage.scheduleFetch();
 
             wait(500);
-            var after = requestCount("ThermalHistory");
+            var after = requestCount("ThermalHistorySince");
             compare(after - before, 1, "three rapid slider moves must coalesce into a single history fetch");
+        }
+
+        // The pages share one StackLayout; another tab hides this one. Each
+        // fetch parses the whole history (~170 KB at 30 min) in plasmashell.
+        function test_hiddenPage_fetchesNoHistory() {
+            if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
+            root.configData = { telemetry: { poll_ms: 1000 } };
+            sensorsPage.visible = false;
+            root.expanded = true;
+            wait(50);
+            var before = requestCount("ThermalHistorySince");
+
+            wait(2500);
+            compare(requestCount("ThermalHistorySince") - before, 0, "no fetch while another tab shows");
+
+            sensorsPage.visible = true;
+            tryVerify(function() { return requestCount("ThermalHistorySince") - before === 1; }, 500,
+                      "showing the tab fetches at once");
+            root.expanded = false;
+        }
+    
+        // The page keeps its samples and asks only for newer ones: the whole
+        // history is ~170 KB at 30 min, parsed in plasmashell every 2 s.
+        function test_fetchHistory_asksOnlyForNewSamples() {
+            if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
+            sensorsPage.selectedSensors = ["CPU", "GPU"];
+            sensorsPage.windowSeconds = 3600;
+            sensorsPage.fetchHistory();
+            tryVerify(function() { return sensorsPage.series.CPU && sensorsPage.series.CPU.length >= 3; }, 2000);
+            wait(50); // the mock's newest sample is "now"; let fetches in flight land
+            var cpu = sensorsPage.series.CPU;
+            var newest = sensorsPage.samples[sensorsPage.samples.length - 1].ts_ms;
+            sensorsPage.fetchHistory();
+            tryVerify(function() { return sensorsPage.series.CPU.length > cpu.length; }, 2000);
+
+            var asked = requests("ThermalHistorySince");
+            compare(asked[asked.length - 1].args[0], newest, "asks from the newest sample on");
+            var times = sensorsPage.series.CPU.map(function(p) { return p[0]; });
+            for (var i = 1; i < times.length; i++) {
+                verify(times[i] > times[i - 1], "no sample twice");
+            }
+        }
+
+        function test_firstFetch_asksOnlyForTheWindow() {
+            if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
+            wait(50);
+            var asked = requests("ThermalHistorySince");
+            var since = asked[asked.length - 1].args[0];
+            verify(Math.abs(since - (Date.now() - sensorsPage.windowSeconds * 1000)) < 2000,
+                   "the service keeps 30 min, the chart shows " + sensorsPage.windowSeconds + " s");
+        }
+
+        function test_widerWindow_fetchesAgainFromItsStart() {
+            if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
+            sensorsPage.windowSeconds = 5;
+            sensorsPage.scheduleFetch();
+            wait(400);
+            compare(sensorsPage.series.CPU.length, 1, "5 s window: only the newest sample");
+
+            sensorsPage.windowSeconds = 3600;
+            sensorsPage.scheduleFetch();
+            tryVerify(function() { return sensorsPage.series.CPU.length === 3; }, 2000,
+                      "the older samples come back");
+        }
+    
+        // A clock set back (dual boot with the RTC in local time, then NTP)
+        // leaves samples in the future. The chart must follow the new readings,
+        // not wait an hour for the clock to pass the old ones.
+        // Runs `fetch` and waits until its history request was answered.
+        function fetchAndSettle(fetch) {
+            var before = requestCount("ThermalHistorySince");
+            fetch();
+            tryVerify(function() { return requestCount("ThermalHistorySince") > before; }, 2000);
+            wait(100);
+        }
+
+        function test_clockSetBack_dropsHeldFutureSamples() {
+            if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
+            sensorsPage.selectedSensors = ["CPU", "GPU"];
+            sensorsPage.windowSeconds = 3600;
+            fetchAndSettle(sensorsPage.scheduleFetch);
+            sensorsPage.samples = [{ ts_ms: Date.now() + 3600000, temps: { CPU: 99, GPU: 99 } }];
+
+            fetchAndSettle(sensorsPage.fetchHistory);
+            compare(sensorsPage.series.CPU.map(function(p) { return p[1]; }), [50, 55, 60],
+                    "the current readings, not the one an hour ahead");
+        }
+
+        function test_clockSetBack_ignoresFutureSamplesFromTheService() {
+            if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
+            var added = false;
+            MockBus.call("AddFutureSample", function() { added = true; });
+            tryVerify(function() { return added; }, 2000);
+            sensorsPage.selectedSensors = ["CPU", "GPU"];
+            sensorsPage.windowSeconds = 3600;
+            fetchAndSettle(sensorsPage.scheduleFetch);
+
+            compare(sensorsPage.series.CPU.map(function(p) { return p[1]; }), [50, 55, 60],
+                    "the current readings, not the one an hour ahead");
         }
     }
 }

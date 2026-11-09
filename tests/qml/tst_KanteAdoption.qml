@@ -14,6 +14,8 @@ Item {
     property bool expanded: false
     property bool serviceOnline: true
     property bool cliPresent: true
+    property bool serviceCurrent: true
+    property string serviceVersion: "1.3.0"
     property real cpuTemp: 42
     property int fanRpm: 2000
     property int visualStyle: 0
@@ -286,6 +288,18 @@ Item {
             verify(boxes[0].text.indexOf("shrippen/FrameWidge/main/install.sh") >= 0);
             verify(boxes[1].text.indexOf("framewidged") >= 0);
             root.serviceOnline = true;
+        }
+
+        // A service without the methods this widget calls: only the update
+        // command (install.sh), no start command; the service runs.
+        function test_outdatedServiceAsksForUpdate() {
+            root.visualStyle = 1;
+            root.serviceCurrent = false;
+            var hint = createTemporaryObject(hintComponent, root);
+            var boxes = findAll(hint, isCommandBox, []).filter(function(b) { return b.visible; });
+            compare(boxes.length, 1);
+            verify(boxes[0].text.indexOf("shrippen/FrameWidge/main/install.sh") >= 0);
+            root.serviceCurrent = true;
         }
     }
 }
