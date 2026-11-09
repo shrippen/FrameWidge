@@ -16,16 +16,6 @@ pub const IDLE_POLL: Duration = Duration::from_millis(500);
 /// Steps without a temperature before a curve hands the fans to the EC.
 const BLIND_STEPS: u32 = 3;
 
-/// Whether a step in this mode uses a reading: a curve its temperatures,
-/// per-fan manual duties the fan count. Disabled and global manual need none.
-pub fn needs_reading(fan: &FanConfig) -> bool {
-    match fan.mode {
-        FanMode::Curve => true,
-        FanMode::Manual => !fan.overrides.is_empty(),
-        FanMode::Disabled => false,
-    }
-}
-
 #[derive(Default)]
 pub struct Fans {
     last: Option<(FanMode, bool)>,
@@ -35,9 +25,23 @@ pub struct Fans {
     auto_pending: bool,
     /// Steps in a row without a temperature reading.
     blind_steps: u32,
+    /// The fan count, once two readings in a row agreed on it; it does not change.
+    fan_count: Option<usize>,
+    /// Fans in the last reading that showed any, not yet confirmed.
+    fans_seen: Option<usize>,
 }
 
 impl Fans {
+    /// Whether the next step uses a reading: a curve its temperatures,
+    /// per-fan manual duties the fan count until two readings agreed on it.
+    pub fn needs_reading(&self, fan: &FanConfig) -> bool {
+        match fan.mode {
+            FanMode::Curve => true,
+            FanMode::Manual => !fan.overrides.is_empty() && self.fan_count.is_none(),
+            FanMode::Disabled => false,
+        }
+    }
+
     /// One control step; returns when the next one is due.
     pub fn step(&mut self, tool: &Tool, fan: &FanConfig, thermal: &Thermal) -> Duration {
         // A reading without a single temperature (every sensor faulty) is no reading.
@@ -45,6 +49,7 @@ impl Fans {
             return self.step_blind(tool, fan, "no sensor reports a temperature");
         }
         self.blind_steps = 0;
+        self.note_fans(thermal.fans.len());
 
         // A new mode or topology starts the curve from the current reading.
         let topology = (fan.mode, !fan.overrides.is_empty());
@@ -60,7 +65,7 @@ impl Fans {
                     self.hand_to_ec(tool);
                 }
             }
-            FanMode::Manual => self.manual(tool, fan, thermal.fans.len(), changed),
+            FanMode::Manual => self.manual(tool, fan, self.fan_count.unwrap_or(0), changed),
             FanMode::Curve => self.curve(tool, fan, thermal),
         }
         self.last = Some(topology);
@@ -94,6 +99,19 @@ impl Fans {
             self.hand_to_ec(tool);
         }
         IDLE_POLL
+    }
+
+    /// Learns the fan count from a reading (0: none taken). A fan that failed
+    /// to read hides the ones after it, so a count needs two readings in a
+    /// row to agree, and a lower one later does not replace it.
+    fn note_fans(&mut self, count: usize) {
+        if count == 0 {
+            return;
+        }
+        if self.fans_seen == Some(count) || self.fan_count.is_some_and(|known| count > known) {
+            self.fan_count = Some(self.fan_count.map_or(count, |known| known.max(count)));
+        }
+        self.fans_seen = Some(count);
     }
 
     /// Hands the fans to the EC; a failure is retried on the next step.
@@ -287,6 +305,26 @@ mod tests {
             rate_limit_pct_per_step: rate,
             ..Curve::default()
         }
+    }
+
+    #[test]
+    fn fan_count_needs_two_matching_readings() {
+        // A read error on fan2 makes one reading show a single fan; taken
+        // for good, the second fan's duty would never be set.
+        let mut fans = Fans::default();
+        fans.note_fans(1);
+        assert_eq!(fans.fan_count, None);
+        fans.note_fans(2);
+        assert_eq!(fans.fan_count, None);
+        fans.note_fans(0);
+        fans.note_fans(2);
+        assert_eq!(fans.fan_count, Some(2));
+        fans.note_fans(1);
+        assert_eq!(
+            fans.fan_count,
+            Some(2),
+            "a later short reading does not lower it"
+        );
     }
 
     #[test]

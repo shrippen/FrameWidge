@@ -571,6 +571,31 @@ fn reads_the_ec_only_when_a_step_needs_it() {
 }
 
 #[test]
+fn per_fan_manual_duties_count_the_fans_once() {
+    // Per-fan duties need the fan count, which does not change; reading it
+    // every half second is a framework_tool call each time without the driver.
+    let s = Service::start(Setup {
+        name: "fan-count",
+        hwmon: Hwmon::None,
+        ..Setup::default()
+    });
+    s.set_config(json!({
+        "telemetry": { "poll_ms": 60000 },
+        "fan": { "mode": "manual", "overrides": [{ "index": 0, "manual": { "duty_pct": 40 } }] }
+    }))
+    .unwrap();
+    s.wait_until(|| s.called("--fansetduty 0 40"));
+    let before = thermal_reads(&s);
+
+    thread::sleep(Duration::from_secs(5));
+    let reads = thermal_reads(&s) - before;
+    assert!(
+        reads <= 1,
+        "{reads} thermal reads in 5 s, the fan count is known"
+    );
+}
+
+#[test]
 fn charge_limit_is_not_read_on_every_poll() {
     // The widget polls Power every 2 s while open; the limit only changes
     // when this service writes it.

@@ -100,8 +100,8 @@ Item {
             compare(after - before, 1, "three rapid slider moves must coalesce into a single history fetch");
         }
 
-        // The pages share one StackLayout; another tab hides this one. Each
-        // fetch parses the whole history (~170 KB at 30 min) in plasmashell.
+        // The pages share one StackLayout; another tab hides this one, and
+        // its chart needs no data then.
         function test_hiddenPage_fetchesNoHistory() {
             if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
             root.configData = { telemetry: { poll_ms: 1000 } };
@@ -118,7 +118,7 @@ Item {
                       "showing the tab fetches at once");
             root.expanded = false;
         }
-    
+
         // The page keeps its samples and asks only for newer ones: the whole
         // history is ~170 KB at 30 min, parsed in plasmashell every 2 s.
         function test_fetchHistory_asksOnlyForNewSamples() {
@@ -162,10 +162,7 @@ Item {
             tryVerify(function() { return sensorsPage.series.CPU.length === 3; }, 2000,
                       "the older samples come back");
         }
-    
-        // A clock set back (dual boot with the RTC in local time, then NTP)
-        // leaves samples in the future. The chart must follow the new readings,
-        // not wait an hour for the clock to pass the old ones.
+
         // Runs `fetch` and waits until its history request was answered.
         function fetchAndSettle(fetch) {
             var before = requestCount("ThermalHistorySince");
@@ -174,6 +171,9 @@ Item {
             wait(100);
         }
 
+        // A clock set back (dual boot with the RTC in local time, then NTP)
+        // leaves samples in the future. The chart must follow the new readings,
+        // not wait an hour for the clock to pass the old ones.
         function test_clockSetBack_dropsHeldFutureSamples() {
             if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
             sensorsPage.selectedSensors = ["CPU", "GPU"];
