@@ -10,6 +10,8 @@ A second, test-only interface io.github.shrippen.FrameWidge.Mock has:
   Requests() -> JSON array of every call so far, each {"member", "args"}, in order.
                Used by tests to assert how many calls a debounced UI interaction produced.
   Reset()    -> clears the request log and resets the config to its initial defaults.
+  AddFutureSample() -> ThermalHistory starts with a sample an hour ahead, as after the clock
+               was set back (dual boot, RTC in local time), until Reset().
 
 Prints "READY" once the name is owned.
 """
@@ -44,6 +46,7 @@ INTROSPECTION = f"""
   <interface name="{MOCK_INTERFACE}">
     <method name="Requests"><arg type="s" direction="out"/></method>
     <method name="Reset"/>
+    <method name="AddFutureSample"/>
     <method name="Shots"><arg type="s" direction="out"/></method>
   </interface>
 </node>
@@ -100,7 +103,8 @@ def thermal_history():
     # SensorsPage.qml filters history samples by `Date.now() - windowSeconds*1000`,
     # so timestamps need to be close to "now" for tests to see any data at all.
     now_ms = int(time.time() * 1000)
-    return [
+    future = [{"ts_ms": now_ms + 3600000, "temps": {"CPU": 99, "GPU": 99}}] if STATE.future else []
+    return future + [
         {"ts_ms": now_ms - 20000, "temps": {"CPU": 50, "GPU": 45}},
         {"ts_ms": now_ms - 10000, "temps": {"CPU": 55, "GPU": 47}},
         {"ts_ms": now_ms, "temps": {"CPU": 60, "GPU": 49}},
@@ -124,6 +128,7 @@ class State:
         self.config = copy.deepcopy(INITIAL_CONFIG)
         self.power = copy.deepcopy(POWER)
         self.requests = []
+        self.future = False
 
 
 STATE = State()
@@ -161,6 +166,7 @@ HANDLERS = {
 MOCK_HANDLERS = {
     "Requests": lambda: json.dumps(STATE.requests),
     "Reset": lambda: STATE.reset(),
+    "AddFutureSample": lambda: setattr(STATE, "future", True),
     "Shots": lambda: json.dumps(SHOTS),
 }
 

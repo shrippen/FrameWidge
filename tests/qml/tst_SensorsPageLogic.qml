@@ -162,5 +162,41 @@ Item {
             tryVerify(function() { return sensorsPage.series.CPU.length === 3; }, 2000,
                       "the older samples come back");
         }
+    
+        // A clock set back (dual boot with the RTC in local time, then NTP)
+        // leaves samples in the future. The chart must follow the new readings,
+        // not wait an hour for the clock to pass the old ones.
+        // Runs `fetch` and waits until its history request was answered.
+        function fetchAndSettle(fetch) {
+            var before = requestCount("ThermalHistorySince");
+            fetch();
+            tryVerify(function() { return requestCount("ThermalHistorySince") > before; }, 2000);
+            wait(100);
+        }
+
+        function test_clockSetBack_dropsHeldFutureSamples() {
+            if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
+            sensorsPage.selectedSensors = ["CPU", "GPU"];
+            sensorsPage.windowSeconds = 3600;
+            fetchAndSettle(sensorsPage.scheduleFetch);
+            sensorsPage.samples = [{ ts_ms: Date.now() + 3600000, temps: { CPU: 99, GPU: 99 } }];
+
+            fetchAndSettle(sensorsPage.fetchHistory);
+            compare(sensorsPage.series.CPU.map(function(p) { return p[1]; }), [50, 55, 60],
+                    "the current readings, not the one an hour ahead");
+        }
+
+        function test_clockSetBack_ignoresFutureSamplesFromTheService() {
+            if (!root.mockRunning) skip("mock backend not running; run via tests/run_unit_tests.sh");
+            var added = false;
+            MockBus.call("AddFutureSample", function() { added = true; });
+            tryVerify(function() { return added; }, 2000);
+            sensorsPage.selectedSensors = ["CPU", "GPU"];
+            sensorsPage.windowSeconds = 3600;
+            fetchAndSettle(sensorsPage.scheduleFetch);
+
+            compare(sensorsPage.series.CPU.map(function(p) { return p[1]; }), [50, 55, 60],
+                    "the current readings, not the one an hour ahead");
+        }
     }
 }

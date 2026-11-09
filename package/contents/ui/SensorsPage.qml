@@ -24,6 +24,9 @@ ColumnLayout {
     property var samples: []
     // Bumped when `samples` starts over; a reply for an older one is dropped.
     property int samplesGeneration: 0
+    // A sample further ahead than this is from before the clock was set back
+    // (dual boot with the RTC in local time, then NTP).
+    readonly property int clockSlackMs: 5000
     property int windowSeconds: 300
     property int telemetryPollMs: 2000
 
@@ -83,8 +86,7 @@ ColumnLayout {
         // faster reopening - without this it would keep polling
         // ThermalHistory forever, well past whatever's actually
         // visible, adding to how much the backend service logs.
-        // Another tab hides the page: each fetch parses the whole history
-        // (~170 KB at 30 min) in plasmashell's GUI thread.
+        // Another tab hides the page: it fetches when shown again.
         running: root.expanded && sensorsPage.visible
         repeat: true
         onTriggered: fetchHistory()
@@ -110,6 +112,12 @@ ColumnLayout {
     }
 
     function fetchHistory() {
+        // Asking from a sample in the future would get nothing until the
+        // clock passes it: start over from the window.
+        if (samples.length > 0 && samples[samples.length - 1].ts_ms > Date.now() + clockSlackMs) {
+            samples = [];
+            samplesGeneration++;
+        }
         var generation = samplesGeneration;
         var since = samples.length > 0
             ? samples[samples.length - 1].ts_ms
@@ -119,12 +127,14 @@ ColumnLayout {
             if (!ok || !data || generation !== samplesGeneration) return;
 
             // Drop what left the window, append what is new (two fetches
-            // in flight may both bring the same sample).
+            // in flight may both bring the same sample) and not ahead of
+            // the clock.
             var cutoff = Date.now() - windowSeconds * 1000;
+            var ahead = Date.now() + clockSlackMs;
             var kept = samples.filter(function(s) { return s.ts_ms >= cutoff; });
             var newest = kept.length > 0 ? kept[kept.length - 1].ts_ms : -Infinity;
             for (var i = 0; i < data.length; i++) {
-                if (data[i].ts_ms <= newest || data[i].ts_ms < cutoff) continue;
+                if (data[i].ts_ms <= newest || data[i].ts_ms < cutoff || data[i].ts_ms > ahead) continue;
                 kept.push(data[i]);
                 newest = data[i].ts_ms;
             }

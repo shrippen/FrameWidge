@@ -1,9 +1,10 @@
-//! The one control loop: reads the sensors, then steps the fans, the
-//! charge settings and the history, each at its own interval, and applies
-//! a preset when the power source changes.
+//! The one control loop: steps the fans, the charge settings and the
+//! history, each at its own interval, and applies a preset when the power
+//! source changes. A tick reads the sensors once if a due step needs them
+//! (the history, a curve, per-fan manual duties), before any step acts.
 //!
-//! One loop instead of a thread per task: every task needs the same
-//! reading, and the order (read, then act) stays fixed.
+//! One loop instead of a thread per task: the steps share one reading,
+//! and the order (read, then act) stays fixed.
 
 use crate::battery::Charge;
 use crate::config::PowerSource;
