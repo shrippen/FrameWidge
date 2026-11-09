@@ -23,8 +23,12 @@ const INSTALL_DIR: &str = "/usr/local/lib/framewidge";
 
 const CALL_TIMEOUT: Duration = Duration::from_secs(30);
 const THERMAL_TTL: Duration = Duration::from_secs(1);
-const LIMIT_TTL: Duration = Duration::from_secs(5);
+/// The limit changes when this service writes it (which clears the cache),
+/// rarely by hand; the widget asks every 2 s while open.
+const LIMIT_TTL: Duration = Duration::from_secs(60);
 const VERSIONS_TTL: Duration = Duration::from_secs(3600);
+const POLL_MIN: Duration = Duration::from_millis(1);
+const POLL_MAX: Duration = Duration::from_millis(5);
 
 /// Which fan a duty applies to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -210,6 +214,9 @@ fn wait(
     let stderr = drain(child.stderr.take());
     let deadline = Instant::now() + timeout;
 
+    // Polls from 1 ms, doubling up to POLL_MAX: a call returns at most
+    // POLL_MAX after it ended (it holds the EC lock until then).
+    let mut pause = POLL_MIN;
     let status = loop {
         if let Some(status) = child.try_wait().map_err(|e| e.to_string())? {
             break status;
@@ -219,7 +226,8 @@ fn wait(
             let _ = child.wait();
             return Err("framework_tool timed out".into());
         }
-        thread::sleep(Duration::from_millis(10));
+        thread::sleep(pause);
+        pause = (pause * 2).min(POLL_MAX);
     };
 
     let out = stdout.join().unwrap_or_default();
@@ -237,4 +245,26 @@ fn drain<R: Read + Send + 'static>(pipe: Option<R>) -> thread::JoinHandle<String
         }
         text
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fast_call_returns_without_a_poll_delay() {
+        // The EC lock is held for the whole call; a 10 ms poll step held it
+        // 10 ms for a call that takes 1 ms.
+        // The fastest of 9 runs: other tests may load the machine.
+        let tool = Tool::locate(Some("/bin/true".into()));
+        let fastest = (0..9)
+            .map(|_| {
+                let start = Instant::now();
+                tool.run(&[]).unwrap();
+                start.elapsed()
+            })
+            .min()
+            .unwrap();
+        assert!(fastest < Duration::from_millis(8), "fastest {fastest:?}");
+    }
 }

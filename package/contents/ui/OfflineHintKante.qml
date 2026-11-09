@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import "Kante"
 import "KantePlasma"
 
-// Service-unreachable / framework_tool-missing state in the Kante styles
+// Service-unreachable / outdated / framework_tool-missing state in the Kante styles
 // (KanteEmptyState). Same texts and actions as OfflineHint.qml, which the
 // System style keeps.
 ColumnLayout {
@@ -16,22 +16,30 @@ ColumnLayout {
 
     KanteEmptyState {
         Layout.fillWidth: true
-        title: !root.serviceOnline ? i18n("Service Not Reachable") : i18n("framework_tool Not Found")
-        text: !root.serviceOnline
-            ? i18n("The FrameWidge service (framewidged) is not running or not installed.\n\nInstall it with the command below, or start it if already installed.")
-            : i18n("The service is running but cannot find framework_tool.\nCheck the service logs for details.")
+        title: {
+            if (!root.serviceOnline) return i18n("Service Not Reachable");
+            if (!root.serviceCurrent) return i18n("Service Out of Date");
+            return i18n("framework_tool Not Found");
+        }
+        text: {
+            if (!root.serviceOnline)
+                return i18n("The FrameWidge service (framewidged) is not running or not installed.\n\nInstall it with the command below, or start it if already installed.");
+            if (!root.serviceCurrent)
+                return i18n("The installed service (framewidged %1) is older than this widget.\n\nUpdate it with the command below.", root.serviceVersion);
+            return i18n("The service is running but cannot find framework_tool.\nCheck the service logs for details.");
+        }
     }
 
-    // Install command
+    // Install (or update) command
     ColumnLayout {
         Layout.fillWidth: true
-        visible: !root.serviceOnline
+        visible: !root.serviceOnline || !root.serviceCurrent
         spacing: KanteStyle.unit(8)
 
         KantePlasmaHeading {
             Layout.fillWidth: true
             level: 4
-            text: i18n("Install:")
+            text: root.serviceOnline ? i18n("Update:") : i18n("Install:")
         }
 
         KanteCommandBox {
@@ -40,6 +48,13 @@ ColumnLayout {
             copyText: i18n("Copy")
             copiedText: i18n("Copied")
         }
+    }
+
+    // Start command
+    ColumnLayout {
+        Layout.fillWidth: true
+        visible: !root.serviceOnline
+        spacing: KanteStyle.unit(8)
 
         KantePlasmaHeading {
             Layout.fillWidth: true

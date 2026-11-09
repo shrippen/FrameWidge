@@ -543,3 +543,68 @@ fn manual_without_duty_hands_the_fan_back() {
         .unwrap();
     s.wait_until(|| s.calls().iter().filter(|c| *c == "--autofanctrl").count() > before);
 }
+
+/// `--thermal` calls in the fake tool's log.
+fn thermal_reads(s: &Service) -> usize {
+    s.calls().iter().filter(|c| *c == "--thermal").count()
+}
+
+#[test]
+fn reads_the_ec_only_when_a_step_needs_it() {
+    // Without the EC driver every reading is a framework_tool call. With the
+    // fan left to the EC only the history needs one, here once a minute.
+    let s = Service::start(Setup {
+        name: "lazy-thermal",
+        hwmon: Hwmon::None,
+        ..Setup::default()
+    });
+    s.set_config(json!({ "telemetry": { "poll_ms": 60000 } }))
+        .unwrap();
+    let before = thermal_reads(&s);
+
+    thread::sleep(Duration::from_secs(5));
+    let reads = thermal_reads(&s) - before;
+    assert!(
+        reads <= 1,
+        "{reads} thermal reads in 5 s, history wants 1 a minute"
+    );
+}
+
+#[test]
+fn charge_limit_is_not_read_on_every_poll() {
+    // The widget polls Power every 2 s while open; the limit only changes
+    // when this service writes it.
+    let s = Service::start(Setup {
+        name: "limit-cache",
+        ..Setup::default()
+    });
+    let reads = || s.calls().iter().filter(|c| *c == "--charge-limit").count();
+
+    s.get("Power");
+    thread::sleep(Duration::from_millis(5500));
+    s.get("Power");
+    assert_eq!(reads(), 1, "second Power call answered from the cache");
+}
+
+#[test]
+fn history_since_sends_only_new_samples() {
+    // The widget keeps what it has and asks for the rest: a whole history
+    // is ~170 KB at 30 min, parsed in plasmashell every 2 s.
+    let s = Service::start(Setup {
+        name: "history-since",
+        ..Setup::default()
+    });
+    assert!(s.get("Health")["api"].as_u64().unwrap() >= 2);
+
+    s.set_config(json!({ "telemetry": { "poll_ms": 1000 } }))
+        .unwrap();
+    s.wait_until(|| s.get("ThermalHistory").as_array().unwrap().len() >= 2);
+    let all = s.get("ThermalHistory");
+    let first = all[0]["ts_ms"].as_i64().unwrap();
+
+    let since: Value =
+        serde_json::from_str(&s.call("ThermalHistorySince", &(first,)).unwrap()).unwrap();
+    let since = since.as_array().unwrap();
+    assert!(!since.is_empty());
+    assert!(since.iter().all(|x| x["ts_ms"].as_i64().unwrap() > first));
+}

@@ -7,7 +7,8 @@
 
 use crate::battery::Charge;
 use crate::config::PowerSource;
-use crate::fan::Fans;
+use crate::fan::{self, Fans};
+use crate::sensors::Thermal;
 use crate::App;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -38,9 +39,19 @@ pub fn run(app: &App) {
         }
 
         let cfg = app.config();
-        let thermal = app.thermal();
+        let fan_step = now >= fan_due;
+        let telemetry_step = now >= telemetry_due;
 
-        if now >= fan_due {
+        // Without the EC hwmon driver a reading is a framework_tool call:
+        // read only when a due step uses it, not on every tick.
+        let needed = telemetry_step || (fan_step && fan::needs_reading(&cfg.fan));
+        let thermal = if needed {
+            app.thermal()
+        } else {
+            Ok(Thermal::default())
+        };
+
+        if fan_step {
             let next = match &thermal {
                 Ok(t) => fans.step(&app.tool, &cfg.fan, t),
                 Err(e) => fans.step_blind(&app.tool, &cfg.fan, e),
@@ -53,7 +64,7 @@ pub fn run(app: &App) {
             charge_due = now + CHARGE_EVERY;
         }
 
-        if now >= telemetry_due {
+        if telemetry_step {
             if let Ok(t) = &thermal {
                 app.record(t, cfg.telemetry.retain_seconds);
             }

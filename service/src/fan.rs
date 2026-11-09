@@ -16,6 +16,16 @@ pub const IDLE_POLL: Duration = Duration::from_millis(500);
 /// Steps without a temperature before a curve hands the fans to the EC.
 const BLIND_STEPS: u32 = 3;
 
+/// Whether a step in this mode uses a reading: a curve its temperatures,
+/// per-fan manual duties the fan count. Disabled and global manual need none.
+pub fn needs_reading(fan: &FanConfig) -> bool {
+    match fan.mode {
+        FanMode::Curve => true,
+        FanMode::Manual => !fan.overrides.is_empty(),
+        FanMode::Disabled => false,
+    }
+}
+
 #[derive(Default)]
 pub struct Fans {
     last: Option<(FanMode, bool)>,

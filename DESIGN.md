@@ -86,7 +86,7 @@ Tabs instead of the web UI's side-by-side panels — a popup can't render four c
 
 | Tab | D-Bus methods | Notes |
 |-----|--------------|-------|
-| Sensors | `ThermalHistory` | Canvas-based line chart, sensor checkboxes, time window slider |
+| Sensors | `ThermalHistorySince` | Canvas-based line chart, sensor checkboxes, time window slider |
 | Fan | `Config`, `SetConfig`, `Thermal` | Mode selector, manual duty slider, CurveEditor, curve presets (stored by the service, optionally applied by Plasma Activity or by the service on plug/unplug), calibration dialog, per-fan override tabs |
 | Power | `Power`, `SetPowerProfile` | AC state and the system power profile (power-profiles-daemon) |
 | Battery | `Power`, `Config`, `SetConfig` | Info bar + charge limit slider + rate limit with SoC threshold |
@@ -227,9 +227,10 @@ Bus name `io.github.shrippen.FrameWidge`, object `/io/github/shrippen/FrameWidge
 
 | Method | Returns | Used by |
 |--------|---------|---------|
-| `Health()` | `cli_present`, `service_version` | Health polling (all states) |
+| `Health()` | `cli_present`, `service_version`, `api` | Health polling (all states); below the widget's `Api.REQUIRED_API` the popup asks for a service update |
 | `Thermal()` | `temps` (name → °C), `fans` (name, rpm) | Live temps/RPMs, sensor discovery |
-| `ThermalHistory()` | samples `ts_ms`, `temps`, `rpms` | SensorsPage graph |
+| `ThermalHistory()` | samples `ts_ms`, `temps`, `rpms` | widgets up to 1.3 |
+| `ThermalHistorySince(x since_ms)` | the samples newer than `since_ms` | SensorsPage graph: first the window, then only new samples |
 | `Power()` | `battery` (sysfs plus EC charge limit), `profile` (`active`, `available`) or null | PowerPage, BatteryPage, tray |
 | `SetPowerProfile(s)` | nothing; polkit | PowerPage |
 | `Config()` | the settings | All pages (seed UI) |

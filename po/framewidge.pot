@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FrameWidge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 13:15+0200\n"
+"POT-Creation-Date: 2026-11-09 18:46+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -380,6 +380,9 @@ msgstr ""
 msgid "Service offline"
 msgstr ""
 
+msgid "Service out of date"
+msgstr ""
+
 msgid "framework_tool not found"
 msgstr ""
 
@@ -392,6 +395,9 @@ msgstr ""
 msgid "Service Not Reachable"
 msgstr ""
 
+msgid "Service Out of Date"
+msgstr ""
+
 msgid "framework_tool Not Found"
 msgstr ""
 
@@ -402,8 +408,17 @@ msgid ""
 msgstr ""
 
 msgid ""
+"The installed service (framewidged %1) is older than this widget.\n"
+"\n"
+"Update it with the command below."
+msgstr ""
+
+msgid ""
 "The service is running but cannot find framework_tool.\n"
 "Check the service logs for details."
+msgstr ""
+
+msgid "Update:"
 msgstr ""
 
 msgid "Install:"

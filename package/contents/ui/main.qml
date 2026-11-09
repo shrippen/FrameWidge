@@ -22,10 +22,12 @@ PlasmoidItem {
     property bool serviceOnline: false
     property bool cliPresent: false
     property string serviceVersion: ""
+    // Health().api reaches Api.REQUIRED_API; below it the popup asks for an update.
+    property bool serviceCurrent: true
+    readonly property bool serviceReady: serviceOnline && serviceCurrent && cliPresent
 
     // Thermal data
     property var thermalData: null
-    property var thermalHistory: []
 
     // Power data
     property var powerData: null
@@ -62,6 +64,7 @@ PlasmoidItem {
     toolTipMainText: "FrameWidge"
     toolTipSubText: {
         if (!serviceOnline) return i18n("Service offline");
+        if (!serviceCurrent) return i18n("Service out of date");
         if (!cliPresent) return i18n("framework_tool not found");
         var parts = [];
         if (cpuTemp >= 0) parts.push(i18n("CPU: %1 °C", Math.round(cpuTemp)));
@@ -122,6 +125,8 @@ PlasmoidItem {
                 serviceOnline = true;
                 cliPresent = data.cli_present || false;
                 serviceVersion = data.service_version || "";
+                serviceCurrent = Api.serviceCurrent(data);
+                if (!serviceCurrent) return;
                 if (!wasOnline || configData === null) loadConfig();
                 // Without background polling nothing else fetches data
                 // before the popup is first opened, leaving the tray
@@ -135,7 +140,7 @@ PlasmoidItem {
     }
 
     function pollData() {
-        if (!serviceOnline || !cliPresent) return;
+        if (!serviceReady) return;
 
         Api.get("Thermal", function(ok, data) {
             if (ok && data) thermalData = data;
@@ -175,12 +180,6 @@ PlasmoidItem {
         Api.setPowerProfile(name, function(ok) {
             if (ok) pollData();
             if (callback) callback(ok);
-        });
-    }
-
-    function loadThermalHistory() {
-        Api.get("ThermalHistory", function(ok, data) {
-            if (ok && data) thermalHistory = data;
         });
     }
 
