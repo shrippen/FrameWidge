@@ -7,8 +7,9 @@ import org.kde.plasma.workspace.dbus as DBus
  * Landing-page screenshots, only against the demo backend: once the service is online
  * the runner asks it for a plan with Mock.Shots() (only demo/backend.py serves one; the real
  * framewidged has no such interface and nothing happens). Plan:
- *   { "dir": "/out", "shots": [ { "name": "sensors", "tab": 0 } ] }
- * Each tab of the popup is grabbed into dir/name.png, then the viewer quits
+ *   { "dir": "/out", "shots": [ { "name": "sensors", "tab": 0 }, { "name": "outdated", "api": 1 } ] }
+ * Each tab of the popup is grabbed into dir/name.png; a shot with "api" first has the backend
+ * report that api level (Mock.SetApi), as an older service would, then the viewer quits
  * ("FRAMEWIDGE_SCREENSHOT_DONE" in the log). Plasma draws the popup frame outside the grabbed
  * item, and the offscreen grab has no alpha (the gaps come out black), so while a plan runs a
  * rectangle in the colour scheme's window colour stands in for that frame.
@@ -51,6 +52,9 @@ Item {
                 trace("FRAMEWIDGE_SCREENSHOT_START " + data.dir)
                 var q = [{ act: "expand" }]
                 for (var i = 0; i < data.shots.length; ++i) {
+                    if (data.shots[i].api) {
+                        q.push({ act: "api", value: data.shots[i].api })
+                    }
                     q.push({ act: "tab", value: data.shots[i].tab || 0 })
                     q.push({ act: "shot", name: data.shots[i].name })
                 }
@@ -71,6 +75,15 @@ Item {
         switch (item.act) {
         case "expand":
             plasmoidRoot.expanded = true
+            wait = 4000
+            break
+        case "api":
+            DBus.SystemBus.asyncCall({
+                service: "io.github.shrippen.FrameWidge", path: "/io/github/shrippen/FrameWidge",
+                iface: "io.github.shrippen.FrameWidge.Mock", member: "SetApi",
+                arguments: [item.value], signature: "(i)"
+            })
+            // The next health poll (pollIntervalMs while open) sees it.
             wait = 4000
             break
         case "tab":

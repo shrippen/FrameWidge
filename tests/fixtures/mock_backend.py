@@ -10,6 +10,8 @@ A second, test-only interface io.github.shrippen.FrameWidge.Mock has:
   Requests() -> JSON array of every call so far, each {"member", "args"}, in order.
                Used by tests to assert how many calls a debounced UI interaction produced.
   Reset()    -> clears the request log and resets the config to its initial defaults.
+  SetApi(i)  -> Health() reports this api level, as an older service would (demo screenshot of
+               the update hint), until Reset().
   AddFutureSample() -> ThermalHistory starts with a sample an hour ahead, as after the clock
                was set back (dual boot, RTC in local time), until Reset().
 
@@ -47,6 +49,7 @@ INTROSPECTION = f"""
     <method name="Requests"><arg type="s" direction="out"/></method>
     <method name="Reset"/>
     <method name="AddFutureSample"/>
+    <method name="SetApi"><arg name="level" type="i" direction="in"/></method>
     <method name="Shots"><arg type="s" direction="out"/></method>
   </interface>
 </node>
@@ -95,6 +98,8 @@ VERSIONS = {"uefi_version": "03.05", "mainboard_type": "FRANBMCP07", "tool_versi
 LOGS_TEXT = "mock backend started\nno warnings\n"
 # As service/src/dbus.rs; a test lowers it to play an outdated service.
 API_LEVEL = 2
+# What Health() reports with an api below API_LEVEL: the last release without it.
+OLD_SERVICE_VERSION = "1.3.0"
 # Screenshot plan for the demo (demo/backend.py sets it).
 SHOTS = None
 
@@ -129,6 +134,8 @@ class State:
         self.power = copy.deepcopy(POWER)
         self.requests = []
         self.future = False
+        self.api = API_LEVEL
+        self.version = "mock-1.0"
 
 
 STATE = State()
@@ -137,6 +144,11 @@ STATE = State()
 def set_config(patch):
     merge(STATE.config, json.loads(patch))
     return json.dumps(STATE.config)
+
+
+def set_api(level):
+    STATE.api = level
+    STATE.version = OLD_SERVICE_VERSION if level < API_LEVEL else "mock-1.0"
 
 
 def set_power_profile(profile):
@@ -148,7 +160,7 @@ def set_power_profile(profile):
 # member -> function(*string args) -> reply string, or None for no reply value.
 # demo/backend.py replaces entries.
 HANDLERS = {
-    "Health": lambda: json.dumps({"cli_present": True, "service_version": "mock-1.0", "api": API_LEVEL}),
+    "Health": lambda: json.dumps({"cli_present": True, "service_version": STATE.version, "api": STATE.api}),
     "Thermal": lambda: json.dumps(THERMAL),
     "ThermalHistory": lambda: json.dumps(thermal_history()),
     # Filters whatever ThermalHistory serves, so demo/backend.py's history serves both.
@@ -167,6 +179,7 @@ MOCK_HANDLERS = {
     "Requests": lambda: json.dumps(STATE.requests),
     "Reset": lambda: STATE.reset(),
     "AddFutureSample": lambda: setattr(STATE, "future", True),
+    "SetApi": set_api,
     "Shots": lambda: json.dumps(SHOTS),
 }
 

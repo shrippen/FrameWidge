@@ -8,7 +8,7 @@ mkdir -p "${OUT}"
 python3 - "${OUT}" "${ROOT}/demo/shots.json" > "${WORK}/plan.json" <<'PY'
 import json, sys
 shots = json.load(open(sys.argv[2]))["shots"]
-print(json.dumps({"dir": sys.argv[1], "shots": [{"name": s["name"], "tab": s.get("tab", 0)} for s in shots]}))
+print(json.dumps({"dir": sys.argv[1], "shots": [{"name": s["name"], "tab": s.get("tab", 0), "api": s.get("api")} for s in shots]}))
 PY
 start_backend "${WORK}/plan.json"
 cat > "${WORK}/screens.json" <<'JSON'

@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [1.4] — 2026-11-09
 
 ### English
 
@@ -8,18 +8,22 @@ The popup asks the service for less and the service asks the embedded controller
 
 #### Improved
 - The Sensors tab loads only the shown time range, then only new readings, instead of the whole 30-minute history every 2 seconds; other tabs load none.
-- Without the kernel's EC driver (Linux before 6.11) the service reads temperatures through `framework_tool` only when the fan curve or the history needs them; the charge limit is read once a minute instead of every 5 seconds while the popup is open.
+- Without the kernel's EC driver (Linux before 6.11) the service reads temperatures through `framework_tool` only when the fan curve or the history needs them.
+- The charge limit is read from the embedded controller once a minute instead of every 5 seconds while the popup is open.
 
 #### Note
 - Update the service together with the widget (the install one-liner does both). A widget newer than its service shows "Service Out of Date" with the update command instead of its pages.
 
+All changes: https://github.com/shrippen/FrameWidge/compare/1.3...1.4
+
 ### Deutsch
 
-Das Popup fragt den Dienst seltener, und der Dienst fragt den Embedded Controller seltener.
+Das Popup holt weniger vom Dienst, und der Dienst fragt den Embedded Controller seltener.
 
 #### Verbessert
 - Der Sensoren-Tab lädt nur den gezeigten Zeitraum, danach nur neue Messwerte, statt alle 2 Sekunden den ganzen 30-Minuten-Verlauf; die anderen Tabs laden keinen.
-- Ohne den EC-Treiber des Kernels (Linux vor 6.11) liest der Dienst die Temperaturen über `framework_tool` nur, wenn Lüfterkurve oder Verlauf sie brauchen; das Ladelimit liest er bei offenem Popup einmal pro Minute statt alle 5 Sekunden.
+- Ohne den EC-Treiber des Kernels (Linux vor 6.11) liest der Dienst die Temperaturen über `framework_tool` nur, wenn Lüfterkurve oder Verlauf sie brauchen.
+- Das Ladelimit liest der Dienst bei offenem Popup einmal pro Minute statt alle 5 Sekunden aus dem Embedded Controller.
 
 #### Hinweis
 - Dienst und Widget zusammen aktualisieren (der Install-Einzeiler macht beides). Ein Widget, das neuer ist als sein Dienst, zeigt „Dienst veraltet“ mit dem Update-Befehl statt seiner Seiten.
