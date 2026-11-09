@@ -16,16 +16,6 @@ pub const IDLE_POLL: Duration = Duration::from_millis(500);
 /// Steps without a temperature before a curve hands the fans to the EC.
 const BLIND_STEPS: u32 = 3;
 
-/// Whether a step in this mode uses a reading: a curve its temperatures,
-/// per-fan manual duties the fan count. Disabled and global manual need none.
-pub fn needs_reading(fan: &FanConfig) -> bool {
-    match fan.mode {
-        FanMode::Curve => true,
-        FanMode::Manual => !fan.overrides.is_empty(),
-        FanMode::Disabled => false,
-    }
-}
-
 #[derive(Default)]
 pub struct Fans {
     last: Option<(FanMode, bool)>,
@@ -35,9 +25,21 @@ pub struct Fans {
     auto_pending: bool,
     /// Steps in a row without a temperature reading.
     blind_steps: u32,
+    /// Fans in the last reading that showed any; the count does not change.
+    fan_count: Option<usize>,
 }
 
 impl Fans {
+    /// Whether the next step uses a reading: a curve its temperatures,
+    /// per-fan manual duties the fan count until one reading told it.
+    pub fn needs_reading(&self, fan: &FanConfig) -> bool {
+        match fan.mode {
+            FanMode::Curve => true,
+            FanMode::Manual => !fan.overrides.is_empty() && self.fan_count.is_none(),
+            FanMode::Disabled => false,
+        }
+    }
+
     /// One control step; returns when the next one is due.
     pub fn step(&mut self, tool: &Tool, fan: &FanConfig, thermal: &Thermal) -> Duration {
         // A reading without a single temperature (every sensor faulty) is no reading.
@@ -45,6 +47,9 @@ impl Fans {
             return self.step_blind(tool, fan, "no sensor reports a temperature");
         }
         self.blind_steps = 0;
+        if !thermal.fans.is_empty() {
+            self.fan_count = Some(thermal.fans.len());
+        }
 
         // A new mode or topology starts the curve from the current reading.
         let topology = (fan.mode, !fan.overrides.is_empty());
@@ -60,7 +65,7 @@ impl Fans {
                     self.hand_to_ec(tool);
                 }
             }
-            FanMode::Manual => self.manual(tool, fan, thermal.fans.len(), changed),
+            FanMode::Manual => self.manual(tool, fan, self.fan_count.unwrap_or(0), changed),
             FanMode::Curve => self.curve(tool, fan, thermal),
         }
         self.last = Some(topology);

@@ -35,8 +35,7 @@ impl History {
         self.samples.iter().cloned().collect()
     }
 
-    /// Samples newer than `since_ms`, oldest first. A filter, not a binary
-    /// search: a clock set back leaves the samples out of order.
+    /// Samples newer than `since_ms`, oldest first.
     pub fn since(&self, since_ms: i64) -> Vec<Sample> {
         self.samples
             .iter()
@@ -45,7 +44,12 @@ impl History {
             .collect()
     }
 
+    /// Keeps the samples in order: after the clock was set back, the ones
+    /// now in the future go, or every `since` would send them again.
     fn push(&mut self, sample: Sample, retain_seconds: u64) {
+        while self.samples.back().is_some_and(|s| s.ts_ms > sample.ts_ms) {
+            self.samples.pop_back();
+        }
         let cutoff = sample.ts_ms - retain_seconds as i64 * MS_PER_S;
         self.samples.push_back(sample);
         while self.samples.front().is_some_and(|s| s.ts_ms < cutoff) {
@@ -81,6 +85,21 @@ mod tests {
         h.push(at(12_000), 10);
         let kept: Vec<i64> = h.samples().iter().map(|s| s.ts_ms).collect();
         assert_eq!(kept, vec![5_000, 12_000]);
+    }
+
+    #[test]
+    fn clock_set_back_drops_the_samples_ahead() {
+        // Dual boot with the RTC in local time, then NTP: the samples taken
+        // before are now in the future. Kept, every ThermalHistorySince
+        // would send them again until the clock passes them.
+        let mut h = History::default();
+        for ts in [10_000, 20_000, 30_000] {
+            h.push(at(ts), 3600);
+        }
+        h.push(at(15_000), 3600);
+        let kept: Vec<i64> = h.samples().iter().map(|s| s.ts_ms).collect();
+        assert_eq!(kept, vec![10_000, 15_000]);
+        assert!(h.since(15_000).is_empty());
     }
 
     #[test]

@@ -8,7 +8,7 @@
 
 use crate::battery::Charge;
 use crate::config::PowerSource;
-use crate::fan::{self, Fans};
+use crate::fan::Fans;
 use crate::sensors::Thermal;
 use crate::App;
 use std::thread;
@@ -45,7 +45,7 @@ pub fn run(app: &App) {
 
         // Without the EC hwmon driver a reading is a framework_tool call:
         // read only when a due step uses it, not on every tick.
-        let needed = telemetry_step || (fan_step && fan::needs_reading(&cfg.fan));
+        let needed = telemetry_step || (fan_step && fans.needs_reading(&cfg.fan));
         let thermal = if needed {
             app.thermal()
         } else {
