@@ -19,7 +19,7 @@ All changes: https://github.com/shrippen/FrameWidge/compare/1.4...1.4.1
 Zwei Reste der Abfrage-Arbeit aus 1.4: Der Dienst zählt die Lüfter einmal statt jede halbe Sekunde, und eine zurückgestellte Uhr bringt die Last des ganzen Verlaufs nicht mehr zurück.
 
 #### Verbessert
-- Bei fester Drehzahl je Lüfter las der Dienst die Temperaturen jede halbe Sekunde, nur um die Lüfter zu zählen; jetzt zählt er sie einmal. Ohne den EC-Treiber des Kernels (Linux vor 6.11) war jede dieser Messungen ein Aufruf von `framework_tool`.
+- Bei fester Leistung je Lüfter las der Dienst die Temperaturen jede halbe Sekunde, nur um die Lüfter zu zählen; jetzt zählt er sie einmal. Ohne den EC-Treiber des Kernels (Linux vor 6.11) war jede dieser Messungen ein Aufruf von `framework_tool`.
 
 #### Behoben
 - Nach einer zurückgestellten Systemuhr (etwa bei Dual-Boot mit der Hardware-Uhr in Ortszeit) schickte der Dienst die Messwerte, die jetzt in der Zukunft liegen, bei jeder Aktualisierung des Sensoren-Tabs erneut, bis die Uhr sie eingeholt hatte; das Diagramm überging sie, aber ein Großteil der alten Last war zurück. Jetzt verwirft der Dienst sie.
