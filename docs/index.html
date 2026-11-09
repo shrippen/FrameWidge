@@ -117,6 +117,20 @@ kpackagetool6 -t Plasma/Applet -r org.kde.plasma.framewidge</div></section>
   <h2 lang="en">Changes</h2><h2 lang="de">Änderungen</h2>
   <p lang="en">What each release brought, newest first. Every release adds an entry here and the same notes on the release page.</p><p lang="de">Was jede Version gebracht hat, die neueste zuerst. Jede Version bekommt hier einen Eintrag und dieselben Notizen auf der Release-Seite.</p>
   <ol class="changelog">
+    <li class="release" id="v1.4.1">
+      <div class="release-head"><b class="release-version">1.4.1</b><time datetime="2026-11-09"><span lang="en">9 Nov 2026</span><span lang="de">9. Nov. 2026</span></time></div>
+      <div class="release-body">
+        <p class="release-lead"><span lang="en">Two leftovers of the polling work in 1.4: the service counts the fans once instead of every half second, and a clock set back no longer brings back the load of the full history.</span><span lang="de">Zwei Reste der Abfrage-Arbeit aus 1.4: Der Dienst zählt die Lüfter einmal statt jede halbe Sekunde, und eine zurückgestellte Uhr bringt die Last des ganzen Verlaufs nicht mehr zurück.</span></p>
+        <div class="release-group" data-kind="improved"><h3><span lang="en">Improved</span><span lang="de">Verbessert</span></h3><ul>
+          <li><span lang="en">With a manual duty per fan the service read the temperatures every half second only to count the fans; now it counts them once. Without the kernel's EC driver (Linux before 6.11) each of those readings was a <code>framework_tool</code> call.</span><span lang="de">Bei fester Drehzahl je Lüfter las der Dienst die Temperaturen jede halbe Sekunde, nur um die Lüfter zu zählen; jetzt zählt er sie einmal. Ohne den EC-Treiber des Kernels (Linux vor 6.11) war jede dieser Messungen ein Aufruf von <code>framework_tool</code>.</span></li>
+        </ul></div>
+        <div class="release-group" data-kind="fixed"><h3><span lang="en">Fixed</span><span lang="de">Behoben</span></h3><ul>
+          <li><span lang="en">After the system clock was set back (for example dual boot with the hardware clock in local time), the service sent the readings now stamped in the future again with every update of the Sensors tab, until the clock caught up; the chart ignored them, but much of the old load was back. The service now drops them.</span><span lang="de">Nach einer zurückgestellten Systemuhr (etwa bei Dual-Boot mit der Hardware-Uhr in Ortszeit) schickte der Dienst die Messwerte, die jetzt in der Zukunft liegen, bei jeder Aktualisierung des Sensoren-Tabs erneut, bis die Uhr sie eingeholt hatte; das Diagramm überging sie, aber ein Großteil der alten Last war zurück. Jetzt verwirft der Dienst sie.</span></li>
+        </ul></div>
+        <div class="flow"><div class="flow-node"><b lang="en">Clock set back</b><b lang="de">Uhr zurückgestellt</b><span><span lang="en">earlier readings now lie in the future</span><span lang="de">frühere Messwerte liegen jetzt in der Zukunft</span></span></div><span class="flow-arrow" aria-hidden="true"></span><div class="flow-node hl"><b>framewidged</b><span><span lang="en">drops them with the next reading</span><span lang="de">verwirft sie mit der nächsten Messung</span></span></div><span class="flow-arrow" aria-hidden="true"></span><div class="flow-node"><b lang="en">Sensors tab</b><b lang="de">Sensoren-Tab</b><span><span lang="en">gets only new readings again</span><span lang="de">bekommt wieder nur neue Messwerte</span></span></div></div>
+        <a class="release-notes" href="https://github.com/shrippen/FrameWidge/compare/1.4...1.4.1"><span lang="en">All changes since 1.4 →</span><span lang="de">Alle Änderungen seit 1.4 →</span></a>
+      </div>
+    </li>
     <li class="release" id="v1.4">
       <div class="release-head"><b class="release-version">1.4</b><time datetime="2026-11-09"><span lang="en">9 Nov 2026</span><span lang="de">9. Nov. 2026</span></time></div>
       <div class="release-body">
@@ -169,19 +183,19 @@ kpackagetool6 -t Plasma/Applet -r org.kde.plasma.framewidge</div></section>
         <a class="release-notes" href="https://github.com/shrippen/FrameWidge/compare/1.2...1.3"><span lang="en">All changes since 1.2 →</span><span lang="de">Alle Änderungen seit 1.2 →</span></a>
       </div>
     </li>
-    <li class="release" id="v1.2">
-      <div class="release-head"><b class="release-version">1.2</b><time datetime="2026-09-20"><span lang="en">20 Sep 2026</span><span lang="de">20. Sep. 2026</span></time></div>
-      <div class="release-body">
-        <p class="release-lead"><span lang="en">A new logo.</span><span lang="de">Ein neues Logo.</span></p>
-        <div class="release-group" data-kind="improved"><h3><span lang="en">Improved</span><span lang="de">Verbessert</span></h3><ul>
-          <li><span lang="en">The tray uses a monochrome logo that follows the panel's text colour; the app icon uses the variant with the colour accent.</span><span lang="de">Das Tray-Symbol nutzt ein einfarbiges Logo, das der Textfarbe des Panels folgt; das App-Symbol die Variante mit Farbakzent.</span></li>
-        </ul></div>
-        <a class="release-notes" href="https://github.com/shrippen/FrameWidge/compare/1.1...1.2"><span lang="en">All changes since 1.1 →</span><span lang="de">Alle Änderungen seit 1.1 →</span></a>
-      </div>
-    </li>
   </ol>
   <details class="changelog-more"><summary><span lang="en">Older releases</span><span lang="de">Ältere Versionen</span></summary>
     <ol class="changelog">
+      <li class="release" id="v1.2">
+        <div class="release-head"><b class="release-version">1.2</b><time datetime="2026-09-20"><span lang="en">20 Sep 2026</span><span lang="de">20. Sep. 2026</span></time></div>
+        <div class="release-body">
+          <p class="release-lead"><span lang="en">A new logo.</span><span lang="de">Ein neues Logo.</span></p>
+          <div class="release-group" data-kind="improved"><h3><span lang="en">Improved</span><span lang="de">Verbessert</span></h3><ul>
+            <li><span lang="en">The tray uses a monochrome logo that follows the panel's text colour; the app icon uses the variant with the colour accent.</span><span lang="de">Das Tray-Symbol nutzt ein einfarbiges Logo, das der Textfarbe des Panels folgt; das App-Symbol die Variante mit Farbakzent.</span></li>
+          </ul></div>
+          <a class="release-notes" href="https://github.com/shrippen/FrameWidge/compare/1.1...1.2"><span lang="en">All changes since 1.1 →</span><span lang="de">Alle Änderungen seit 1.1 →</span></a>
+        </div>
+      </li>
       <li class="release" id="v1.1">
         <div class="release-head"><b class="release-version">1.1</b><time datetime="2026-09-20"><span lang="en">20 Sep 2026</span><span lang="de">20. Sep. 2026</span></time></div>
         <div class="release-body">
@@ -225,7 +239,7 @@ kpackagetool6 -t Plasma/Applet -r org.kde.plasma.framewidge</div></section>
       <div><h4><span lang="en">Source</span><span lang="de">Quelltext</span></h4><a href="https://github.com/shrippen/FrameWidge">GitHub</a><a href="https://github.com/shrippen/FrameWidge/issues">Issues</a><a href="https://github.com/shrippen/FrameWidge/releases">Releases</a><a href="https://github.com/ozturkkl/framework-control"><span lang="en">Original project</span><span lang="de">Originalprojekt</span></a></div>
     </nav>
   </div>
-  <div class="foot-meta"><p>MIT · shrippen · <a href="#changes">v1.4</a> · <span lang="en">based on <a href="https://github.com/ozturkkl/framework-control">framework-control</a></span><span lang="de">basiert auf <a href="https://github.com/ozturkkl/framework-control">framework-control</a></span></p></div>
+  <div class="foot-meta"><p>MIT · shrippen · <a href="#changes">v1.4.1</a> · <span lang="en">based on <a href="https://github.com/ozturkkl/framework-control">framework-control</a></span><span lang="de">basiert auf <a href="https://github.com/ozturkkl/framework-control">framework-control</a></span></p></div>
 </footer>
 
 </body>
