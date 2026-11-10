@@ -1,6 +1,6 @@
 # Review guide
 
-Every PR is reviewed before it is merged (rule in `agent.md`, taken over
+Every PR is reviewed before it is merged (rule in `RULES.md` and the skill `pr-review`, taken over
 from lmix and Kante): by PR-Agent (owner, 22.10.2026); a new Claude agent
 checks the **Wichtig** of earlier rounds, and reviews when PR-Agent fails.
 The reviewer knows nothing of the session that wrote the change: it gets the
@@ -39,7 +39,7 @@ someone who should not have it, or leaves the user without a working widget:
   `blocking::unblock`.
 - Widget: calls go through `js/Api.js`; a patch matches `Config` in
   `service/src/config.rs` (field names, types); Kante styles use Kante
-  elements (rule in `agent.md`).
+  elements (GUI rule in `RULES.md`).
 - Root cause on bug fixes: does the fix remove the cause, or hide one case
   of it? Is there a test that failed before the fix?
 - Tests: is the new behaviour tested where it can be (`cargo test` in
@@ -69,5 +69,5 @@ someone who should not have it, or leaves the user without a working widget:
 - In a later round: say for each open **Wichtig** of the last round whether
   it is fixed, or whether its answer is accepted, with the reason. PR-Agent
   sees no earlier round: it reports only its own findings with their labels,
-  and a new Claude agent closes the open ones (`agent.md`).
+  and a new Claude agent closes the open ones (skill `pr-review`).
 - Findings in German, code names as they are.
