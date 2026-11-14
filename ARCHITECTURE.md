@@ -17,7 +17,7 @@ running as root does the work on the hardware; the widget only talks to that ser
 | `service/src/control.rs` | The one control loop: steps fans, charge settings and history, each at its interval. |
 | `service/src/fan.rs`, `battery.rs`, `telemetry.rs` | The rules: fan curve with hysteresis, keeping the charge limit, the recent history for the graph. |
 | `service/src/config.rs` | The settings on disk and their defaults, in the schema the widget reads and writes. |
-| `service/src/sensors.rs` | One set of sensor names and readings, whichever driver produced them. |
+| `service/src/sensors.rs` | One set of sensor names and readings, whichever driver produced them. A shared vocabulary, not a layer. |
 | `service/src/tool.rs`, `parse.rs`, `sysfs.rs` | The drivers: `framework_tool` (writes to the embedded controller) with the parsers of its output, and the kernel's view (reads). |
 | `service/src/profiles.rs`, `system.rs` | The system's power profile through its own daemon; host facts and the service log. |
 | `service/src/main.rs`, `service/data/` | Start and wiring of the service; its systemd unit, D-Bus policy and polkit action. |
@@ -34,21 +34,24 @@ running as root does the work on the hardware; the widget only talks to that ser
 ## Layers
 
 ```
- widget (user, Plasma)                         service (root, systemd)
+ widget (user, Plasma)                    service (root, systemd)
 
- pages, editors (QML) ─► js/ pure logic        dbus.rs ◄──────────────── system bus
-        │                                         │
-        ▼                                         ▼
-   js/Api.js ───────── system bus ─────────►   control loop, config
-                                                  │
-                                                  ▼
-                                    fan, battery, telemetry (the rules)
-                                                  │
-                                                  ▼
-                                    sensors (one set of names)
-                                                  │
-                                                  ▼
-                              drivers: tool + parse (writes), sysfs (reads)
+ pages, editors (QML) ─► js/ pure logic
+        │
+        ▼
+   js/Api.js ────── system bus ──────►  dbus.rs: the interface
+                                          │ settings, history   │ reads for an answer
+                                          ▼                     │ (battery, versions,
+                          config ◄── control loop               │  profile, host)
+                                          │                     │
+                                          ▼                     │
+                          fan, battery, telemetry (the rules)   │
+                                          │ fan duty, charge    │
+                                          ▼                     ▼
+                  drivers: tool + parse (framework_tool), sysfs (kernel),
+                           profiles (power profile daemon), system (host)
+
+ sensors.rs: the names and readings every block above shares; it uses none of them
 ```
 
 - The widget never touches hardware, files of the system or programs. Everything goes
@@ -59,7 +62,11 @@ running as root does the work on the hardware; the widget only talks to that ser
   widget must draw the same curve, it uses one function that a test holds equal to the
   service's numbers.
 - In the service only the drivers know `framework_tool`, its output and sysfs paths.
-  The rules above them work with the names and readings of `sensors.rs`.
+  The rules read the names and readings of `sensors.rs` and write through the functions
+  of the `tool` driver.
+- `dbus.rs` decides nothing. It changes settings through `config`, and for an answer
+  it may read a driver directly. Of the drivers it writes only the power profile; fans
+  and charging are written by the rules alone.
 - Logic of the widget that needs no QML lives in `js/` and has tests; a page holds
   layout and wiring.
 - A thing shown in both styles (system, Kante) has its texts, commands and rules once;
@@ -73,14 +80,14 @@ running as root does the work on the hardware; the widget only talks to that ser
 
 | Change | Touch |
 |---|---|
-| A new value from the hardware | A driver (`sysfs.rs` or `tool.rs` with `parse.rs`), `sensors.rs`, `dbus.rs`, `DESIGN.md`, then `Api.js` and a page |
+| A new value from the hardware | A driver (`sysfs.rs` or `tool.rs` with `parse.rs`), `sensors.rs`, `dbus.rs`, `DESIGN.md`, both stand-ins, then `Api.js` and a page |
 | A new setting | `config.rs` (name and default), the rule that uses it, `DESIGN.md`, the page that edits it, both stand-ins |
 | A new rule for fans or charging | `fan.rs` or `battery.rs`, with a test in the service |
-| A new page or control in the popup | A QML file in `package/contents/ui/`; its logic in `js/` with a test in `tests/qml/` |
+| A new page or control in the popup | A QML file in `package/contents/ui/`; its logic in `js/` with a test in `tests/qml/`; new texts through `po/update.sh` (German included) |
 | A new colour rule | `js/ColorGrading.js` |
 | A design element that is missing | Kante, then `scripts/sync-kante.sh`; never the copies here |
 | Something run as root or installed on the system | `service/data/`, `install.sh`; the owner confirms |
-| A release | `RELEASE.md`, `CHANGELOG.md`, landing page |
+| A release | The steps in `RELEASE.md`: `CHANGELOG.md`, the version in `package/metadata.json` and `service/Cargo.toml`, landing page |
 
 ## Known deviations
 
@@ -95,5 +102,8 @@ running as root does the work on the hardware; the widget only talks to that ser
   limits (`AUDIT.md`, finding 6).
 - The fan page has four tasks and holds logic that belongs in `js/`
   (`AUDIT.md`, finding 7).
+- Two more pages hold logic without QML: the sensors page shapes the history and picks
+  the axis steps, the curve editor places captions and keeps points in order
+  (not in `AUDIT.md`).
 - The defaults stand in the service, in the widget and in the test stand-in, which
   already differs (`AUDIT.md`, finding 8).
