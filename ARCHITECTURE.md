@@ -42,12 +42,12 @@ running as root does the work on the hardware; the widget only talks to that ser
         ▼
    js/Api.js ─── system bus ───►  dbus.rs               control.rs
                                   answers the widget    the one loop, on a timer
-                                   │        │              │    │        │
-                                   │        ▼              ▼    │        ▼
-                                   │   config (settings, presets),   fan, battery
-                                   │   telemetry (history)      │    (the rules)
-                                   │ reads               reads  │        │ write fan
-                                   ▼                            ▼        ▼ duty, charge
+                                   │        │              │      │       │
+                                   │        ▼              ▼      │       ▼
+                                   │   config (settings, presets) │   fan, battery
+                                   │   telemetry (history)        │   (the rules)
+                                   │ reads                  reads │       │ write fan
+                                   ▼                              ▼       ▼ duty, charge
                   drivers: sysfs (kernel), tool + parse (framework_tool),
                            profiles (power profile daemon), system (host)
 
@@ -69,9 +69,9 @@ running as root does the work on the hardware; the widget only talks to that ser
 - `dbus.rs` decides nothing. It reads and changes settings through `config`, takes the
   history from `telemetry`, and for an answer reads a driver directly (temperatures,
   battery, versions, profile, host). Of the drivers it writes only the power profile.
-- `control.rs` reads the settings each tick and the drivers at most once per tick, when
-  a due step needs it; it hands the readings to the rules and the history, and switches
-  the preset in the settings when the power source changes.
+- `control.rs` reads the settings and the power source each tick, the temperatures
+  only when a due step needs them; it hands the readings to the rules and the history,
+  and switches the preset in the settings when the power source changes.
 - Fans and charging are written by the rules alone. One exception: when the service
   stops, `main.rs` hands the fans back to the embedded controller.
 - Logic of the widget that needs no QML lives in `js/` and has tests; a page holds
