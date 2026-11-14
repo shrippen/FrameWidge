@@ -1,0 +1,9 @@
+# What is over a structure limit today (tools/structure-check.py). An entry may shrink,
+# never grow; a raised or new entry needs its reason in the PR. Rewrite with --update.
+# Lines: exclude<TAB>glob | path<TAB>function or - for the file<TAB>metric=value ...
+exclude	package/contents/ui/Kante/*
+exclude	package/contents/ui/KantePlasma/*
+package/contents/ui/CurveEditor.qml	Keys.onPressed	nesting=6
+package/contents/ui/FanPage.qml	seedFromConfig	ccn=17
+package/contents/ui/js/ColorGrading.js	hslToHex	nesting=5
+service/src/config.rs	validate	ccn=16

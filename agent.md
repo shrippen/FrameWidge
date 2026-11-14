@@ -20,6 +20,7 @@ is published, so the owner confirms it in words.
 ## Repository (this project)
 
 - CI runs on the GitHub mirror (`.github/workflows/ci.yml`, since 16.10.2026) and reports back to Gitea as the commit status `github / test`.
+- CI also runs `tools/structure-check.py` (function and file size limits; `structure.baseline` lists the existing exceptions).
 - The merge waits for: CI is green: the newest `github / test` status on the PR's latest commit is success. `ci.yml` runs on every push (no path filter), so every PR waits for it; no status yet means wait, not merge. PR-Agent's status does not count here.
 - The owner also confirms: `.gitea/pr-agent/`, what runs as root on users' machines (the service `service/` with its code, unit, D-Bus policy and polkit action, `install.sh`, `uninstall.sh`), the landing page `docs/`, the KDE Store text.
 - Everything else: `RULES.md` (Repository) and the skill `pr-review`.
