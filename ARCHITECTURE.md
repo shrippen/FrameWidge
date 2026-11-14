@@ -15,7 +15,8 @@ running as root does the work on the hardware; the widget only talks to that ser
 |---|---|
 | `service/src/dbus.rs` | The service's interface for the widget, on the system bus. The schema is described in `DESIGN.md`. |
 | `service/src/control.rs` | The one control loop: steps fans, charge settings and history, each at its interval. |
-| `service/src/fan.rs`, `battery.rs`, `telemetry.rs` | The rules: fan curve with hysteresis, keeping the charge limit, the recent history for the graph. |
+| `service/src/fan.rs`, `battery.rs` | The rules: fan curve with hysteresis, keeping the charge limit. |
+| `service/src/telemetry.rs` | The recent history for the graph. |
 | `service/src/config.rs` | The settings on disk and their defaults, in the schema the widget reads and writes. |
 | `service/src/sensors.rs` | One set of sensor names and readings, whichever driver produced them. A shared vocabulary, not a layer; the setting types of `config.rs` are shared the same way. |
 | `service/src/tool.rs`, `parse.rs`, `sysfs.rs` | The drivers: `framework_tool` (writes to the embedded controller) with the parsers of its output, and the kernel's view (reads). |
@@ -41,16 +42,16 @@ running as root does the work on the hardware; the widget only talks to that ser
         ▼
    js/Api.js ─── system bus ───►  dbus.rs               control.rs
                                   answers the widget    the one loop, on a timer
-                                   │        │              │         │
-                                   │        ▼              ▼         ▼
-                                   │   config (settings),        fan, battery
-                                   │   telemetry (history)       (the rules)
-                                   │ reads                 │ reads   │ writes fan duty,
-                                   ▼                       ▼         ▼ charge
+                                   │        │              │    │        │
+                                   │        ▼              ▼    │        ▼
+                                   │   config (settings, presets),   fan, battery
+                                   │   telemetry (history)      │    (the rules)
+                                   │ reads               reads  │        │ write fan
+                                   ▼                            ▼        ▼ duty, charge
                   drivers: sysfs (kernel), tool + parse (framework_tool),
                            profiles (power profile daemon), system (host)
 
- sensors.rs and the types of config.rs: the words every block above shares
+ sensors.rs and the types of config.rs: the words the blocks above share
 ```
 
 - The widget never touches hardware, files of the system or programs. Everything goes
@@ -68,8 +69,11 @@ running as root does the work on the hardware; the widget only talks to that ser
 - `dbus.rs` decides nothing. It reads and changes settings through `config`, takes the
   history from `telemetry`, and for an answer reads a driver directly (temperatures,
   battery, versions, profile, host). Of the drivers it writes only the power profile.
-- `control.rs` reads the drivers once per tick and hands the readings to the rules and
-  the history. Fans and charging are written by the rules alone.
+- `control.rs` reads the settings each tick and the drivers at most once per tick, when
+  a due step needs it; it hands the readings to the rules and the history, and switches
+  the preset in the settings when the power source changes.
+- Fans and charging are written by the rules alone. One exception: when the service
+  stops, `main.rs` hands the fans back to the embedded controller.
 - Logic of the widget that needs no QML lives in `js/` and has tests; a page holds
   layout and wiring.
 - A thing shown in both styles (system, Kante) has its texts, commands and rules once;
