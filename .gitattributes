@@ -10,3 +10,5 @@
 /agent.md export-ignore
 /RULES.md export-ignore
 /REVIEW.md export-ignore
+# Rule files and tooling for agents, not part of source archives (git archive).
+/RELEASE.md export-ignore
